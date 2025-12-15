@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs e runtime
+logs/
+*.log
+*.csv
+*.json
+
+# Backups / testes locais
+backup/
+teste/
+
+# Arquivos de mídia
+*.mp3
+*.wav
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Ambiente / segredos
+.env
+.env.*
+*.key
+
+# Windows
+Thumbs.db
+.DS_Store
