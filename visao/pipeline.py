@@ -1,17 +1,18 @@
 # ARQUIVO: vision/visao_pipeline.py
 # ROBONILDO_101 — Pipeline de visão (foco ProfitPro + captura por offset relativo à janela)
 
+from config import NOME_TELA_PROFIT
 from visao.foco_profit import FocoProfit
 from visao.captura_janela import CapturaJanela
 
 
 class PipelineVisao:
-    def __init__(self, offset_grafico):
+    def __init__(self, offset_grafico, nome_tela_profit: str = NOME_TELA_PROFIT):
         """
         offset_grafico = dict(x=..., y=..., width=..., height=...)
         (relativo à janela do ProfitPro)
         """
-        self.foco = FocoProfit("ProfitPro")
+        self.foco = FocoProfit(nome_tela_profit)
         self.cap = CapturaJanela()
         self.off = offset_grafico
 

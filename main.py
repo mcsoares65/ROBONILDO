@@ -9,12 +9,14 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from config import ENVIAR_ORDENS, NOME_TELA_PROFIT
 from visao.pipeline import PipelineVisao
 from ia.decisor_openai import DecisorOpenAI
 from narracao.voz import Voz
 from narracao.narrador import NarradorOficial
 
 from operacao.estado_operacao import EstadoOperacao
+from operacao.executa_ordem import executar_ordem
 from regras.pregao import RegrasPregao
 
 
@@ -200,14 +202,14 @@ def main():
 
     garantir_logs()
 
-    visao = PipelineVisao(OFFSET_GRAFICO)
+    visao = PipelineVisao(OFFSET_GRAFICO, nome_tela_profit=NOME_TELA_PROFIT)
     ia = DecisorOpenAI(modelo=MODELO_OPENAI)
 
     voz = Voz()
     narrador = NarradorOficial(voz, cooldown=1.0)
 
     estado = EstadoOperacao()
-    pregao = RegrasPregao(hora_inicio=datetime.strptime("09:01", "%H:%M").time(),
+    pregao = RegrasPregao(hora_inicio=datetime.strptime("09:05", "%H:%M").time(),
                           hora_fim=datetime.strptime("18:20", "%H:%M").time(),
                           margem_zeragem_min=2)
 
@@ -303,14 +305,23 @@ def main():
                 f"MODO={session_mode} | MOTIVO={decisao.reason_short}"
             )
 
-            # 4) Atualiza estado (simulado por enquanto — no futuro liga na execução real)
+            # 4) Envia ordem real apenas se permitido e a ação for executável
+            if acao_final in ("COMPRAR", "VENDER", "ENCERRAR"):
+                if ENVIAR_ORDENS and not SMOKE_TEST:
+                    _sucesso, msg = executar_ordem(acao_final)
+                    print(f"[ORDENS] {msg}")
+                else:
+                    motivo_skip = "SMOKE_TEST ativo" if SMOKE_TEST else "ENVIAR_ORDENS=False"
+                    print(f"[ORDENS] Simulação: {motivo_skip}. Ordem não enviada.")
+
+            # 5) Atualiza estado (simulação interna)
             estado.aplicar_acao(acao_final, agora, getattr(decisao, "price_now", None))
 
-            # 5) Log
+            # 6) Log
             registrar_decisao(decisao, acao_final, estado, market_status)
             print(f"[OK] Log gravado em: {CAMINHO_LOG}")
 
-            # 6) Narração (sempre curta)
+            # 7) Narração (sempre curta)
             # Regra: fala quando for abrir/encerrar; se for manter/aguardar só fala com confiança boa
             if acao_final in ("COMPRAR", "VENDER", "ENCERRAR"):
                 texto_fala = f"{decisao.reason_short} Ação: {acao_final}."
@@ -322,7 +333,7 @@ def main():
                     narrador.falar(texto_fala, force=True)
                     time.sleep(tempo_para_falar(texto_fala))
 
-            # 7) Encerrar no smoke test
+            # 8) Encerrar no smoke test
             if SMOKE_TEST:
                 print("[OK] Smoke test finalizado (1 ciclo). Encerrando.")
                 time.sleep(1)
