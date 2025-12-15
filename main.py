@@ -59,13 +59,32 @@ def registrar_decisao(decisao, acao_final: str, estado: EstadoOperacao, market_s
         writer = csv.writer(f, delimiter=";")
 
         if not existe:
-            writer.writerow(["timestamp", "acao_ia", "acao_final", "posicao", "confianca", "status", "motivo"])
+            writer.writerow([
+                "timestamp",
+                "acao_ia",
+                "acao_final",
+                "posicao",
+                "preco_entrada",
+                "entrou_em",
+                "preco_saida",
+                "saiu_em",
+                "confianca",
+                "status",
+                "motivo"
+            ])
+
+        entrou_em = estado.entrou_em.strftime("%Y-%m-%d %H:%M:%S") if estado.entrou_em else ""
+        saiu_em = estado.saiu_em.strftime("%Y-%m-%d %H:%M:%S") if estado.saiu_em else ""
 
         writer.writerow([
             datetime.now(TZ_LOCAL).strftime("%Y-%m-%d %H:%M:%S"),
             getattr(decisao, "action", ""),
             acao_final,
             estado.posicao,
+            estado.preco_entrada if estado.preco_entrada is not None else "",
+            entrou_em,
+            estado.preco_saida if estado.preco_saida is not None else "",
+            saiu_em,
             round(decisao.confidence, 2),
             market_status,
             decisao.reason_short
@@ -108,6 +127,17 @@ def normalizar_status(status: str) -> str:
     return "DESCONHECIDO"
 
 
+def normalizar_session_mode(session_mode: str) -> str:
+    if not session_mode:
+        return "DESCONHECIDO"
+    s = str(session_mode).strip().upper()
+    if s.startswith("REPLAY"):
+        return "REPLAY"
+    if s in ("AO_VIVO", "AOVIVO", "NORMAL", "LIVE"):
+        return "AO_VIVO"
+    return "DESCONHECIDO"
+
+
 def decidir_acao_final(acao_norm: str, estado: EstadoOperacao) -> str:
     """
     Regra central:
@@ -131,6 +161,32 @@ def decidir_acao_final(acao_norm: str, estado: EstadoOperacao) -> str:
         return "MANTER"
 
     return "AGUARDAR"
+
+
+def detectar_tarja_amarela_leilao(frame, altura=50, limiar_percentual=0.08) -> bool:
+    """Detecta a tarja amarela de leilão no topo do ProfitPro."""
+    try:
+        import numpy as np
+        import cv2
+    except Exception:
+        return False
+
+    if frame is None:
+        return False
+
+    if frame.ndim == 3 and frame.shape[2] == 4:
+        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+    else:
+        frame_bgr = frame
+
+    topo = frame_bgr[:altura, :, :]
+    if topo.size == 0:
+        return False
+
+    b, g, r = cv2.split(topo)
+    mask_amarelo = (r > 200) & (g > 200) & (b < 170)
+    proporcao = mask_amarelo.mean()
+    return proporcao >= limiar_percentual
 
 
 # ==============================
@@ -162,40 +218,6 @@ def main():
         agora = datetime.now(TZ_LOCAL)
 
         try:
-            # 0) Regra de horário (não chama IA fora do pregão)
-            if not pregao.dentro_horario(agora):
-                # Se tiver posição aberta fora do horário: por segurança, peça zeragem imediata (futuro: execução real)
-                if estado.esta_aberto():
-                    msg = "Fora do horário do pregão e há posição aberta. Encerrar imediatamente por segurança."
-                    print("[HORARIO]", msg)
-                    narrador.falar(msg, force=True)
-                    time.sleep(tempo_para_falar(msg))
-                    estado.encerrar(agora)
-
-                # Falar no máximo 1x a cada 2 minutos fora do horário
-                if (time.time() - falou_fora_horario_ts) > 120:
-                    narrador.falar("Fora do horário. Aguardando abertura do pregão.", force=True)
-                    falou_fora_horario_ts = time.time()
-
-                time.sleep(10)
-                if SMOKE_TEST:
-                    return
-                continue
-
-            # 0.1) Perto do encerramento: se tiver posição, encerrar
-            if pregao.perto_de_encerrar(agora) and estado.esta_aberto():
-                msg = "Pregão perto do encerramento. Vou encerrar a posição agora para evitar zeragem."
-                print("[ENCERRAMENTO]", msg)
-                narrador.falar(msg, force=True)
-                time.sleep(tempo_para_falar(msg))
-                estado.encerrar(agora)
-
-                # A partir daqui, não abre nova operação perto do fim
-                time.sleep(2)
-                if SMOKE_TEST:
-                    return
-                continue
-
             # 1) Captura
             frame, erro = visao.capturar_grafico()
             if erro:
@@ -213,23 +235,64 @@ def main():
 
             acao_norm = normalizar_acao(getattr(decisao, "action", ""))
             market_status = normalizar_status(getattr(decisao, "market_status", "DESCONHECIDO"))
+            session_mode = normalizar_session_mode(getattr(decisao, "session_mode", "DESCONHECIDO"))
 
-            # 2.1) Leilão: não faz nada (exceto regra de encerramento que já tratamos acima)
-            if market_status == "LEILAO":
-                msg = "Mercado em leilão. Não vou operar. Aguardando normalizar."
-                print("[LEILAO]", msg)
-                registrar_decisao(decisao, "AGUARDAR", estado, market_status)
+            leilao_visual = detectar_tarja_amarela_leilao(frame)
+            if leilao_visual:
+                market_status = "LEILAO"
 
-                # fala só se confiança for ok (e para não virar spam, frase curta)
-                if decisao.confidence >= LIMIAR_FALA_CONFIANCA:
+            em_replay = session_mode == "REPLAY"
+
+            # 0) Regra de horário (valida apenas se não for replay)
+            if not em_replay and not pregao.dentro_horario(agora):
+                if estado.esta_aberto():
+                    msg = "Fora do horário do pregão e há posição aberta. Encerrar imediatamente por segurança."
+                    print("[HORARIO]", msg)
                     narrador.falar(msg, force=True)
                     time.sleep(tempo_para_falar(msg))
+                    estado.aplicar_acao("ENCERRAR", agora, getattr(decisao, "price_now", None))
+                    registrar_decisao(decisao, "ENCERRAR", estado, market_status)
+                else:
+                    if (time.time() - falou_fora_horario_ts) > 120:
+                        narrador.falar("Fora do horário. Aguardando abertura do pregão.", force=True)
+                        falou_fora_horario_ts = time.time()
 
-                # intervalo maior para não gastar IA à toa
-                time.sleep(8)
+                time.sleep(10)
                 if SMOKE_TEST:
                     return
                 continue
+
+            # 0.1) Perto do encerramento: se tiver posição, encerrar
+            if not em_replay and pregao.perto_de_encerrar(agora) and estado.esta_aberto():
+                msg = "Pregão perto do encerramento. Vou encerrar a posição agora para evitar zeragem."
+                print("[ENCERRAMENTO]", msg)
+                narrador.falar(msg, force=True)
+                time.sleep(tempo_para_falar(msg))
+                estado.aplicar_acao("ENCERRAR", agora, getattr(decisao, "price_now", None))
+                registrar_decisao(decisao, "ENCERRAR", estado, market_status)
+
+                time.sleep(2)
+                if SMOKE_TEST:
+                    return
+                continue
+
+            # 2.1) Leilão: não faz nada
+            if market_status == "LEILAO":
+                msg = "Mercado em leilão. Não vou operar. Aguardando normalizar."
+                print("[LEILAO]", msg)
+                narrador.falar("Mercado em leilão.", force=True)
+                registrar_decisao(decisao, "AGUARDAR", estado, market_status)
+
+                time.sleep(5)
+                if SMOKE_TEST:
+                    return
+                continue
+
+            # 2.2) Posição aberta: restringe a IA para sair/manter
+            if estado.posicao == "COMPRADO" and acao_norm == "COMPRAR":
+                acao_norm = "AGUARDAR"
+            if estado.posicao == "VENDIDO" and acao_norm == "VENDER":
+                acao_norm = "AGUARDAR"
 
             # 3) Máquina de estados: ação final respeitando posição
             acao_final = decidir_acao_final(acao_norm, estado)
@@ -237,14 +300,17 @@ def main():
             print(
                 f"[IA] AÇÃO={acao_norm} | FINAL={acao_final} | POS={estado.posicao} | "
                 f"CONF={int(decisao.confidence * 100)}% | STATUS={market_status} | "
-                f"MOTIVO={decisao.reason_short}"
+                f"MODO={session_mode} | MOTIVO={decisao.reason_short}"
             )
 
-            # 4) Log
+            # 4) Atualiza estado (simulado por enquanto — no futuro liga na execução real)
+            estado.aplicar_acao(acao_final, agora, getattr(decisao, "price_now", None))
+
+            # 5) Log
             registrar_decisao(decisao, acao_final, estado, market_status)
             print(f"[OK] Log gravado em: {CAMINHO_LOG}")
 
-            # 5) Narração (sempre curta)
+            # 6) Narração (sempre curta)
             # Regra: fala quando for abrir/encerrar; se for manter/aguardar só fala com confiança boa
             if acao_final in ("COMPRAR", "VENDER", "ENCERRAR"):
                 texto_fala = f"{decisao.reason_short} Ação: {acao_final}."
@@ -255,20 +321,6 @@ def main():
                     texto_fala = f"{decisao.reason_short} Ação: {acao_final}."
                     narrador.falar(texto_fala, force=True)
                     time.sleep(tempo_para_falar(texto_fala))
-
-            # 6) Atualiza estado (simulado por enquanto — no futuro liga na execução real)
-            if estado.posicao == "SEM_POSICAO":
-                if acao_final == "COMPRAR":
-                    estado.abrir_compra(agora)
-                elif acao_final == "VENDER":
-                    estado.abrir_venda(agora)
-                else:
-                    estado.ultima_acao = "AGUARDAR"
-            else:
-                if acao_final == "ENCERRAR":
-                    estado.encerrar(agora)
-                else:
-                    estado.manter()
 
             # 7) Encerrar no smoke test
             if SMOKE_TEST:
