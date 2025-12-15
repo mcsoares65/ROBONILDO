@@ -9,6 +9,10 @@ logs/
 *.csv
 *.json
 
+# Ambientes locais
+.venv/
+venv/
+
 # Backups / testes locais
 backup/
 teste/
