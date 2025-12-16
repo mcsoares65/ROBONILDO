@@ -1,40 +1,33 @@
-# ARQUIVO: narracao/narrador_oficial.py
-# ROBONILDO_100 — Orquestrador oficial de narração (não bloqueante)
-
+# narracao/narrador.py
 import time
-import threading
-import queue
 
+class Narrador:
+    """
+    Narrador com controle de cooldown.
+    Suporta múltiplas instâncias (ex: NARRADOR, TECNICO, FLUXO).
+    """
 
-class NarradorOficial:
-    def __init__(self, voz, cooldown=3.0):
-        """
-        voz: instância de VozAdam (ou outro driver de voz)
-        cooldown: tempo mínimo entre falas (segundos)
-        """
+    def __init__(self, voz, cooldown: float = 2.0, nome: str = "NARRADOR"):
         self.voz = voz
-        self.cooldown = cooldown
-        self._ultima_fala = 0.0
-        self._fila = queue.Queue()
-        self._thread = threading.Thread(target=self._worker, daemon=True)
-        self._thread.start()
+        self.cooldown = float(cooldown)
+        self.nome = nome
+        self._ultimo_ts = 0.0
 
-    def falar(self, texto: str, force=False):
-        agora = time.time()
-
-        if not force and (agora - self._ultima_fala) < self.cooldown:
+    def falar(self, texto: str, force: bool = False):
+        if not texto:
             return
 
-        try:
-            self._fila.put_nowait(texto)
-            self._ultima_fala = agora
-        except queue.Full:
-            pass
+        agora = time.time()
 
-    def _worker(self):
-        while True:
-            texto = self._fila.get()
-            try:
-                self.voz.falar(texto)
-            except Exception:
-                pass
+        if not force:
+            if self.cooldown > 0 and (agora - self._ultimo_ts) < self.cooldown:
+                return
+
+        self._ultimo_ts = agora
+
+        try:
+            print(f"[{self.nome}] {texto}")
+            # IMPORTANTE: VozSeletor NÃO recebe kwargs
+            self.voz.falar(texto)
+        except Exception as e:
+            print(f"[{self.nome}][ERRO_TTS] {repr(e)}")

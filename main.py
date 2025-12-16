@@ -1,31 +1,38 @@
 # ARQUIVO: main.py
-# PROJETO: ROBONILDO_102
-# MODO: MONITORAMENTO com ESTADO + REGRAS DE PREGÃO + BLOQUEIO DE LEILÃO
-# Fluxo: ver → IA decide → valida por regras → narração → log
+# ROBONILDO_102 — CONSENSO TÉCNICO + FLUXO (ANALÍTICO, SEM REGRAS DE HORÁRIO)
+
+import os
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"  # remove "Hello from pygame..."
 
 import time
 import csv
+import config
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from config import ENVIAR_ORDENS, NOME_TELA_PROFIT
 from visao.pipeline import PipelineVisao
 from ia.decisor_openai import DecisorOpenAI
-from narracao.voz import Voz
-from narracao.narrador import NarradorOficial
+from narracao.voz_seletor import VozSeletor
+from narracao.narrador import Narrador
 
-from operacao.estado_operacao import EstadoOperacao
-from operacao.executa_ordem import executar_ordem
-from regras.pregao import RegrasPregao
+TZ = ZoneInfo("America/Sao_Paulo")
 
+# >>> Você pode manter fixo aqui, ou depois ler do topo do gráfico (visão/OCR)
+TIMEFRAME_ANALISE = "30M"
 
-# ==============================
-# CONFIGURAÇÕES
-# ==============================
+# Loop / ritmo
+INTERVALO_CICLO = 6.0  # captura/IA a cada ~6s (ajuste fino)
+INTERVALO_COMENTARIO_TECNICO = getattr(config, "INTERVALO_COMENTARIO_ANDAMENTO", 300)
+INTERVALO_COMENTARIO_FLUXO = getattr(config, "INTERVALO_COMENTARIO_ANDAMENTO", 300)
 
-TIMEFRAME_ANALISE = "30m"
-TZ_LOCAL = ZoneInfo("America/Sao_Paulo")
+# Consenso
+MIN_CONF_PARA_OPERAR = 0.65         # só considera operar acima disso
+MIN_CONF_PARA_FALAR_DECISAO = 0.55  # narrador pode falar decisão (sem operar) acima disso
+
+# Log
+PASTA_LOGS = Path("logs")
+CAMINHO_LOG = PASTA_LOGS / "decisoes_102.csv"
 
 OFFSET_GRAFICO = {
     "x": 80,
@@ -34,324 +41,272 @@ OFFSET_GRAFICO = {
     "height": 700
 }
 
-SMOKE_TEST = False
-INTERVALO_CICLO = 6.0
 
-# Narração
-LIMIAR_FALA_CONFIANCA = 0.55
-
-PASTA_LOGS = Path("logs")
-CAMINHO_LOG = PASTA_LOGS / "decisoes_102.csv"
-
-MODELO_OPENAI = "gpt-5-mini"
-
-
-# ==============================
-# LOG
-# ==============================
-
-def garantir_logs():
+def _garantir_logs():
     PASTA_LOGS.mkdir(parents=True, exist_ok=True)
-
-
-def registrar_decisao(decisao, acao_final: str, estado: EstadoOperacao, market_status: str):
-    existe = CAMINHO_LOG.exists()
-
-    with open(CAMINHO_LOG, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f, delimiter=";")
-
-        if not existe:
-            writer.writerow([
+    if not CAMINHO_LOG.exists():
+        with open(CAMINHO_LOG, "a", newline="", encoding="utf-8") as f:
+            w = csv.writer(f, delimiter=";")
+            w.writerow([
                 "timestamp",
+                "timeframe",
                 "acao_ia",
-                "acao_final",
-                "posicao",
-                "preco_entrada",
-                "entrou_em",
-                "preco_saida",
-                "saiu_em",
                 "confianca",
-                "status",
-                "motivo"
+                "market_status",
+                "session_mode",
+                "motivo_curto",
+                "consenso_tecnico",
+                "consenso_fluxo",
+                "acao_final"
             ])
 
-        entrou_em = estado.entrou_em.strftime("%Y-%m-%d %H:%M:%S") if estado.entrou_em else ""
-        saiu_em = estado.saiu_em.strftime("%Y-%m-%d %H:%M:%S") if estado.saiu_em else ""
 
-        writer.writerow([
-            datetime.now(TZ_LOCAL).strftime("%Y-%m-%d %H:%M:%S"),
-            getattr(decisao, "action", ""),
-            acao_final,
-            estado.posicao,
-            estado.preco_entrada if estado.preco_entrada is not None else "",
-            entrou_em,
-            estado.preco_saida if estado.preco_saida is not None else "",
-            saiu_em,
-            round(decisao.confidence, 2),
+def _logar(decisao, acao_final: str, consenso_tecnico: bool, consenso_fluxo: bool):
+    ts = datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
+    acao = str(getattr(decisao, "action", "AGUARDAR") or "AGUARDAR").upper()
+    conf = float(getattr(decisao, "confidence", 0.0) or 0.0)
+    motivo = str(getattr(decisao, "reason_short", "") or "")
+    market_status = str(getattr(decisao, "market_status", "DESCONHECIDO") or "DESCONHECIDO").upper()
+    session_mode = str(getattr(decisao, "session_mode", "DESCONHECIDO") or "DESCONHECIDO").upper()
+
+    with open(CAMINHO_LOG, "a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f, delimiter=";")
+        w.writerow([
+            ts,
+            TIMEFRAME_ANALISE,
+            acao,
+            round(conf, 3),
             market_status,
-            decisao.reason_short
+            session_mode,
+            motivo,
+            int(consenso_tecnico),
+            int(consenso_fluxo),
+            acao_final
         ])
 
 
-# ==============================
-# HELPERS
-# ==============================
+def _is_replay(decisao) -> bool:
+    # Detecção leve e objetiva (sem governança de horário agora)
+    session_mode = str(getattr(decisao, "session_mode", "") or "").upper()
+    if session_mode.startswith("REPLAY"):
+        return True
 
-def tempo_para_falar(texto: str) -> float:
-    return max(2.0, min(12.0, len(texto) / 14.0))
+    motivo = (str(getattr(decisao, "reason_short", "") or "") + " " +
+              str(getattr(decisao, "notes", "") or "")).lower()
+    return "replay" in motivo or "simul" in motivo
 
 
-def normalizar_acao(acao: str) -> str:
-    if not acao:
-        return "AGUARDAR"
-    a = str(acao).strip().upper()
-
-    if a in ("AGUARDAR", "ESPERAR", "WAIT"):
-        return "AGUARDAR"
-    if a in ("COMPRAR", "COMPRA", "BUY"):
+def _normalizar_acao(a: str) -> str:
+    a = str(a or "").strip().upper()
+    if a in ("BUY", "COMPRA"):
         return "COMPRAR"
-    if a in ("VENDER", "VENDA", "SELL"):
+    if a in ("SELL", "VENDA"):
         return "VENDER"
-    if a in ("SAIR", "ENCERRAR", "ZERAR", "CLOSE"):
+    if a in ("CLOSE", "ZERAR", "SAIR"):
         return "ENCERRAR"
-
+    if a in ("AGUARDAR", "WAIT", "ESPERAR", ""):
+        return "AGUARDAR"
     return "AGUARDAR"
 
 
-def normalizar_status(status: str) -> str:
-    if not status:
-        return "DESCONHECIDO"
-    s = str(status).strip().upper()
+def _normalizar_status(s: str) -> str:
+    s = str(s or "").strip().upper()
     if s in ("LEILAO", "LEILÃO", "AUCTION"):
         return "LEILAO"
-    if s in ("NORMAL", "ABERTO", "TRADING", "MERCADO"):
+    if s in ("NORMAL", "ABERTO", "TRADING", "MERCADO", "OPEN"):
         return "NORMAL"
     return "DESCONHECIDO"
 
 
-def normalizar_session_mode(session_mode: str) -> str:
-    if not session_mode:
-        return "DESCONHECIDO"
-    s = str(session_mode).strip().upper()
-    if s.startswith("REPLAY"):
-        return "REPLAY"
-    if s in ("AO_VIVO", "AOVIVO", "NORMAL", "LIVE"):
-        return "AO_VIVO"
-    return "DESCONHECIDO"
-
-
-def decidir_acao_final(acao_norm: str, estado: EstadoOperacao) -> str:
+def _comentario_tecnico(decisao) -> str:
     """
-    Regra central:
-    - se SEM_POSICAO: COMPRAR abre comprado; VENDER abre vendido; AGUARDAR espera
-    - se VENDIDO: VENDER => MANTER; COMPRAR => ENCERRAR; AGUARDAR => MANTER
-    - se COMPRADO: COMPRAR => MANTER; VENDER => ENCERRAR; AGUARDAR => MANTER
+    Comentário do 'grafista': regiões, gatilhos técnicos, timeframe.
+    Aqui ele se baseia no motivo curto retornado pela IA e reforça disciplina.
     """
-    if estado.posicao == "SEM_POSICAO":
-        if acao_norm in ("COMPRAR", "VENDER"):
-            return acao_norm
-        return "AGUARDAR"
+    acao = _normalizar_acao(getattr(decisao, "action", "AGUARDAR"))
+    conf = float(getattr(decisao, "confidence", 0.0) or 0.0)
+    motivo = str(getattr(decisao, "reason_short", "") or "").strip()
 
-    if estado.posicao == "VENDIDO":
-        if acao_norm == "COMPRAR":
-            return "ENCERRAR"
-        return "MANTER"
+    if _is_replay(decisao):
+        return f"No {TIMEFRAME_ANALISE}, estou em replay. Vou focar em regiões e estrutura, sem pressa. {motivo}".strip()
 
-    if estado.posicao == "COMPRADO":
-        if acao_norm == "VENDER":
-            return "ENCERRAR"
-        return "MANTER"
+    if acao == "AGUARDAR":
+        return f"No {TIMEFRAME_ANALISE}, ainda não vi gatilho limpo. Vou esperar preço entrar numa região melhor. {motivo}".strip()
 
-    return "AGUARDAR"
+    if conf < MIN_CONF_PARA_OPERAR:
+        return f"Eu até vejo um cenário, mas falta convicção no {TIMEFRAME_ANALISE}. Melhor aguardar confirmação. {motivo}".strip()
+
+    return f"Gatilho técnico no {TIMEFRAME_ANALISE} parece se formando. Se confirmar região, dá para {acao.lower()}. {motivo}".strip()
 
 
-def detectar_tarja_amarela_leilao(frame, altura=50, limiar_percentual=0.08) -> bool:
-    """Detecta a tarja amarela de leilão no topo do ProfitPro."""
-    try:
-        import numpy as np
-        import cv2
-    except Exception:
+def _comentario_fluxo(decisao) -> str:
+    """
+    Comentário do 'tape reading' (por enquanto via tela/IA).
+    Depois a gente evolui para BO/T&T por captura dedicada.
+    """
+    acao = _normalizar_acao(getattr(decisao, "action", "AGUARDAR"))
+    conf = float(getattr(decisao, "confidence", 0.0) or 0.0)
+    motivo = str(getattr(decisao, "reason_short", "") or "").strip()
+
+    if _is_replay(decisao):
+        return f"Fluxo em replay não valida execução. Vou só observar agressão/ritmo visual. {motivo}".strip()
+
+    if acao == "AGUARDAR":
+        return f"Fluxo ainda não está 'gritando'. Melhor segurar e esperar o mercado mostrar intenção. {motivo}".strip()
+
+    if conf < MIN_CONF_PARA_OPERAR:
+        return f"Não sinto pressão suficiente para executar agora. Falta intenção clara. {motivo}".strip()
+
+    return f"Estou vendo intenção surgindo. Se o ritmo confirmar, dá para {acao.lower()} com disciplina. {motivo}".strip()
+
+
+def _consenso_tecnico(decisao) -> bool:
+    acao = _normalizar_acao(getattr(decisao, "action", "AGUARDAR"))
+    conf = float(getattr(decisao, "confidence", 0.0) or 0.0)
+    if _is_replay(decisao):
         return False
-
-    if frame is None:
+    if acao not in ("COMPRAR", "VENDER"):
         return False
+    return conf >= MIN_CONF_PARA_OPERAR
 
-    if frame.ndim == 3 and frame.shape[2] == 4:
-        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-    else:
-        frame_bgr = frame
 
-    topo = frame_bgr[:altura, :, :]
-    if topo.size == 0:
+def _consenso_fluxo(decisao) -> bool:
+    # Por enquanto, como o "fluxo" ainda vem via IA/tela, usamos regra espelhada.
+    # Depois que você colocar BO/T&T visível, a gente separa a leitura e o critério.
+    acao = _normalizar_acao(getattr(decisao, "action", "AGUARDAR"))
+    conf = float(getattr(decisao, "confidence", 0.0) or 0.0)
+    if _is_replay(decisao):
         return False
+    if acao not in ("COMPRAR", "VENDER"):
+        return False
+    return conf >= MIN_CONF_PARA_OPERAR
 
-    b, g, r = cv2.split(topo)
-    mask_amarelo = (r > 200) & (g > 200) & (b < 170)
-    proporcao = mask_amarelo.mean()
-    return proporcao >= limiar_percentual
-
-
-# ==============================
-# MAIN
-# ==============================
 
 def main():
-    modo = "SMOKE TEST" if SMOKE_TEST else "MONITORAMENTO"
-    print(f"ROBONILDO_102 iniciado ({modo}).")
-    print("Fluxo: ver → IA decide → valida regras → narração → log\n")
+    print("ROBONILDO_102 iniciado (CONSENSO TÉCNICO + FLUXO)")
+    print(f"Timeframe observado: {TIMEFRAME_ANALISE}\n")
 
-    garantir_logs()
+    _garantir_logs()
 
-    visao = PipelineVisao(OFFSET_GRAFICO, nome_tela_profit=NOME_TELA_PROFIT)
-    ia = DecisorOpenAI(modelo=MODELO_OPENAI)
+    # =========================
+    # VISÃO + IA
+    # =========================
+    visao = PipelineVisao(OFFSET_GRAFICO, nome_tela_profit=config.NOME_TELA_PROFIT)
+    ia = DecisorOpenAI(modelo="gpt-5-mini")
 
-    voz = Voz()
-    narrador = NarradorOficial(voz, cooldown=1.0)
+    # =========================
+    # VOZES (3 pessoas)
+    # =========================
 
-    estado = EstadoOperacao()
-    pregao = RegrasPregao(hora_inicio=datetime.strptime("09:05", "%H:%M").time(),
-                          hora_fim=datetime.strptime("18:20", "%H:%M").time(),
-                          margem_zeragem_min=2)
+    # 1) NARRADOR PRINCIPAL (onyx)
+    config.OPENAI_TTS_VOICE = "onyx"
+    voz_narrador = VozSeletor()
+    narrador = Narrador(voz_narrador, cooldown=2.0, nome="NARRADOR")
 
-    falou_fora_horario_ts = 0.0
+    # 2) COMENTARISTA TÉCNICO (shimmer)
+    config.OPENAI_TTS_VOICE = "shimmer"
+    voz_tecnico = VozSeletor()
+    tecnico = Narrador(voz_tecnico, cooldown=INTERVALO_COMENTARIO_TECNICO, nome="TECNICO")
+
+    # 3) COMENTARISTA DE FLUXO (sage) — você pode trocar por "cedar" se quiser mais grave
+    config.OPENAI_TTS_VOICE = "sage"
+    voz_fluxo = VozSeletor()
+    fluxo = Narrador(voz_fluxo, cooldown=INTERVALO_COMENTARIO_FLUXO, nome="FLUXO")
+
+    # fala inicial curta
+    narrador.falar("Robonildo iniciado. Vou esperar o momento certo.", force=True)
+
+    ultimo_tecnico = 0.0
+    ultimo_fluxo = 0.0
 
     while True:
-        ciclo_inicio = time.time()
-        agora = datetime.now(TZ_LOCAL)
-
+        inicio = time.time()
         try:
-            # 1) Captura
             frame, erro = visao.capturar_grafico()
             if erro:
-                print("[ERRO VISAO]", erro)
-                narrador.falar("Falha ao capturar o gráfico. Vou aguardar.", force=True)
-                time.sleep(3)
-                if SMOKE_TEST:
-                    return
+                narrador.falar("Falha na captura do gráfico. Vou aguardar.", force=True)
+                time.sleep(2)
                 continue
 
-            print("[OK] Captura realizada. Shape:", getattr(frame, "shape", None))
-
-            # 2) IA decide (deve retornar também market_status)
+            print("[IA] Consultando IA...")
             decisao = ia.decidir(frame_bgra=frame, timeframe=TIMEFRAME_ANALISE)
 
-            acao_norm = normalizar_acao(getattr(decisao, "action", ""))
-            market_status = normalizar_status(getattr(decisao, "market_status", "DESCONHECIDO"))
-            session_mode = normalizar_session_mode(getattr(decisao, "session_mode", "DESCONHECIDO"))
+            acao = _normalizar_acao(getattr(decisao, "action", "AGUARDAR"))
+            conf = float(getattr(decisao, "confidence", 0.0) or 0.0)
+            motivo = str(getattr(decisao, "reason_short", "") or "").strip()
 
-            leilao_visual = detectar_tarja_amarela_leilao(frame)
-            if leilao_visual:
-                market_status = "LEILAO"
+            market_status = _normalizar_status(getattr(decisao, "market_status", "DESCONHECIDO"))
+            replay = _is_replay(decisao)
 
-            em_replay = session_mode == "REPLAY"
+            print(f"[IA] {acao} | CONF={int(conf*100)}% | STATUS={market_status} | REPLAY={replay} | {motivo}")
 
-            # 0) Regra de horário (valida apenas se não for replay)
-            if not em_replay and not pregao.dentro_horario(agora):
-                if estado.esta_aberto():
-                    msg = "Fora do horário do pregão e há posição aberta. Encerrar imediatamente por segurança."
-                    print("[HORARIO]", msg)
-                    narrador.falar(msg, force=True)
-                    time.sleep(tempo_para_falar(msg))
-                    estado.aplicar_acao("ENCERRAR", agora, getattr(decisao, "price_now", None))
-                    registrar_decisao(decisao, "ENCERRAR", estado, market_status)
-                else:
-                    if (time.time() - falou_fora_horario_ts) > 120:
-                        narrador.falar("Fora do horário. Aguardando abertura do pregão.", force=True)
-                        falou_fora_horario_ts = time.time()
+            # Comentários pontuais (não spam)
+            agora_ts = time.time()
 
-                time.sleep(10)
-                if SMOKE_TEST:
-                    return
-                continue
+            if (agora_ts - ultimo_tecnico) >= INTERVALO_COMENTARIO_TECNICO:
+                tecnico.falar(_comentario_tecnico(decisao))
+                ultimo_tecnico = agora_ts
 
-            # 0.1) Perto do encerramento: se tiver posição, encerrar
-            if not em_replay and pregao.perto_de_encerrar(agora) and estado.esta_aberto():
-                msg = "Pregão perto do encerramento. Vou encerrar a posição agora para evitar zeragem."
-                print("[ENCERRAMENTO]", msg)
-                narrador.falar(msg, force=True)
-                time.sleep(tempo_para_falar(msg))
-                estado.aplicar_acao("ENCERRAR", agora, getattr(decisao, "price_now", None))
-                registrar_decisao(decisao, "ENCERRAR", estado, market_status)
+            if (agora_ts - ultimo_fluxo) >= INTERVALO_COMENTARIO_FLUXO:
+                fluxo.falar(_comentario_fluxo(decisao))
+                ultimo_fluxo = agora_ts
 
-                time.sleep(2)
-                if SMOKE_TEST:
-                    return
-                continue
+            # Consenso para executar (sem horário; mas respeita REPLAY e LEILAO)
+            consenso_tecnico = _consenso_tecnico(decisao)
+            consenso_fluxo = _consenso_fluxo(decisao)
 
-            # 2.1) Leilão: não faz nada
+            acao_final = "AGUARDAR"
+
             if market_status == "LEILAO":
-                msg = "Mercado em leilão. Não vou operar. Aguardando normalizar."
-                print("[LEILAO]", msg)
-                narrador.falar("Mercado em leilão.", force=True)
-                registrar_decisao(decisao, "AGUARDAR", estado, market_status)
+                acao_final = "AGUARDAR"
+                # narrador só avisa se for algo relevante
+                if conf >= MIN_CONF_PARA_FALAR_DECISAO:
+                    narrador.falar("Mercado em leilão. Eu não opero agora.", force=True)
 
-                time.sleep(5)
-                if SMOKE_TEST:
-                    return
-                continue
+            elif replay:
+                acao_final = "AGUARDAR"
+                # sem falar toda hora em replay
+                if conf >= 0.85:
+                    narrador.falar("Replay detectado. Vou apenas observar e aprender o padrão.", force=True)
 
-            # 2.2) Posição aberta: restringe a IA para sair/manter
-            if estado.posicao == "COMPRADO" and acao_norm == "COMPRAR":
-                acao_norm = "AGUARDAR"
-            if estado.posicao == "VENDIDO" and acao_norm == "VENDER":
-                acao_norm = "AGUARDAR"
-
-            # 3) Máquina de estados: ação final respeitando posição
-            acao_final = decidir_acao_final(acao_norm, estado)
-
-            print(
-                f"[IA] AÇÃO={acao_norm} | FINAL={acao_final} | POS={estado.posicao} | "
-                f"CONF={int(decisao.confidence * 100)}% | STATUS={market_status} | "
-                f"MODO={session_mode} | MOTIVO={decisao.reason_short}"
-            )
-
-            # 4) Envia ordem real apenas se permitido e a ação for executável
-            if acao_final in ("COMPRAR", "VENDER", "ENCERRAR"):
-                if ENVIAR_ORDENS and not SMOKE_TEST:
-                    _sucesso, msg = executar_ordem(acao_final)
-                    print(f"[ORDENS] {msg}")
-                else:
-                    motivo_skip = "SMOKE_TEST ativo" if SMOKE_TEST else "ENVIAR_ORDENS=False"
-                    print(f"[ORDENS] Simulação: {motivo_skip}. Ordem não enviada.")
-
-            # 5) Atualiza estado (simulação interna)
-            estado.aplicar_acao(acao_final, agora, getattr(decisao, "price_now", None))
-
-            # 6) Log
-            registrar_decisao(decisao, acao_final, estado, market_status)
-            print(f"[OK] Log gravado em: {CAMINHO_LOG}")
-
-            # 7) Narração (sempre curta)
-            # Regra: fala quando for abrir/encerrar; se for manter/aguardar só fala com confiança boa
-            if acao_final in ("COMPRAR", "VENDER", "ENCERRAR"):
-                texto_fala = f"{decisao.reason_short} Ação: {acao_final}."
-                narrador.falar(texto_fala, force=True)
-                time.sleep(tempo_para_falar(texto_fala))
             else:
-                if decisao.confidence >= 0.70:
-                    texto_fala = f"{decisao.reason_short} Ação: {acao_final}."
-                    narrador.falar(texto_fala, force=True)
-                    time.sleep(tempo_para_falar(texto_fala))
+                if consenso_tecnico and consenso_fluxo and acao in ("COMPRAR", "VENDER"):
+                    acao_final = acao
+                    narrador.falar(f"CONSENSO fechado. {motivo}. Ação: {acao_final}.", force=True)
 
-            # 8) Encerrar no smoke test
-            if SMOKE_TEST:
-                print("[OK] Smoke test finalizado (1 ciclo). Encerrando.")
-                time.sleep(1)
-                return
+                    # Execução real (se você quiser)
+                    if getattr(config, "ENVIAR_ORDENS", False):
+                        try:
+                            from operacao.executa_ordem import executar_ordem
+                            _, msg = executar_ordem(acao_final)
+                            print(f"[ORDENS] {msg}")
+                        except Exception as e:
+                            print(f"[ORDENS][ERRO] {repr(e)}")
+                            narrador.falar("Tive erro ao enviar a ordem. Vou continuar monitorando.", force=True)
+                    else:
+                        print("[ORDENS] ENVIAR_ORDENS=False (simulação).")
+
+                else:
+                    acao_final = "AGUARDAR"
+                    # narrador não fala sempre; só se a confiança estiver razoável e a IA tiver motivo relevante
+                    if conf >= MIN_CONF_PARA_FALAR_DECISAO and acao in ("COMPRAR", "VENDER"):
+                        narrador.falar(f"Quase. Falta consenso. {motivo}. Vou aguardar.", force=True)
+
+            _logar(decisao, acao_final, consenso_tecnico, consenso_fluxo)
 
         except KeyboardInterrupt:
             print("\n[OK] Encerrado pelo usuário (Ctrl+C).")
             return
-
         except Exception as e:
-            print("[ERRO GERAL] Exceção no ciclo:", repr(e))
-            narrador.falar("Ocorreu um erro no ciclo. Vou me recuperar e continuar.", force=True)
-            time.sleep(2)
+            print("[ERRO]", repr(e))
+            # fala curta, sem spam
+            try:
+                narrador.falar("Erro no ciclo. Continuando monitoramento.", force=True)
+            except Exception:
+                pass
 
-        # Intervalo estável
-        duracao = time.time() - ciclo_inicio
-        espera = max(0.05, INTERVALO_CICLO - duracao)
-        time.sleep(espera)
+        duracao = time.time() - inicio
+        time.sleep(max(0.05, INTERVALO_CICLO - duracao))
 
 
 if __name__ == "__main__":
