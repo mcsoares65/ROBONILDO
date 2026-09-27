@@ -1,62 +1,88 @@
 """
-saida_gemini_v01.py — cartucho de saída inteligente (Gemini).
+saida_gemini_v01.py — RSI / realização (migrado V445).
 
-Autoria: Gemini (Colaborador Pessoal), sob o contrato oficial de saída dinâmica.
+Autoria original: Gemini.
+Migração Regra 1 v10: stop estrutural + RR 1,55 na abertura.
+Corrigido: lado usa "COMPRA"/"VENDA" (motor nunca passa 1/-1 em posicao).
 
-PROPÓSITO: Superar a saída baseline antecipando saídas em pontos de exaustão
-técnica (RSI) ou realização de lucros parciais expressivos, respeitando 
-estritamente as regras de prioridade do motor (o motor continua mandando no stop/alvo).
+Lógica original (após abertura):
+  Lucro >= 250 + RSI extremo, ou RSI de exaustão pura.
 
-Contrato:
-    avaliar_saida(row, posicao) -> bool
-        row: dict com indicadores (RSI, etc.)
-        posicao: dict com lado, entrada, candles_decorridos, maxima_desde_entrada, 
-                 minima_desde_entrada, resultado_flutuante_pts, etc.
-        Retorna True = fecha o trade agora.
-        Retorna False = mantém a posição sob o comando do motor.
-
-Sem I/O, sem estado interno, sem imports proibidos.
+Contrato: avaliar_saida(row, posicao) -> dict
+Sem I/O, sem estado, sem imports do projeto.
 """
 
-def avaliar_saida(row, posicao) -> bool:
-    lado = posicao.get("lado", 0)
-    resultado_pts = posicao.get("resultado_flutuante_pts", 0.0)
-    rsi = row.get("RSI", 50.0)
-    
-    # Trava de proteção de lucro: se já abrimos mais de 250 pts de lucro e 
-    # o preço começa a dar sinais de fadiga, realizamos para não devolver.
+from __future__ import annotations
+
+SWING_LOOKBACK_CANDLES = 4
+RELACAO_RISCO_RETORNO = 1.55
+
+
+def _stop_alvo_inicial(row, entrada, lado):
+    ohlc = row.get("ohlc_recentes") or ()
+    janela = ohlc[-(SWING_LOOKBACK_CANDLES + 1):]
+    if len(janela) < SWING_LOOKBACK_CANDLES + 1:
+        return None, None
+    if lado == "COMPRA":
+        stop = min(c["Minimo"] for c in janela)
+        risco = entrada - stop
+        if risco <= 0:
+            return None, None
+        return stop, entrada + RELACAO_RISCO_RETORNO * risco
+    stop = max(c["Maximo"] for c in janela)
+    risco = stop - entrada
+    if risco <= 0:
+        return None, None
+    return stop, entrada - RELACAO_RISCO_RETORNO * risco
+
+
+def _eh_compra(lado) -> bool:
+    s = str(lado or "").strip().upper()
+    return s in ("COMPRA", "COMPRADO", "LONG", "C", "BUY", "B", "1")
+
+
+def _deve_fechar(row, posicao) -> bool:
+    resultado_pts = float(posicao.get("resultado_flutuante_pts") or 0.0)
+    rsi = row.get("rsi")
+    if rsi is None:
+        rsi = row.get("RSI", 50.0)
+    try:
+        rsi = float(rsi)
+    except (TypeError, ValueError):
+        rsi = 50.0
+
+    compra = _eh_compra(posicao.get("lado"))
+
     if resultado_pts >= 250.0:
-        # Se o RSI esticar demais contra a posição ou perder o momentum, sai.
-        if lado == 1 and rsi > 75:
+        if compra and rsi > 75:
             return True
-        if lado == -1 and rsi < 25:
+        if (not compra) and rsi < 25:
             return True
 
-    # Exaustão pura por sobrecompra/sobrevenda extrema
-    if lado == 1 and rsi > 82:
+    if compra and rsi > 82:
         return True
-    elif lado == -1 and rsi < 18:
+    if (not compra) and rsi < 18:
         return True
-        
     return False
 
 
+def avaliar_saida(row, posicao) -> dict:
+    if posicao.get("candles_decorridos", 0) == 0:
+        stop, alvo = _stop_alvo_inicial(row, posicao["entrada"], posicao["lado"])
+        return {"fechar": False, "novo_stop": stop, "novo_alvo": alvo}
+    return {
+        "fechar": _deve_fechar(row, posicao),
+        "novo_stop": None,
+        "novo_alvo": None,
+    }
+
+
 def diagnosticar_saida(row, posicao):
-    """
-    Explicação opcional da decisão de saída para auditoria no laboratório.
-    """
-    lado = posicao.get("lado", 0)
-    resultado_pts = posicao.get("resultado_flutuante_pts", 0.0)
-    rsi = row.get("RSI", 50.0)
-    
-    if resultado_pts >= 250.0 and ((lado == 1 and rsi > 75) or (lado == -1 and rsi < 25)):
-        return f"Saída Gemini v01: Realização de lucro protegido ({resultado_pts:.1f} pts) com RSI em {rsi:.1f}."
-    if lado == 1 and rsi > 82:
-        return f"Saída Gemini v01: Exaustão de alta no RSI ({rsi:.1f})."
-    if lado == -1 and rsi < 18:
-        return f"Saída Gemini v01: Exaustão de baixa no RSI ({rsi:.1f} )."
-        
-    return None
+    if not _deve_fechar(row, posicao):
+        return None
+    rsi = row.get("rsi", row.get("RSI", 50.0))
+    pts = posicao.get("resultado_flutuante_pts", 0.0)
+    return f"Gemini v01: saída por RSI/lucro (pts={pts:.0f}, RSI={rsi:.1f})"
 
 
-__all__ = ['avaliar_saida', 'diagnosticar_saida']
+__all__ = ["avaliar_saida", "diagnosticar_saida"]

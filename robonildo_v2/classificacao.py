@@ -24,6 +24,11 @@ from typing import Callable, Iterable, Optional
 import configuracao as cfg
 from motor import Candle, MotorRobonildo, construir_row
 
+# Versionamento próprio deste programa. Alterações em regras de validação,
+# ordenação ou apresentação da classificação incrementam esta constante sem
+# alterar a versão operacional do Robonildo definida em configuracao.py.
+VERSAO_CLASSIFICACAO = "C001"
+
 try:
     import colorama
     colorama.init()
@@ -339,6 +344,82 @@ def preparar_rows(candles: list[Candle]) -> list[Optional[dict]]:
     return rows
 
 
+def validar_contrato_saida(cartucho: CartuchoSaida, rows: list[Optional[dict]]) -> tuple[bool, str]:
+    """Valida o contrato V445 antes de permitir que a saída participe do ranking.
+
+    A V445 não fornece proteção implícita. Portanto, uma saída compatível deve
+    retornar um ``dict`` na abertura e fornecer um stop inicial finito e
+    coerente tanto para COMPRA quanto para VENDA. O alvo pode ser ``None``
+    quando o próprio cartucho optar explicitamente por trabalhar sem alvo.
+    """
+    row = next((item for item in reversed(rows) if item is not None), None)
+    if row is None:
+        return False, "não há indicadores suficientes para validar a abertura"
+
+    ohlc = row.get("ohlc_recentes") or ()
+    janela = ohlc[-5:]
+    if len(janela) < 5:
+        return False, "row de validação não contém cinco candles em ohlc_recentes"
+
+    minima = min(float(c["Minimo"]) for c in janela)
+    maxima = max(float(c["Maximo"]) for c in janela)
+    if not math.isfinite(minima) or not math.isfinite(maxima) or maxima <= minima:
+        return False, "janela OHLC inválida para o teste de abertura"
+
+    # O ponto médio evita reprovar artificialmente uma fórmula estrutural
+    # quando o último fechamento coincide exatamente com um extremo da janela.
+    entrada = (minima + maxima) / 2.0
+    for lado in ("COMPRA", "VENDA"):
+        posicao = {
+            "lado": lado,
+            "entrada": entrada,
+            "candles_decorridos": 0,
+            "maxima_desde_entrada": entrada,
+            "minima_desde_entrada": entrada,
+            "resultado_flutuante_pts": 0.0,
+        }
+        try:
+            resposta = cartucho.avaliar_saida(row, posicao)
+        except Exception as erro:
+            return False, f"falhou na abertura de {lado}: {type(erro).__name__}: {erro}"
+
+        if not isinstance(resposta, dict):
+            return False, (
+                f"retornou {type(resposta).__name__} na abertura de {lado}; "
+                "a V445 exige dict com novo_stop e novo_alvo"
+            )
+        if bool(resposta.get("fechar", False)):
+            return False, f"solicitou fechamento durante a abertura de {lado}"
+        if "novo_stop" not in resposta or "novo_alvo" not in resposta:
+            return False, f"retorno de {lado} não contém novo_stop e novo_alvo"
+
+        try:
+            stop = float(resposta["novo_stop"])
+        except (TypeError, ValueError):
+            return False, f"novo_stop ausente ou não numérico na abertura de {lado}"
+        if not math.isfinite(stop):
+            return False, f"novo_stop não finito na abertura de {lado}"
+        if lado == "COMPRA" and stop >= entrada:
+            return False, "stop inicial de COMPRA não está abaixo da entrada"
+        if lado == "VENDA" and stop <= entrada:
+            return False, "stop inicial de VENDA não está acima da entrada"
+
+        alvo_bruto = resposta.get("novo_alvo")
+        if alvo_bruto is not None:
+            try:
+                alvo = float(alvo_bruto)
+            except (TypeError, ValueError):
+                return False, f"novo_alvo não numérico na abertura de {lado}"
+            if not math.isfinite(alvo):
+                return False, f"novo_alvo não finito na abertura de {lado}"
+            if lado == "COMPRA" and alvo <= entrada:
+                return False, "alvo inicial de COMPRA não está acima da entrada"
+            if lado == "VENDA" and alvo >= entrada:
+                return False, "alvo inicial de VENDA não está abaixo da entrada"
+
+    return True, ""
+
+
 def _ultimo_candle_do_dia(candles: list[Candle], indice: int) -> bool:
     return (
         indice == len(candles) - 1
@@ -646,7 +727,10 @@ def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) ->
         ("acumulado", "acumulado", True, 10),
     )
     largura_total = sum(c[3] for c in colunas) + len(colunas) - 1
-    print(f"\n========== RANKING PRINCIPAL {cfg.VERSAO} (ENTRADA × SAÍDA) ==========")
+    print(
+        f"\n========== RANKING PRINCIPAL {VERSAO_CLASSIFICACAO} "
+        f"(ENTRADA × SAÍDA | MOTOR {cfg.VERSAO}) =========="
+    )
     print(f"Total de pregões avaliados: {total_pregoes}")
     print(" ".join(f"{rotulo:>{largura}}" for _, rotulo, _, largura in colunas))
     print("-" * largura_total)
@@ -762,18 +846,13 @@ def executar(caminho_csv: Optional[str] = None):
         raise RuntimeError("Nenhuma saída compatível foi encontrada.")
 
     entrada_titular = next(e for e in entradas if e.titular)
-    saida_titular = next(s for s in saidas if s.titular)
-
-    # Só calcula o que o modo pede — evita produto cartesiano desnecessário.
-    if modo == "E":
-        pares_a_rodar = [(ent, saida_titular) for ent in entradas]
-    elif modo == "S":
-        pares_a_rodar = [(entrada_titular, sai) for sai in saidas]
-    else:  # C
-        pares_a_rodar = [(ent, sai) for ent in entradas for sai in saidas]
+    saida_titular_carregada = next(s for s in saidas if s.titular)
 
     print("=" * 100)
-    print(f"ROBONILDO [{cfg.VERSAO}] — CLASSIFICAÇÃO ({rotulos_modo[modo]})")
+    print(
+        f"CLASSIFICAÇÃO [{VERSAO_CLASSIFICACAO}] — "
+        f"ROBONILDO [{cfg.VERSAO}] ({rotulos_modo[modo]})"
+    )
     print(
         f"Histórico: {candles_avaliacao[0].horario} até {candles_avaliacao[-1].horario} | "
         f"{len(candles_avaliacao)} candles | {len(dias)} pregões"
@@ -781,9 +860,8 @@ def executar(caminho_csv: Optional[str] = None):
     if quantidade_aquecimento:
         print(f"Aquecimento externo: {quantidade_aquecimento} candles (fora da pontuação)")
     print(f"Entrada titular: {entrada_titular.nome}.py")
-    print(f"Saída titular  : {saida_titular.nome}.py")
+    print(f"Saída titular  : {saida_titular_carregada.nome}.py")
     print(f"Entradas no ranking: {len(entradas)} | Saídas no ranking: {len(saidas)}")
-    print(f"Combinações a executar: {len(pares_a_rodar)}")
     print("Multi = score ABSOLUTO individual (50/30/20) — sem percentil entre concorrentes.")
     print("=" * 100)
 
@@ -791,6 +869,42 @@ def executar(caminho_csv: Optional[str] = None):
     rows = preparar_rows(candles)
 
     incompatíveis = list(falhas_e) + list(falhas_s)
+    saidas_compativeis = []
+    print("[CONTRATO] Validando proteção inicial dos cartuchos de saída...")
+    for sai in saidas:
+        compativel, motivo = validar_contrato_saida(sai, rows)
+        if compativel:
+            saidas_compativeis.append(sai)
+            print(f"  {sai.nome}")
+        else:
+            incompatíveis.append((sai.nome, motivo))
+            print(f"  {sai.nome} (INCOMPATIVEL)")
+
+    if saida_titular_carregada not in saidas_compativeis:
+        motivo = next(
+            (erro for nome, erro in incompatíveis if nome == saida_titular_carregada.nome),
+            "contrato V445 inválido",
+        )
+        raise RuntimeError(
+            f"A saída titular {saida_titular_carregada.nome}.py está INCOMPATIVEL: {motivo}"
+        )
+
+    saidas = saidas_compativeis
+    saida_titular = saida_titular_carregada
+
+    # Só calcula o que o modo pede — evita produto cartesiano desnecessário
+    # e impede que uma saída sem proteção inicial produza números enganosos.
+    if modo == "E":
+        pares_a_rodar = [(ent, saida_titular) for ent in entradas]
+    elif modo == "S":
+        pares_a_rodar = [(entrada_titular, sai) for sai in saidas]
+    else:  # C
+        pares_a_rodar = [(ent, sai) for ent in entradas for sai in saidas]
+
+    print(
+        f"[CONTRATO] Saídas compatíveis: {len(saidas)} | "
+        f"Combinações a executar: {len(pares_a_rodar)}"
+    )
     pares_ok = []  # list of dict resultados
 
     total = len(pares_a_rodar)
@@ -806,7 +920,7 @@ def executar(caminho_csv: Optional[str] = None):
             )
         except (KeyError, TypeError, ValueError, AttributeError) as erro:
             incompatíveis.append((rotulo, f"{type(erro).__name__}: {erro}"))
-            print(f" incompatível ({type(erro).__name__})")
+            print(" (INCOMPATIVEL)")
             continue
         res = _montar_resultado_par(
             ent.nome, sai.nome, trades, dias,
@@ -846,7 +960,8 @@ def executar(caminho_csv: Optional[str] = None):
         for i, r in enumerate(rank_entrada, 1):
             r["pos"] = i
         _imprimir_ranking_simples(
-            f"RANKING ENTRADA {cfg.VERSAO} (pareado com saída titular: {saida_titular.nome})",
+            f"RANKING ENTRADA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
+            f"saída titular: {saida_titular.nome})",
             rank_entrada,
             chave_nome="estrategia",
         )
@@ -877,7 +992,8 @@ def executar(caminho_csv: Optional[str] = None):
         for i, r in enumerate(rank_saida, 1):
             r["pos"] = i
         _imprimir_ranking_simples(
-            f"RANKING SAÍDA {cfg.VERSAO} (pareado com entrada titular: {entrada_titular.nome})",
+            f"RANKING SAÍDA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
+            f"entrada titular: {entrada_titular.nome})",
             rank_saida,
             chave_nome="estrategia",
         )
@@ -912,7 +1028,9 @@ def executar(caminho_csv: Optional[str] = None):
     def gravar(nome, linhas):
         if not linhas:
             return None
-        saida = pasta_logs / f"{nome}_{cfg.VERSAO.lower()}.csv"
+        saida = pasta_logs / (
+            f"{nome}_{VERSAO_CLASSIFICACAO.lower()}_motor_{cfg.VERSAO.lower()}.csv"
+        )
         campos = list(linhas[0].keys())
         with saida.open("w", newline="", encoding="utf-8-sig") as f:
             w = csv.DictWriter(f, fieldnames=campos, delimiter=";")
@@ -933,9 +1051,9 @@ def executar(caminho_csv: Optional[str] = None):
             print(f"  {p.resolve()}")
     print("Limitação: OHLC 15min não revela ordem intrabar nem preço exato das 18:20.")
     if incompatíveis:
-        print("\nCombinações incompatíveis:")
+        print("\nCartuchos/combinações INCOMPATIVEIS:")
         for nome, erro in incompatíveis:
-            print(f"- {nome}: {erro}")
+            print(f"- {nome} (INCOMPATIVEL): {erro}")
     return {
         "modo": modo,
         "entrada": rank_entrada,

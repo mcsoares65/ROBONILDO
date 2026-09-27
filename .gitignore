@@ -1,3 +1,17 @@
+# Robonildo - arquivos locais
 __pycache__/
 *.pyc
-logs/execucao.log
+*.pyo
+*.log
+*.csv
+*.xlsx
+.env
+
+# Dados operacionais
+robonildo_v2/logs/
+robonildo_v2/**/logs/
+robonildo_v2/**/banco de reserva/
+robonildo_v2/**/noticias_lidas.json
+robonildo_v2/**/estado*.json
+robonildo_v2/**/posicao*.json
+robonildo_v2/**/historico*.csv

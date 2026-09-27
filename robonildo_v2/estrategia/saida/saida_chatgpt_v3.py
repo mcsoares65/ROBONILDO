@@ -1,30 +1,18 @@
-"""Cartucho candidato de saída — ChatGPT V3.
+"""ChatGPT V3 migrada para o contrato S001 do motor V445.
 
-Hipótese validada em três históricos do motor oficial do Robonildo:
-    preservar o stop e o alvo estruturais e nunca antecipar uma operação
-    vencedora; a partir do candle rotulado 17:15, encerrar apenas uma posição
-    perdedora cuja perda alcance o maior valor entre 275 pontos e 0,25 ATR.
-
-Por que a proteção combina pontos e ATR:
-    o piso de 275 pontos evita reagir a ruído normal; a parcela de 0,25 ATR
-    torna o limite mais conservador quando a volatilidade estiver elevada.
-
-Importante sobre o horário:
-    a avaliação ocorre no fechamento do candle de 15 minutos. Assim, o candle
-    rotulado 17:15 normalmente produz uma decisão por volta das 17:30.
-
-Instalação:
-    estrategia/saida/saida_chatgpt_v3.py
-
-Este arquivo é CANDIDATO. Não substituir o titular antes de executar
-classificacao.py no histórico oficial atualizado.
+Mantém a proteção baseline (stop estrutural + alvo 1,55R). A partir do candle
+rotulado 17h15, encerra uma perda que alcance o maior valor entre 275 pontos
+e 0,25 ATR. Não utiliza breakeven, trailing ou giveback.
 """
 
 from datetime import datetime
 from math import isfinite
 
 
+CONTRATO_SAIDA = "S001"
 NOME = "saida_chatgpt_v3"
+SWING_LOOKBACK_CANDLES = 4
+RELACAO_RISCO_RETORNO = 1.55
 HORARIO_INICIO_PROTECAO = "17:15"
 PERDA_MINIMA_PONTOS = 275.0
 MULTIPLICADOR_ATR = 0.25
@@ -40,9 +28,7 @@ def _numero_finito(valor):
 
 def _horario(row):
     valor = row.get("dt")
-    if isinstance(valor, datetime):
-        return valor.strftime("%H:%M")
-    if hasattr(valor, "strftime"):
+    if isinstance(valor, datetime) or hasattr(valor, "strftime"):
         try:
             return valor.strftime("%H:%M")
         except (TypeError, ValueError):
@@ -50,35 +36,60 @@ def _horario(row):
     return None
 
 
-def avaliar_saida(row, posicao) -> bool:
-    """Solicita somente a interrupção de perda tardia.
+def _protecao_inicial(row: dict, posicao: dict) -> tuple[float, float]:
+    entrada = float(posicao["entrada"])
+    lado = str(posicao["lado"]).upper()
+    janela = (row.get("ohlc_recentes") or ())[-(SWING_LOOKBACK_CANDLES + 1):]
+    if len(janela) < SWING_LOOKBACK_CANDLES + 1:
+        raise ValueError("Histórico insuficiente para definir a proteção inicial.")
 
-    O motor continua verificando stop e alvo antes deste cartucho. Na falta de
-    dados válidos, a função falha com segurança e preserva a regra baseline.
-    """
+    if lado == "COMPRA":
+        stop = min(float(c["Minimo"]) for c in janela)
+        risco = entrada - stop
+        alvo = entrada + RELACAO_RISCO_RETORNO * risco
+    elif lado == "VENDA":
+        stop = max(float(c["Maximo"]) for c in janela)
+        risco = stop - entrada
+        alvo = entrada - RELACAO_RISCO_RETORNO * risco
+    else:
+        raise ValueError(f"Lado inválido: {lado}")
+
+    if risco <= 0 or not isfinite(stop) or not isfinite(alvo):
+        raise ValueError(f"Proteção inicial inválida para {lado}.")
+    return stop, alvo
+
+
+def avaliar_saida(row: dict, posicao: dict) -> dict:
     if not isinstance(row, dict) or not isinstance(posicao, dict):
-        return False
+        raise TypeError("row e posicao precisam ser dicionários.")
 
-    if str(posicao.get("lado", "")).upper() not in {"COMPRA", "VENDA"}:
-        return False
+    candles = _numero_finito(posicao.get("candles_decorridos"))
+    if candles is None:
+        raise ValueError("candles_decorridos inválido.")
+    if candles == 0:
+        stop, alvo = _protecao_inicial(row, posicao)
+        return {"fechar": False, "novo_stop": stop, "novo_alvo": alvo}
 
     horario = _horario(row)
     resultado = _numero_finito(posicao.get("resultado_flutuante_pts"))
-    candles = _numero_finito(posicao.get("candles_decorridos"))
     atr = _numero_finito(row.get("atr"))
-    if horario is None or resultado is None or candles is None or atr is None:
-        return False
+    fechar = False
+    if (
+        horario is not None
+        and resultado is not None
+        and atr is not None
+        and atr >= 0
+        and horario >= HORARIO_INICIO_PROTECAO
+    ):
+        limite = max(PERDA_MINIMA_PONTOS, MULTIPLICADOR_ATR * atr)
+        fechar = resultado <= -limite
 
-    if candles < 1 or atr < 0 or horario < HORARIO_INICIO_PROTECAO:
-        return False
-
-    limite = max(PERDA_MINIMA_PONTOS, MULTIPLICADOR_ATR * atr)
-    return resultado <= -limite
+    return {"fechar": bool(fechar), "novo_stop": None, "novo_alvo": None}
 
 
 def diagnosticar_saida(row, posicao):
-    """Explica a antecipação somente quando a proteção for acionada."""
-    if not avaliar_saida(row, posicao):
+    decisao = avaliar_saida(row, posicao)
+    if not decisao["fechar"]:
         return None
     resultado = _numero_finito(posicao.get("resultado_flutuante_pts")) or 0.0
     return (
@@ -87,4 +98,4 @@ def diagnosticar_saida(row, posicao):
     )
 
 
-__all__ = ["avaliar_saida", "diagnosticar_saida"]
+__all__ = ["CONTRATO_SAIDA", "NOME", "avaliar_saida", "diagnosticar_saida"]

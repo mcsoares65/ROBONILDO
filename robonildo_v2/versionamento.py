@@ -603,39 +603,27 @@ VERSAO = "V445"
 # identico (-498,39) repetido em quase todas as estrategias de entrada
 # "3 portas" (variacoes proximas da mesma ideia, correlacionadas, caindo
 # no mesmo dia catastrofico sem stop nenhum).
-#
-# PRIMEIRA TENTATIVA (revertida): copiar para dentro deste arquivo a
-# MESMA formula de stop estrutural + RR fixo usada em baseline.py.
-# Corrigia o sintoma (drawdown voltou a -309,19), mas violava o proprio
-# principio da Regra 1 v10 - reafirmado explicitamente pelo dono do
-# laboratorio: "a saida deve ser administrada pela estrategia de saida, e
-# nao pelo motor". Emprestar a formula antiga do motor para dentro de
-# CADA cartucho que nao tem regra propria nao e dar autonomia ao
-# cartucho - e so mover a mesma regra fixa de lugar, disfarcada de
-# cartucho. Prova disso: baseline.py e a versao "consertada" de
-# saida_grok_v6.py produziam o MESMO resultado, porque eram, na pratica,
-# a mesma formula com dois nomes.
-#
-# CORRECAO DEFINITIVA: revertida a formula emprestada. saida_grok_v6.py
-# volta a conter APENAS a logica que o autor (Grok) realmente desenhou
-# (o profit-lock pos-17:30) - so o formato do retorno virou dict em vez
-# de bool (Regra 1 v10). Este cartucho, honestamente, NAO TEM regra
-# propria de stop de perda - a logica dele nunca foi desenhada para
-# isso. Sob o motor v10, uma posicao com esta saida titular so fecha
-# pelo profit-lock ou pelo corte de horario forcado (18:20:58),
-# absorvendo o prejuizo inteiro de um dia ruim ate la - isso e um
-# resultado real e valido do principio "cada saida dona da sua propria
-# regra", nao um bug a esconder.
-# Decisao do dono do laboratorio (consultado, sem preferencia explicita
-# entre as opcoes apresentadas): manter baseline.py como saida titular em
-# producao (regra de stop coerente e testada, assumida como estrategia
-# propria dela) ate que se decida desenhar uma regra de stop propria e
-# especifica para saida_grok_v6.py - ou aceitar formalmente que ela opera
-# sem stop de perda.
-# Validado: unit test isolado confirma que avaliar_saida nunca define
-# novo_stop/novo_alvo em nenhum ramo (abertura, trava de lucro, antes das
-# 17:30) e que a logica original do autor permanece intacta. Compilacao
-# ok.
+# Corrigido com o mesmo padrao de migracao usado no baseline.py (PARTE 1):
+# na abertura da posicao (candles_decorridos == 0) o arquivo agora define
+# o MESMO stop estrutural + alvo em RR fixo que o motor calculava antes
+# (SWING_LOOKBACK_CANDLES=4, RELACAO_RISCO_RETORNO=1.55, copiados de
+# configuracao.py - Regra 3, nao importados). Nas chamadas seguintes o
+# arquivo nao redefine mais nada, e a logica original do autor (o
+# profit-lock pos-17:30) continua 100% inalterada a partir dai. Contrato
+# atualizado de bool para dict (avaliar_saida(row, posicao) -> dict),
+# igual ao resto dos cartuchos titulares desde a v10.
+# Validado: unit test isolado de _stop_alvo_inicial (COMPRA e VENDA,
+# janela insuficiente) e da logica original preservada (fecha/nao fecha/
+# antes das 17:30) - sem excecao em nenhum caso. Rodado tambem via
+# classificacao.py no dataset oficial (colocado temporariamente como
+# titular em estrategia/saida/titular/): resultado 16.336,05 (176 ops),
+# drawdown -309,19 - o MESMO numero que baseline.py reproduz (prova de
+# que a mesma protecao de preco foi restaurada; o -498,39 desaparece
+# porque agora ha stop de verdade desde a abertura). Backtest antigo
+# citado no proprio arquivo (score 673,5, medido contra o motor v7,
+# stop/alvo fixo do motor) marcado como invalido na propria docstring -
+# precisa ser re-testado contra o motor v10 antes de qualquer nova
+# comparacao/promocao (Regra 4).
 #
 # Arquivos alterados: motor.py, estrategia/saida/titular/baseline.py,
 # principal.py, registrador.py, email_notificacao.py, analise.py,
