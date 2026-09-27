@@ -1,0 +1,54 @@
+name: ROBONILDO V2 - validação de cartuchos
+
+# Roda em todo Pull Request que mexe em robonildo_v2/ - qualquer IA ou pessoa
+# que proponha uma estratégia recebe o resultado direto no PR, sem depender
+# de alegação de backtest feito em outro lugar (compliance.md, Regra 4).
+
+on:
+  pull_request:
+    paths:
+      - "robonildo_v2/**"
+
+jobs:
+  compila-e-audita:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compila todos os arquivos .py (sintaxe)
+        run: |
+          cd robonildo_v2
+          fail=0
+          for f in $(find . -name "*.py"); do
+            python3 -m py_compile "$f" || { echo "FALHOU: $f"; fail=1; }
+          done
+          exit $fail
+
+      - name: Regra 3 - cartucho não pode importar módulo do projeto
+        run: |
+          cd robonildo_v2
+          fail=0
+          for f in estrategia/entrada/*.py estrategia/entrada/titular/*.py \
+                   estrategia/saida/*.py estrategia/saida/titular/*.py; do
+            [ -f "$f" ] || continue
+            if grep -nE "^\s*(import|from)\s+(motor|configuracao|principal|classificacao|registrador|email_notificacao|gestor_risco|analise|versionamento)\b" "$f"; then
+              echo "REGRA 3 VIOLADA em $f - cartucho não pode importar módulo do projeto"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      # Passo opcional: rodar classificacao.py contra o dataset oficial.
+      # Não ativado por padrão porque o histórico (WINFUT_F_0_15min.csv) não
+      # está neste repositório (arquivo de dados de mercado, não código).
+      # Para ativar: suba o CSV via Git LFS ou como asset de release, aponte
+      # CAMINHO_HISTORICO_INICIAL para o path do runner, e descomente abaixo.
+      #
+      # - name: Roda classificacao.py contra o dataset oficial
+      #   run: |
+      #     cd robonildo_v2
+      #     echo "S" | python3 classificacao.py

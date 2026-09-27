@@ -1,0 +1,646 @@
+"""
+ROBONILDO - versionamento.py
+
+Controle de versao e changelog tecnico detalhado do projeto, separado de
+configuracao.py (que ficava poluido com 200+ linhas de comentario aqui).
+
+VERSAO e a fonte unica de verdade, usada por todo o projeto via
+'from versionamento import VERSAO' (configuracao.py reexporta para manter
+cfg.VERSAO funcionando sem precisar mudar nenhum outro arquivo).
+
+changelog.md tem o registro legivel/resumido para o conselho. Este arquivo
+guarda o historico tecnico linha a linha, mais detalhado, indexado por
+versao - util para arqueologia de codigo ("em que versao isso mudou?").
+"""
+
+# Fonte unica de verdade — sempre no topo deste arquivo.
+VERSAO = "V445"
+
+# ---------------------------------------------------------------------------
+# Historico tecnico por versao (blocos separados; mais recente no final)
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# V200 — integracao inicial
+# ---------------------------------------------------------------------------
+# estrategia + risco + candle + registro + DDE
+
+# ---------------------------------------------------------------------------
+# V201 — sincronizacao e executor
+# ---------------------------------------------------------------------------
+# correcoes de sincronizacao de horario, deduplicacao de historico,
+# protecao contra dado futuro + executor_ordem.py
+
+# ---------------------------------------------------------------------------
+# V202 — stop/alvo tick a tick
+# ---------------------------------------------------------------------------
+# stop/alvo verificados tick a tick (nao mais so no fechamento do candle
+# de 15min) — reacao imediata, nao atrasada
+
+# ---------------------------------------------------------------------------
+# V203 — MA_STOCH_DIRECAO_v1
+# ---------------------------------------------------------------------------
+# ESTRATEGIA PROMOVIDA: MA_v2 -> MA_STOCH_DIRECAO_v1
+# (toque na MA21 + Estocastico Lento(8,3) na mesma direcao da tendencia),
+# validada no laboratorio_estrategias em 12 meses
+
+# ---------------------------------------------------------------------------
+# V400 — pasta padronizada + ponte generica + Manus_4_Portas_V11
+# ---------------------------------------------------------------------------
+# pasta padronizada: D:\DAYTRADE\ROBONILDO, sem sufixo de versao no nome
+# (evita confusao entre "versao da pasta" e "versao da estrategia";
+# a VERSAO acima e a fonte unica de verdade).
+# Ponte generica no _nucleo.py (avaliar_candle_via_gerar_sinal +
+# construir_row) — qualquer estrategia do laboratorio_estrategias
+# (gerar_sinal(row)) roda em producao sem traducao manual.
+# ESTRATEGIA PROMOVIDA: Manus_4_Portas_V11 (validada em 21 meses de
+# historico, Minimo Comparado 4.01/5.37, capital minimo real
+# R$2.156,73 — NAO R$515,19, numero da janela de 12 meses testada antes).
+# Narracao/contador de proximidade (principal.py) tambem passou a chamar
+# avaliar_candle() de forma especulativa no candle em formacao, em vez de
+# reimplementar a logica de entrada a parte — antes so cobria a Porta 1 da
+# estrategia de 4 portas, ficando muda quando o sinal vinha das Portas 2/3/4.
+
+# ---------------------------------------------------------------------------
+# V401 — VERSAO obrigatoria a cada entrega + composta_v18 + RSI/ATR
+# ---------------------------------------------------------------------------
+# a partir daqui, TODA implementacao incrementa a VERSAO (combinado com o
+# usuario em 18/09/2026) — impressa com destaque logo no inicio de
+# principal.py.
+# Mudancas acumuladas desde V400 (nunca versionadas individualmente):
+# - ESTRATEGIA PROMOVIDA: chatgpt_composta_v18 (Minimo Comparado 2.69,
+#   pontuacao composta 1.116,0 — primeira a romper 1000 pontos)
+# - RSI e ATR relativo adicionados a construir_row() em _nucleo.py
+# - Narracao de contexto real no sinal via construir_contexto_narracao()
+# - Localizacao dinamica do ativo na aba DDE
+# - Checagens de integridade do DDE
+# - Pergunta REPLAY/NORMAL unificada
+# - Corrigido bug de deriva de relogio em replay
+# - Print de diagnostico de onde _nucleo.py foi carregado
+
+# ---------------------------------------------------------------------------
+# V402 — buraco no replay
+# ---------------------------------------------------------------------------
+# deteccao de "buraco" no historico quando o replay e pulado/arrastado;
+# preenche com dado REAL do arquivo historico
+
+# ---------------------------------------------------------------------------
+# V403 — buraco le do CSV original do Profit
+# ---------------------------------------------------------------------------
+# corrigido preenchimento que lia o persistente (mesmo buraco); passa a ler
+# CAMINHO_HISTORICO_INICIAL
+
+# ---------------------------------------------------------------------------
+# V404 — paridade OHLC no Replay
+# ---------------------------------------------------------------------------
+# cada candle fechado usa OHLC consolidado da exportacao do Profit apos o
+# termino do periodo
+
+# ---------------------------------------------------------------------------
+# V405 — RR = 1,55
+# ---------------------------------------------------------------------------
+# relacao risco/retorno alinhada ao motor oficial (MIN_RR=1.55)
+
+# ---------------------------------------------------------------------------
+# V406 — V19 titular + ordem so apos envio confirmado
+# ---------------------------------------------------------------------------
+# ESTRATEGIA PROMOVIDA: chatgpt_3_portas_robusta_v19
+# Corrigido AttachThreadInput erro 87; estado interno so atualiza DEPOIS
+# de confirmar envio da ordem (evita posicao fantasma)
+
+# ---------------------------------------------------------------------------
+# V407 — dedup provisoria do historico
+# ---------------------------------------------------------------------------
+# politica provisoria: nao gravar horario ja existente
+
+# ---------------------------------------------------------------------------
+# V408 — UPSERT atomico + terminal rico
+# ---------------------------------------------------------------------------
+# substitui politica provisoria por UPSERT atomico por horario;
+# terminal com indicadores e gradiente de sinal
+
+# ---------------------------------------------------------------------------
+# V413 — gradiente continuo da posicao aberta
+# ---------------------------------------------------------------------------
+# progresso -1..+1 com narracao de % ate alvo/stop
+
+# ---------------------------------------------------------------------------
+# V414 — resultado liquido unico (custo descontado)
+# ---------------------------------------------------------------------------
+# cor/narracao/terminal usam a mesma funcao com custo descontado;
+# interpolacao RGB continua
+
+# ---------------------------------------------------------------------------
+# V415 — laboratorio integrado
+# ---------------------------------------------------------------------------
+# modo L usa os mesmos parametros de risco/custos/horarios do console
+
+# ---------------------------------------------------------------------------
+# V416 — narracao apos ordem
+# ---------------------------------------------------------------------------
+# ordens e saidas tem prioridade absoluta; voz so apos fatos concluidos
+
+# ---------------------------------------------------------------------------
+# V417 — bug de direcao (sinal real, nao trend)
+# ---------------------------------------------------------------------------
+# calcular_stop_alvo usa retorno de gerar_sinal(row), nao row['trend'];
+# pergunta inicial insiste em L/R/N
+
+# ---------------------------------------------------------------------------
+# V418 — validacao defensiva do sinal
+# ---------------------------------------------------------------------------
+# somente 1 e -1 chegam ao stop/alvo; resto gera erro explicito
+
+# ---------------------------------------------------------------------------
+# V419 — classificacao multitemporal
+# ---------------------------------------------------------------------------
+# 50% longo + 30% mensal + 20% diario; pesos redistribuidos se faltar horizonte
+
+# ---------------------------------------------------------------------------
+# V420 — console unico (motor.py)
+# ---------------------------------------------------------------------------
+# motor.py concentra indicadores, cartucho, stop/alvo, limites e posicao;
+# principal e classificacao so alimentam o motor
+
+# ---------------------------------------------------------------------------
+# V421 — classificacao alimenta o motor direto
+# ---------------------------------------------------------------------------
+# laboratorio.py removido; laboratorio/estrategias permanece como deposito
+
+# ---------------------------------------------------------------------------
+# V422 — tabela compacta (120 colunas)
+# ---------------------------------------------------------------------------
+# um espaco entre colunas; nomes longos abreviados so na tela
+
+# ---------------------------------------------------------------------------
+# V423 — titular em azul celeste
+# ---------------------------------------------------------------------------
+# linha da titular destacada; coluna titular no CSV (True/False)
+
+# ---------------------------------------------------------------------------
+# V424 — mercado ainda nao aberto + versionamento.py
+# ---------------------------------------------------------------------------
+# DDE com data de ontem nao dispara mais "Mercado encerrado";
+# narra "Bom dia! Aguardando abertura do mercado.";
+# changelog tecnico extraido para este arquivo
+
+# ---------------------------------------------------------------------------
+# V425 — diagnostico de ordem que nao chega ao Profit
+# ---------------------------------------------------------------------------
+# hipotese UIPI; FocoProfit.diagnosticar() com PID e elevacao
+
+# ---------------------------------------------------------------------------
+# V426 — cooldown de avisos DDE
+# ---------------------------------------------------------------------------
+# mesmo aviso (preco parado / deriva) no maximo a cada 60s
+
+# ---------------------------------------------------------------------------
+# V427 — e-mail em abertura/fechamento (opt-in)
+# ---------------------------------------------------------------------------
+# email_notificacao.py em thread; nunca bloqueia ordem
+
+# ---------------------------------------------------------------------------
+# V428 — fim de pregao encerra o script
+# ---------------------------------------------------------------------------
+# as 18:20: ALT+Z de seguranca + "Finalizado." + processo termina
+
+# ---------------------------------------------------------------------------
+# V429 — dois cartuchos independentes (entrada / saida)
+# ---------------------------------------------------------------------------
+# estrategia/entrada/ — exatamente 1 arquivo, gerar_sinal(row)
+# estrategia/saida/   — exatamente 1 arquivo, avaliar_saida(row, posicao)->bool
+# saida_claude_v1.py = baseline (sempre False = comportamento RR=1,55 atual)
+# motor: Posicao com candles_decorridos, maxima/minima_desde_entrada;
+# verificar_saida: (1) stop/alvo motor (2) cartucho saida so antecipa
+# (3) corte horario; excecao no cartucho nao derruba o motor;
+# posicao publica SEM motivo_entrada (evita acoplamento entrada/saida);
+# classificacao pareia toda entrada candidata com a saida titular;
+# regressao: 18/09 14:15 identico; 0 SAIDA_CARTUCHO espurio no baseline
+
+# ---------------------------------------------------------------------------
+# V430 — inventario explicito de cartuchos no laboratorio
+# ---------------------------------------------------------------------------
+# classificacao.py:
+# - listar_cartuchos_disco() / imprimir_inventario_cartuchos()
+# - lista no terminal o conteudo de estrategia/entrada/, estrategia/saida/
+#   e da pasta do laboratorio antes da apuracao
+# - mensagens de erro de "exatamente 1 arquivo" incluem os nomes achados
+# - cabecalho do lab mostra entrada titular, saida titular e nomes do ranking
+# Nao altera regras de ranking nem o motor — so transparencia operacional
+# (V429 ja tinha a descoberta dos dois slots; V430 torna o inventario visivel).
+
+# ---------------------------------------------------------------------------
+# V431 — titulares em subpasta titular/; fim do laboratorio
+# ---------------------------------------------------------------------------
+# Nova arvore oficial (laboratorio/estrategias removido do projeto):
+#   estrategia/entrada/titular/  → exatamente 1 .py (entrada de producao)
+#   estrategia/entrada/*.py      → candidatas de ranking de ENTRADA
+#   estrategia/saida/titular/    → exatamente 1 .py (saida de producao)
+#   estrategia/saida/*.py        → candidatas de ranking de SAIDA (futuro)
+# classificacao.py:
+# - deixa de ler PASTA_ESTRATEGIAS_LABORATORIO e legado
+# - descobrir_estrategias() usa entrada/titular + entrada/*.py
+# - descobrir_cartucho_saida() usa saida/titular/
+# - inventario no terminal reflete a nova arvore
+# principal.py (producao) deve usar a mesma regra de descoberta nos
+# caminhos estrategia/entrada/titular e estrategia/saida/titular.
+
+# ---------------------------------------------------------------------------
+# V432 — ranking triplo: entrada / saída / cruzado (principal)
+# ---------------------------------------------------------------------------
+# classificacao.py:
+# - descobre entradas (titular + candidatas) e saídas (titular + candidatas)
+#   de forma independente
+# - Ranking ENTRADA: cada entrada × saída titular
+# - Ranking SAÍDA: cada saída × entrada titular
+# - Ranking PRINCIPAL (cruzado): todas as combinações entrada × saída
+#   colunas: pos, entrada, saída, resultado, diária, dias, drawdown, pontuação
+# - CSVs: classificacao_entrada_*, classificacao_saida_*, classificacao_cruzada_*
+# principal.py já carrega só estrategia/*/titular/ (V431)
+# motor.py já aceita gerar_sinal e avaliar_saida independentes (V429)
+
+# ---------------------------------------------------------------------------
+# V433 — multi ABSOLUTO individual (fim do percentil entre concorrentes)
+# ---------------------------------------------------------------------------
+# classificacao.py — aplicar_pontuacao_multitemporal:
+# - ANTES: multi = percentil 0-100 de cada horizonte entre as estratégias
+#   da rodada (nota relativa — mudava se o conjunto de concorrentes mudasse)
+# - AGORA: multi = média ponderada dos scores BRUTOS individuais
+#   50% score_longo_raw + 30% score_mensal_raw + 20% score_diario_raw
+#   (pesos redistribuídos se faltar horizonte)
+# Motivo: um colega que testa UMA estratégia isolada precisa obter o MESMO
+# multi que obteria aqui no arsenal completo — comparável por valor.
+# _normalizar_percentil removido do caminho do multi (permanece _percentil_25
+# só dentro de robustez/horizontes, como estatística de janela, não de rank).
+
+# ---------------------------------------------------------------------------
+# V434 — cartucho de saida "v1" renomeado para baseline.py
+# ---------------------------------------------------------------------------
+# RENUMERADO: esta mudanca tinha sido entregue como "V433" numa sessao em
+# paralelo com a mudanca de pontuacao absoluta (tambem chamada V433, acima) -
+# as duas reivindicaram o mesmo numero ao mesmo tempo. A pontuacao absoluta
+# ficou com V433 (ja estava no versionamento.py recebido); este rename
+# passa a V434.
+#
+# saida_claude_v1.py -> baseline.py, mesma pasta (estrategia/saida/titular/),
+# mesmo conteudo (avaliar_saida sempre False). Nome reflete melhor o papel
+# dele: referencia fixa a ser superada, nao uma candidata numerada na
+# sequencia v1/v2/v3. Descoberta e puramente por pasta (exatamente 1
+# arquivo), entao a troca de nome nao exigiu nenhuma mudanca de codigo em
+# principal.py nem classificacao.py.
+#
+# Validado RODANDO OS DOIS JUNTOS (V433 pontuacao absoluta + V434 rename):
+# pipeline completo (classificacao.executar) com o dataset oficial - 176
+# operacoes / R$15.966,98 na titular (chatgpt_3_portas_robusta_v19 x
+# baseline), identico a toda validacao anterior. Inventario mostra
+# "baseline [TITULAR]" corretamente. Sem conflito de codigo entre as duas
+# mudancas - so o numero de versao colidiu.
+
+# ---------------------------------------------------------------------------
+# V435 — saída candidata por retenção de lucro + credencial fora do código
+# ---------------------------------------------------------------------------
+# Novo cartucho candidato estrategia/saida/saida_chatgpt_v1.py:
+# - não altera a baseline titular nem a produção antes de promoção explícita;
+# - stop/alvo do motor continuam com prioridade absoluta;
+# - trailing só arma após MFE relevante (pontos + ATR);
+# - saída exige devolução da MFE e confirmação adversa por RSI/Estocástico/MACD,
+#   com trava de emergência para devolução excepcional;
+# - posição lucrativa é realizada no fechamento rotulado 17:45 (execução
+#   aproximada às 18:00 no histórico), criando margem antes do corte 18:20.
+# configuracao.py deixa de conter senha de aplicativo em texto puro e passa a
+# ler ROBONILDO_EMAIL_SENHA_APP do ambiente. email_notificacao.py ignora o
+# envio com aviso claro quando a variável não estiver definida.
+
+# ---------------------------------------------------------------------------
+# V436 — CORRIGIDA REGRESSAO: integracao de e-mail sumida do principal.py
+# ---------------------------------------------------------------------------
+# Reportado: e-mail nao foi enviado na abertura de uma ordem real, mesmo com
+# EMAIL_NOTIFICACAO_ATIVO=True e a senha de app configurada corretamente
+# (ja confirmado funcionando via teste_email.py isolado).
+#
+# CAUSA RAIZ: o principal.py em uso NAO TINHA NENHUMA referencia a
+# email_notificacao - nem o import, nem as 4 chamadas (1 abertura + 3
+# fechamento) que foram implementadas originalmente na V427. A integracao
+# foi perdida em algum ponto entre V427 e a reestruturacao grande de
+# entrada/saida (V429+), que reescreveu boa parte do arquivo sem carregar
+# essa parte junto - uma regressao silenciosa, sem erro nenhum no log
+# (o codigo simplesmente nunca chamava a funcao, entao nunca havia nada
+# pra falhar ou avisar).
+#
+# CORRIGIDO: reinserido o import (`import email_notificacao`) e as 4
+# chamadas, nos mesmos 4 pontos de sempre (logo apos
+# registrador.registrar_operacao_aberta/fechada, mesma posicao relativa
+# da V427), adaptadas a estrutura atual do arquivo (que mudou bastante
+# desde entao). Nenhuma outra logica alterada.
+#
+# LICAO: ao revisar reestruturacoes grandes do principal.py dai em diante,
+# checar explicitamente que toda integracao anterior (narracao, auditoria,
+# registrador, email) sobreviveu - "sintaxe valida + roda sem erro" nao
+# detecta uma chamada que simplesmente deixou de existir.
+
+# ---------------------------------------------------------------------------
+# V437 — saida_grok_v6 candidata: trava de lucro no fim do pregão
+# ---------------------------------------------------------------------------
+# Cartucho candidato (NÃO titular): estrategia/saida/saida_grok_v6.py
+# Regra: após 17:30, se resultado_flutuante_pts >= 1,0 × ATR → True
+# (antecipa só lucro; stop/alvo do motor continuam prioritários).
+#
+# Backtest isolado (V19 × saídas, jun–set/2026, mesmo MotorRobonildo):
+#   baseline (sempre False): R$ 6.809,63 | DD -249,48 | PF 4,75 | score 622,9
+#   saida_grok_v6:           R$ 6.974,73 | DD -249,48 | PF 5,01 | score 673,5
+#   Δ +R$ 165,09 | DD igual | stops 14→13
+# Grade hora×ATR: melhor combinação 17:30 + 1,0 ATR; vizinhas 17:30/0,8 e
+# 17:45/0,8 também bateram a baseline. Tentativas anteriores (giveback,
+# Fibonacci, MA21 break, scratch no zero) NÃO superaram a baseline.
+#
+# Promoção a titular só após ranking de saída + cruzado em classificacao.py.
+# Arquivo novo: saida_grok_v6.py (candidata em estrategia/saida/).
+
+# ---------------------------------------------------------------------------
+# V438 — classificacao.py pergunta qual ranking rodar (E / S / C)
+# ---------------------------------------------------------------------------
+# Ao iniciar classificacao.py (ou modo L do principal), pergunta:
+#   E = ranking de entradas (cada entrada × saída titular)
+#   S = ranking de saídas   (entrada titular × cada saída)
+#   C = ranking cruzado     (produto cartesiano — ranking principal)
+# Só executa as combinações do modo escolhido (evita cartesian completo
+# quando só se quer E ou S). Imprime e grava CSV só do ranking pedido.
+# Arquivo alterado: classificacao.py.
+
+
+# ---------------------------------------------------------------------------
+# V439 — remocao do modo LABORATORIO (L) do prompt de principal.py
+# ---------------------------------------------------------------------------
+# Pedido anteriormente (mesma sessao), mas nao tinha persistido no arquivo
+# que chegou como V438 - reaplicado aqui. Prompt volta a ser so REPLAY/NORMAL
+# (R/N); o modo L chamava classificacao.executar() e saia - redundante desde
+# que classificacao.py ganhou vida propria (e agora, com a V438, ate pergunta
+# qual ranking rodar sozinho). Rodar o laboratorio agora e sempre
+# "python classificacao.py" direto, nunca mais via principal.py.
+#
+# Revisao completa desta rodada (sincronizacao de 15 arquivos recebidos):
+#   - V436 (integracao de e-mail): confirmada presente e intacta.
+#   - V437 (saida_grok_v6.py, candidata de saida): registrada no historico,
+#     mas o ARQUIVO em si nao foi enviado nesta rodada - ainda pendente de
+#     revisao real (nao posso validar backtest que nao tenho em maos).
+#   - V438 (classificacao.py pergunta E/S/C): testada de ponta a ponta com
+#     o dataset oficial, escolhendo "E" - confirmado que roda so as 4
+#     combinacoes de entrada (nao as 12 do cruzado completo), resultado
+#     identico a toda validacao anterior (176 ops/R$15.966,98 na titular).
+
+# ---------------------------------------------------------------------------
+# V440 — narracao enriquecida do lado da SAIDA (espelha o que ja existia so
+#        na entrada)
+# ---------------------------------------------------------------------------
+# Ate aqui, "[CENARIO EM FORMACAO]" so existia para a ENTRADA (chama
+# diagnosticar_sinal especulativamente, no candle ainda formando, avisa
+# antes de fechar de verdade). Do lado da saida so havia a narracao de
+# progresso motor-level ("X% do caminho ate o alvo/stop") - nunca avisava
+# quando o CARTUCHO DE SAIDA especificamente estava prestes a antecipar o
+# fechamento.
+#
+# Duas adicoes, mesmo espirito da entrada:
+#
+# 1. AVISO ESPECULATIVO (com posicao aberta, candle ainda formando): chama
+#    avaliar_saida() do cartucho titular com o preco/hora atuais (ainda nao
+#    fechados). Se ja fecharia com o dado de agora, narra
+#    "[CENARIO EM FORMACAO] <explicacao real, via diagnosticar_saida se
+#    disponivel>" - ANTES do candle fechar de verdade. Deduplicado por
+#    (candle, horario_entrada) para nao repetir a cada iteracao do loop.
+#    Excecao no cartucho nunca trava a narracao - so nao avisa nada.
+#
+# 2. FECHAMENTO REAL explicado: quando o motivo do fechamento e
+#    "SAIDA_CARTUCHO", a narracao de fechamento agora tenta usar
+#    diagnosticar_saida() do cartucho para explicar o motivo REAL (ex: "lucro
+#    de X pontos, MACD virou contra"), em vez de so cair na frase generica de
+#    lucro/prejuizo. Se diagnosticar_saida nao existir, lancar excecao, ou
+#    nao devolver string, cai no fallback generico normalmente - sem quebrar
+#    nada.
+#
+# Testado isoladamente (sem loop completo, que depende de DDE ao vivo): 3
+# cenarios - especulativo nao dispara com lucro baixo, dispara com explicacao
+# real quando lucro alto, e cartucho quebrado nunca trava (cai em None/
+# generico). Os 3 se comportaram como esperado.
+#
+# Arquivo alterado: principal.py.
+
+# ---------------------------------------------------------------------------
+# V441 — [CENARIO EM FORMACAO] agora e FALADO, nao so impresso no log
+# ---------------------------------------------------------------------------
+# Ate a V440, todo "[CENARIO EM FORMACAO]" (entrada especulativa, expectativa
+# perdida, saida especulativa, progresso periodico com/sem posicao) so
+# aparecia no terminal via print() - a decisao original da V416 foi
+# deliberada ("a voz so relata fatos depois do candle confirmado, nunca
+# concorre com o envio de uma ordem"), mas o dono do laboratorio pediu para
+# reverter isso: esses cenarios devem ser narrados tambem, nao so
+# apresentados no log.
+#
+# Verificado antes de aplicar: narrar() usa SVSFlagAsync=1 (SAPI), ou seja,
+# a fala e genuinamente NAO BLOQUEANTE - chamar narrar() no meio do loop
+# especulativo nao atrasa nem compete com o envio de ordem em nenhum sentido
+# tecnico (a chamada so enfileira a fala e retorna na hora). A preocupacao
+# original da V416 era mais sobre nao falar algo que pode nao se confirmar
+# do que sobre travamento - o dono do laboratorio decidiu que a narracao do
+# cenario em formacao (deixando claro que pode mudar ate o fechamento) vale
+# mais que esse risco.
+#
+# Adicionado narrar() ao lado de cada print() de "[CENARIO EM FORMACAO]"
+# (5 pontos): expectativa de entrada identificada, expectativa de entrada
+# perdida, saida especulativa identificada (V440), progresso periodico com
+# posicao aberta, e frase periodica sem posicao aberta. Nenhuma logica de
+# decisao mudou - so a voz passou a acompanhar o que ja aparecia no log.
+#
+# Arquivo alterado: principal.py.
+
+# ---------------------------------------------------------------------------
+# V442 — email_notificacao.py aceita mais de 1 destinatario
+# ---------------------------------------------------------------------------
+# EMAIL_NOTIFICACAO_DESTINATARIO (configuracao.py) agora aceita 1 ou mais
+# e-mails separados por virgula (ex: "voce@gmail.com, socio@gmail.com").
+# Nova funcao _lista_destinatarios() faz o parsing (strip de espaco,
+# descarta entrada vazia por virgula sobrando), usada tanto no cabecalho
+# "To" quanto na lista real de sendmail(). Se a lista vier vazia, avisa e
+# nao tenta enviar (mesmo padrao dos outros avisos do modulo - nunca lanca
+# excecao pro chamador). Testado com 1 email, varios, espacos extras,
+# virgulas duplicadas e string vazia - todos os casos tratados
+# corretamente.
+#
+# Arquivo alterado: email_notificacao.py.
+
+# ---------------------------------------------------------------------------
+# V443 — narracao de entrada identifica "porta X de Y" + confirma disparo
+# ---------------------------------------------------------------------------
+# Pedido: a narracao deveria deixar mais claro a qual porta a expectativa se
+# refere. Esclarecido antes de implementar: NAO e um funil sequencial (a
+# estrategia checa Porta 1, 2, 3 em ordem, mas so UMA dispara por candle - as
+# outras nem chegam a ser avaliadas naquele caso). Implementado de forma
+# honesta com essa realidade:
+#
+# 1. Novo campo OPCIONAL "total_portas" no dict que diagnosticar_sinal()
+#    devolve - se presente, principal.py acrescenta "(porta X de Y)" ao final
+#    da explicacao narrada. Estrategias que nao expuserem esse campo
+#    continuam funcionando exatamente como antes (sem o sufixo).
+# 2. Adicionado ao titular atual (grok_3_portas_assimetrica_v2.py):
+#    total_portas=3 no helper _resultado().
+# 3. Toda narracao de expectativa de entrada agora termina com "Se
+#    confirmado no fechamento, a ordem sera disparada." - centralizado em
+#    principal.py (nao depende do texto de cada estrategia individual -
+#    reparado que o cartucho novo do Grok tinha deixado essa frase de fora,
+#    diferente da V19 antiga que a tinha).
+#
+# Arquivos alterados: principal.py, estrategia/entrada/titular/
+# grok_3_portas_assimetrica_v2.py.
+
+# ---------------------------------------------------------------------------
+# V445 — motor deixa de ter formula propria de saida (Regra 1 v8 do compliance)
+# ---------------------------------------------------------------------------
+# Pedido explicito do dono do laboratorio, esclarecido em duas rodadas: a
+# estrategia de saida deve ser INTEIRAMENTE do cartucho de saida titular,
+# nao do motor - nem como piso de seguranca, nem como "ponto de partida".
+#
+# motor.py:
+# - calcular_stop_alvo() REMOVIDA por completo - o motor nao calcula mais
+#   stop nem alvo em nenhum momento.
+# - Sinal.stop/alvo e Posicao.stop/alvo agora Optional[float], nascem None.
+# - avaliar_row() / avaliar_candle_via_gerar_sinal() derivam lado (COMPRA/
+#   VENDA) diretamente do sinal bruto (1/-1) da estrategia de entrada - nao
+#   dependem mais de calcular_stop_alvo para isso.
+# - abrir_posicao() agora consulta o cartucho de saida titular JA na
+#   abertura da posicao (alem de a cada candle fechado, como sempre) -
+#   contrato identico ao de avaliar_saida por candle (row + posicao
+#   sintetica com candles_decorridos=0), permitindo definir novo_stop/
+#   novo_alvo iniciais.
+# - verificar_saida() e verificar_saida_continua() tratam pos.stop/pos.alvo
+#   como possivelmente None em toda comparacao - sem isso, a primeira
+#   posicao sem nivel definido pelo cartucho quebraria com TypeError.
+# - Se o cartucho de saida nunca definir nivel nenhum, a posicao fica sem
+#   stop/alvo ate o corte de horario do pregao - comportamento esperado,
+#   nao uma falha.
+#
+# Consequencia encontrada ao testar (classificacao.py, dataset oficial):
+# baseline.py sempre devolvia False, o que antes significava "aceito o
+# RR=1,55 que o motor ja calculou". Sem essa formula em lugar nenhum,
+# devolver False sempre virou, silenciosamente, "segurar ate o corte de
+# horario" - drawdown medido piorou de -309,19 para -498,39. Corrigido
+# reescrevendo baseline.py para calcular, dentro do proprio arquivo, a
+# MESMA formula que antes vivia no motor (stop estrutural via
+# row["ohlc_recentes"], janela de SWING_LOOKBACK_CANDLES+1 candles, + RR
+# 1,55 fixado uma unica vez na abertura, candles_decorridos==0) - validado
+# reproduzindo resultado (R$16.585,04 / 175 ops / DD -309,19) e drawdown
+# identicos aos de antes da mudanca de contrato, confirmando migracao
+# comportamentalmente neutra.
+#
+# saida_claude_v3.py (candidata anterior, sem stop inicial) tambem sofria
+# do mesmo problema - substituida por saida_claude_v4.py, que soma um
+# stop inicial (mesma formula do baseline) ao comportamento de breakeven/
+# trailing ja existente na v3. Ainda assim nao supera o baseline no
+# dataset oficial (R$5.896,31 vs R$16.585,04) - nao promovida.
+#
+# compliance.md atualizado para Versao 8 (Regra 1 reescrita, Regra 3
+# esclarecida contra importar configuracao.py de dentro de um cartucho).
+#
+# PARTE 2 (mesma versao): motor ORQUESTRA, cartucho so avalia estrategia/
+# lucratividade - fechado o circuito na producao (principal.py), que
+# ainda nao tinha sido atualizado para o novo contrato do motor:
+# - principal.py: abrir_posicao(sinal) passa a ser abrir_posicao(sinal,
+#   row=row_fechamento) - sem isso, o motor nunca perguntava ao cartucho
+#   de saida o stop/alvo inicial em producao (so no backtest, via
+#   classificacao.py, que ja passava row corretamente). O motor e quem
+#   decide QUANDO consultar o cartucho; o cartucho so responde com o
+#   nivel/decisao, nunca decide por si so quando ser chamado.
+# - registrador.registrar_operacao_aberta(sinal) -> recebe a Posicao
+#   (gestor.posicao_aberta), nao o Sinal: Sinal.stop/alvo sao sempre None
+#   desde que o motor parou de calcula-los, entao gravar o Sinal geraria
+#   stop/alvo vazios sempre, mesmo quando o cartucho definiu um nivel
+#   real na abertura.
+# - email_notificacao.notificar_abertura(sinal, agora) -> recebe a
+#   Posicao pelo mesmo motivo. Corrigido tambem o crash certo que isso
+#   causaria: sinal.stop/alvo formatados com "{:.2f}" quebravam com
+#   TypeError assim que valessem None (SEMPRE, no fluxo antigo). Agora
+#   formata "(ainda não definido pelo cartucho de saída)" quando for None
+#   - informativo, nao um erro.
+# - principal.py (_progresso_posicao e a narracao periodica de posicao
+#   aberta): a exibicao ao vivo ("X% do caminho ate o alvo/stop") tambem
+#   fazia aritmetica direta com posicao.stop/posicao.alvo - quebraria com
+#   TypeError assim que um cartucho (ex: saida_claude_v4, que nunca
+#   define alvo) deixasse um dos dois em None. Corrigido: progresso
+#   neutro quando o nivel de referencia nao existe, e a narracao passa a
+#   dizer "o cartucho de saída ainda não definiu um alvo/stop" em vez de
+#   inventar uma porcentagem contra um nivel inexistente.
+# Testado isoladamente (sem loop completo, que depende de DDE ao vivo):
+# registrar_operacao_aberta, notificar_abertura e o calculo de progresso,
+# cada um com posicao COM e SEM stop/alvo definidos - nenhuma excecao em
+# nenhum dos dois casos.
+#
+# PARTE 3 (mesma versao): corte de horario forcado disparava ~1min02s
+# ATRASADO. cfg.HORARIO_LIMITE_ABSOLUTO foi alterado em algum momento de
+# "18:20" para "18:20:58" (com segundos, de proposito - reduzir a folga
+# de risco), mas as duas comparacoes contra esse valor
+# (motor.verificar_corte_final - o corte de seguranca de verdade - e o
+# aviso de "mercado encerrado" em principal.py) continuaram comparando
+# so por MINUTO (strftime("%H:%M")). Como "18:20" < "18:20:58" em ordem
+# lexicografica, o corte so disparava as 18:21:00 - o OPOSTO do que a
+# mudanca para segundos pretendia. Corrigido para strftime("%H:%M:%S")
+# nos dois lugares - agora dispara exatamente as 18:20:58. Removida
+# tambem HORARIO_ULTIMO_CANDLE de configuracao.py (sem uso ha varias
+# versoes, so criava confusao sobre qual e "o" horario de corte).
+# HORARIO_LIMITE_ABSOLUTO e agora, exclusivamente, o unico horario de
+# saida forcada do projeto - documentado como tal em configuracao.py.
+# HORARIO_BLOQUEIO_NOVAS_ENTRADAS ("18:20") NAO foi tocado: e uma regra
+# diferente (bloqueia ABRIR posicao nova, nao forca fechar uma existente)
+# e a comparacao por minuto la e proposital e correta.
+#
+# PARTE 4 (mesma versao): saida_grok_v6.py (titular do ranking de entrada
+# que o dono do laboratorio trouxe) promovido a titular ainda no contrato
+# antigo (avaliar_saida -> bool, sem nunca definir stop/alvo) - a logica
+# original do autor (Grok) sempre assumiu "stop/alvo do motor continuam
+# prioritarios", so ANTECIPA um fechamento lucrativo perto do fim do
+# pregao. Sob o motor v10 (Regra 1, PARTE 1 acima), que nao calcula mais
+# nenhum stop/alvo proprio, isso deixou TODA posicao sem nenhuma protecao
+# de preco - so o corte de horario forcado (18:20:58, ja corrigido na
+# PARTE 3) ou o proprio profit-lock do arquivo fechavam uma posicao.
+# Constatado pelo dono do laboratorio no ranking ao vivo: drawdown quase
+# identico (-498,39) repetido em quase todas as estrategias de entrada
+# "3 portas" (variacoes proximas da mesma ideia, correlacionadas, caindo
+# no mesmo dia catastrofico sem stop nenhum).
+#
+# PRIMEIRA TENTATIVA (revertida): copiar para dentro deste arquivo a
+# MESMA formula de stop estrutural + RR fixo usada em baseline.py.
+# Corrigia o sintoma (drawdown voltou a -309,19), mas violava o proprio
+# principio da Regra 1 v10 - reafirmado explicitamente pelo dono do
+# laboratorio: "a saida deve ser administrada pela estrategia de saida, e
+# nao pelo motor". Emprestar a formula antiga do motor para dentro de
+# CADA cartucho que nao tem regra propria nao e dar autonomia ao
+# cartucho - e so mover a mesma regra fixa de lugar, disfarcada de
+# cartucho. Prova disso: baseline.py e a versao "consertada" de
+# saida_grok_v6.py produziam o MESMO resultado, porque eram, na pratica,
+# a mesma formula com dois nomes.
+#
+# CORRECAO DEFINITIVA: revertida a formula emprestada. saida_grok_v6.py
+# volta a conter APENAS a logica que o autor (Grok) realmente desenhou
+# (o profit-lock pos-17:30) - so o formato do retorno virou dict em vez
+# de bool (Regra 1 v10). Este cartucho, honestamente, NAO TEM regra
+# propria de stop de perda - a logica dele nunca foi desenhada para
+# isso. Sob o motor v10, uma posicao com esta saida titular so fecha
+# pelo profit-lock ou pelo corte de horario forcado (18:20:58),
+# absorvendo o prejuizo inteiro de um dia ruim ate la - isso e um
+# resultado real e valido do principio "cada saida dona da sua propria
+# regra", nao um bug a esconder.
+# Decisao do dono do laboratorio (consultado, sem preferencia explicita
+# entre as opcoes apresentadas): manter baseline.py como saida titular em
+# producao (regra de stop coerente e testada, assumida como estrategia
+# propria dela) ate que se decida desenhar uma regra de stop propria e
+# especifica para saida_grok_v6.py - ou aceitar formalmente que ela opera
+# sem stop de perda.
+# Validado: unit test isolado confirma que avaliar_saida nunca define
+# novo_stop/novo_alvo em nenhum ramo (abertura, trava de lucro, antes das
+# 17:30) e que a logica original do autor permanece intacta. Compilacao
+# ok.
+#
+# Arquivos alterados: motor.py, estrategia/saida/titular/baseline.py,
+# principal.py, registrador.py, email_notificacao.py, analise.py,
+# configuracao.py, compliance.md, versionamento.py, changelog.md,
+# saida_grok_v6.py.
+# Arquivo novo: estrategia/saida/saida_claude_v4.py (candidata, nao
+# titular). Arquivo removido do laboratorio: saida_claude_v3.py (superada
+# pela v4, mesma ideia com o bug do stop inicial corrigido).
