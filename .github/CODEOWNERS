@@ -1,0 +1,12 @@
+# Arquivos/pastas sensíveis exigem aprovação do dono do laboratório antes de
+# qualquer merge, não importa quem (humano ou IA) abriu o Pull Request.
+# Sintaxe: https://docs.github.com/articles/about-code-owners
+
+/robonildo_v2/motor.py             @mcsoares65
+/robonildo_v2/configuracao.py      @mcsoares65
+/robonildo_v2/compliance.md        @mcsoares65
+/robonildo_v2/versionamento.py     @mcsoares65
+/robonildo_v2/principal.py         @mcsoares65
+/robonildo_v2/estrategia/entrada/titular/  @mcsoares65
+/robonildo_v2/estrategia/saida/titular/    @mcsoares65
+/.github/                                  @mcsoares65
