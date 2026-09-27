@@ -1,13 +1,18 @@
 name: ROBONILDO V2 - validação de cartuchos
 
-# Roda em todo Pull Request que mexe em robonildo_v2/ - qualquer IA ou pessoa
+# Roda em todo Pull Request que mexe no projeto operacional na raiz - qualquer IA ou pessoa
 # que proponha uma estratégia recebe o resultado direto no PR, sem depender
 # de alegação de backtest feito em outro lugar (compliance.md, Regra 4).
 
 on:
   pull_request:
     paths:
-      - "robonildo_v2/**"
+      - "*.py"
+      - "**/*.py"
+      - "estrategia/**"
+      - "compliance.md"
+      - "REGRAS_DO_JOGO.md"
+      - ".github/workflows/robonildo-v2-ci.yml"
 
 jobs:
   compila-e-audita:
@@ -21,16 +26,14 @@ jobs:
 
       - name: Compila todos os arquivos .py (sintaxe)
         run: |
-          cd robonildo_v2
           fail=0
-          for f in $(find . -name "*.py"); do
+          for f in $(find . -path "./legado" -prune -o -name "*.py" -print); do
             python3 -m py_compile "$f" || { echo "FALHOU: $f"; fail=1; }
           done
           exit $fail
 
       - name: Regra 3 - cartucho não pode importar módulo do projeto
         run: |
-          cd robonildo_v2
           fail=0
           for f in estrategia/entrada/*.py estrategia/entrada/titular/*.py \
                    estrategia/saida/*.py estrategia/saida/titular/*.py; do
@@ -50,5 +53,4 @@ jobs:
       #
       # - name: Roda classificacao.py contra o dataset oficial
       #   run: |
-      #     cd robonildo_v2
       #     echo "S" | python3 classificacao.py

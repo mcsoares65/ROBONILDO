@@ -1,5 +1,9 @@
 # ROBONILDO V2
 
+O projeto operacional fica diretamente na raiz deste repositório. A implementação
+anterior foi preservada em `legado/` apenas para consulta histórica e não participa
+da execução, da classificação ou da validação automática do sistema atual.
+
 Robô de day trade para WINFUT (mini-índice), operando via DDE com a plataforma
 Profit Pro (Nelogica). Desenvolvido em conjunto por um "conselho" de IAs
 (Claude, ChatGPT/Codex, Gemini, Grok, DeepSeek) — este repositório é onde essa
