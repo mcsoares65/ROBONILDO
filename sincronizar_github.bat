@@ -12,12 +12,14 @@ echo.
 echo [1] BAIXAR atualizacoes do GitHub
 echo [2] ENVIAR alteracoes para o GitHub
 echo [3] Consultar situacao
-echo [4] Sair
+echo [4] REVERTER um commit com problema
+echo [5] Sair
 echo.
 
-choice /C 1234 /N /M "Escolha uma opcao: "
+choice /C 12345 /N /M "Escolha uma opcao: "
 
-if errorlevel 4 goto sair
+if errorlevel 5 goto sair
+if errorlevel 4 goto reverter
 if errorlevel 3 goto status
 if errorlevel 2 goto enviar
 if errorlevel 1 goto baixar
@@ -116,12 +118,97 @@ echo.
 git switch main
 git status
 echo.
-git log -5 --oneline
+git log -10 --oneline
+goto finalizar
+
+:reverter
+cls
+echo ============================================================
+echo REVERTER COMMIT
+echo ============================================================
+echo.
+echo Esta opcao cria um novo commit que desfaz o commit escolhido.
+echo O historico original sera preservado.
+echo.
+
+git switch main
+if errorlevel 1 goto erro
+
+git pull --ff-only origin main
+if errorlevel 1 (
+    echo.
+    echo Reversao interrompida: nao foi possivel atualizar a main.
+    goto finalizar
+)
+
+set "ALTERADO="
+for /f "delims=" %%i in ('git status --porcelain') do set "ALTERADO=1"
+if defined ALTERADO (
+    echo.
+    echo Reversao interrompida: existem alteracoes locais pendentes.
+    echo Envie, descarte ou guarde essas alteracoes antes de continuar.
+    echo.
+    git status --short
+    goto finalizar
+)
+
+echo.
+echo Ultimos 15 commits:
+echo ------------------------------------------------------------
+git log -15 --oneline
+echo ------------------------------------------------------------
+echo.
+
+set "COMMIT="
+set /p "COMMIT=Digite o codigo do commit que deseja reverter: "
+
+if not defined COMMIT (
+    echo.
+    echo Nenhum commit informado.
+    goto finalizar
+)
+
+git rev-parse --verify "%COMMIT%^^{commit}" >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo Commit invalido ou nao encontrado: %COMMIT%
+    goto finalizar
+)
+
+echo.
+echo O commit abaixo sera desfeito:
+echo ------------------------------------------------------------
+git show --stat --oneline --decorate "%COMMIT%"
+echo ------------------------------------------------------------
+echo.
+echo ATENCAO: confirme somente se este for exatamente o commit com problema.
+choice /C SN /N /M "Deseja criar e enviar a reversao? [S/N]: "
+if errorlevel 2 goto cancelar
+
+git revert --no-edit "%COMMIT%"
+if errorlevel 1 (
+    echo.
+    echo A reversao encontrou conflito e nao foi concluida.
+    echo Use git revert --abort para cancelar a tentativa.
+    goto finalizar
+)
+
+git push origin main
+if errorlevel 1 (
+    echo.
+    echo A reversao foi criada localmente, mas o envio falhou.
+    echo Nao repita o revert. Corrija a conexao e execute: git push origin main
+    goto finalizar
+)
+
+echo.
+echo Commit revertido e enviado com sucesso.
+git log -3 --oneline
 goto finalizar
 
 :cancelar
 echo.
-echo Envio cancelado. Nenhum arquivo foi enviado.
+echo Operacao cancelada. Nenhuma nova alteracao foi enviada.
 goto finalizar
 
 :erro
