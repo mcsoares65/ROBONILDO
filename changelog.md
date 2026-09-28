@@ -4,6 +4,31 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V455 — radar quantitativo e recuperação silenciosa do DDE
+
+O percentual e o quadrado colorido permanecem no final da linha. O radar passa
+a quantificar a primeira condição pendente — por exemplo,
+`afastamento 184/200 pts` — e, quando chega a 100%, informa há quantos segundos
+a mesma oportunidade permanece continuamente confirmada. Se uma condição for
+perdida, a contagem é reiniciada.
+
+A estratégia titular recebeu somente campos de telemetria para o painel; seus
+limiares, prioridades e sinais não foram modificados.
+
+Falhas transitórias recuperadas nas tentativas internas de leitura do DDE não
+são mais impressas. Se as três tentativas falharem, uma única mensagem final,
+com o último erro COM, permanece visível e o ciclo é descartado com segurança.
+
+### Arquivos alterados
+
+- `principal.py`
+- `leitor_dde.py`
+- `estrategia/entrada/titular/entrada_grok_3_v1.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V454 — direção do candle e percentual do radar
 
 A narração de fechamento sem entrada agora diferencia a direção efetiva do
