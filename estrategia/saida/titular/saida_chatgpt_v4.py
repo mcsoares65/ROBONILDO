@@ -1,24 +1,25 @@
-"""ChatGPT V3 migrada para o contrato S001 do motor V445.
+"""Saída ChatGPT V4 — proteção proporcional no encerramento.
 
-Mantém a proteção baseline (stop estrutural + alvo 1,55R). A partir do candle
-rotulado 17h15, encerra uma perda que alcance o maior valor entre 275 pontos
-e 0,25 ATR. Não utiliza breakeven, trailing ou giveback.
+Candidata S001. Preserva o stop estrutural e o alvo de 1,55R da V3. A partir
+das 18h, encerra posições cuja perda alcance 0,50 ATR, evitando que uma
+operação sem continuidade consuma o restante do risco até o corte obrigatório.
 """
 
 from datetime import datetime
 from math import isfinite
 
-
 CONTRATO_SAIDA = "S001"
-NOME = "saida_chatgpt_v3"
+NOME = "saida_chatgpt_v4"
 SWING_LOOKBACK_CANDLES = 4
 RELACAO_RISCO_RETORNO = 1.55
-HORARIO_INICIO_PROTECAO = "17:15"
-PERDA_MINIMA_PONTOS = 275.0
-MULTIPLICADOR_ATR = 0.25
+HORARIO_PROTECAO_V3 = "17:15"
+HORARIO_PROTECAO_PROPORCIONAL = "18:00"
+PERDA_MINIMA_V3_PONTOS = 275.0
+MULTIPLICADOR_V3_ATR = 0.25
+PERDA_FINAL_ATR = 0.50
 
 
-def _numero_finito(valor):
+def _numero(valor):
     try:
         numero = float(valor)
     except (TypeError, ValueError):
@@ -36,7 +37,7 @@ def _horario(row):
     return None
 
 
-def _protecao_inicial(row: dict, posicao: dict) -> tuple[float, float]:
+def _protecao_inicial(row, posicao):
     entrada = float(posicao["entrada"])
     lado = str(posicao["lado"]).upper()
     janela = (row.get("ohlc_recentes") or ())[-(SWING_LOOKBACK_CANDLES + 1):]
@@ -59,43 +60,49 @@ def _protecao_inicial(row: dict, posicao: dict) -> tuple[float, float]:
     return stop, alvo
 
 
+def _motivo(row, posicao):
+    horario = _horario(row)
+    resultado = _numero(posicao.get("resultado_flutuante_pts"))
+    atr = _numero(row.get("atr"))
+    if horario is None or resultado is None or atr is None or atr <= 0:
+        return None
+
+    if horario >= HORARIO_PROTECAO_PROPORCIONAL:
+        if resultado <= -(PERDA_FINAL_ATR * atr):
+            return "PROTECAO_FINAL_PROPORCIONAL"
+        return None
+
+    if horario >= HORARIO_PROTECAO_V3:
+        limite_v3 = max(PERDA_MINIMA_V3_PONTOS, MULTIPLICADOR_V3_ATR * atr)
+        if resultado <= -limite_v3:
+            return "PROTECAO_V3"
+    return None
+
+
 def avaliar_saida(row: dict, posicao: dict) -> dict:
     if not isinstance(row, dict) or not isinstance(posicao, dict):
         raise TypeError("row e posicao precisam ser dicionários.")
-
-    candles = _numero_finito(posicao.get("candles_decorridos"))
+    candles = _numero(posicao.get("candles_decorridos"))
     if candles is None:
         raise ValueError("candles_decorridos inválido.")
     if candles == 0:
         stop, alvo = _protecao_inicial(row, posicao)
         return {"fechar": False, "novo_stop": stop, "novo_alvo": alvo}
-
-    horario = _horario(row)
-    resultado = _numero_finito(posicao.get("resultado_flutuante_pts"))
-    atr = _numero_finito(row.get("atr"))
-    fechar = False
-    if (
-        horario is not None
-        and resultado is not None
-        and atr is not None
-        and atr >= 0
-        and horario >= HORARIO_INICIO_PROTECAO
-    ):
-        limite = max(PERDA_MINIMA_PONTOS, MULTIPLICADOR_ATR * atr)
-        fechar = resultado <= -limite
-
-    return {"fechar": bool(fechar), "novo_stop": None, "novo_alvo": None}
+    return {"fechar": _motivo(row, posicao) is not None,
+            "novo_stop": None, "novo_alvo": None}
 
 
 def diagnosticar_saida(row, posicao):
-    decisao = avaliar_saida(row, posicao)
-    if not decisao["fechar"]:
-        return None
-    resultado = _numero_finito(posicao.get("resultado_flutuante_pts")) or 0.0
-    return (
-        "Proteção de fim de pregão acionada: a posição permaneceu negativa "
-        f"e atingiu {abs(resultado):.0f} pontos de perda."
-    )
+    motivo = _motivo(row, posicao)
+    resultado = _numero(posicao.get("resultado_flutuante_pts")) or 0.0
+    if motivo == "PROTECAO_FINAL_PROPORCIONAL":
+        return ("A operação não apresentou continuidade até o período final "
+                f"do pregão e atingiu {abs(resultado):.0f} pontos de perda. "
+                "A posição foi encerrada para limitar a exposição.")
+    if motivo == "PROTECAO_V3":
+        return ("Proteção de fim de pregão acionada: a posição permaneceu "
+                f"negativa e atingiu {abs(resultado):.0f} pontos de perda.")
+    return None
 
 
 __all__ = ["CONTRATO_SAIDA", "NOME", "avaliar_saida", "diagnosticar_saida"]
