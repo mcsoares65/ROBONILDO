@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V448"
+VERSAO = "V449"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -448,6 +448,14 @@ VERSAO = "V448"
 # entrada_macd_estocastico_grok_v1.py e entrada_saida_extremo_grok_v1.py.
 # Arquivos alterados: motor.py, principal.py, entrada_grok_3_v1.py,
 # compliance.md, versionamento.py e changelog.md.
+
+# ---------------------------------------------------------------------------
+# V449 — linha de posição compacta sem quebra no Prompt
+# ---------------------------------------------------------------------------
+# Ajuste exclusivamente visual em principal.py. A linha de posição aberta
+# abrevia distâncias entre parênteses e remove rótulos redundantes, mantendo
+# em uma linha: lado, entrada, preço atual, resultado, alvo, stop e progresso.
+# Nenhuma regra de entrada, saída, risco, radar ou envio de ordem foi alterada.
 
 # ---------------------------------------------------------------------------
 # V441 — [CENARIO EM FORMACAO] agora e FALADO, nao so impresso no log
