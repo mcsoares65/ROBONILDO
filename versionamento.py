@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V453"
+VERSAO = "V454"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -762,3 +762,18 @@ VERSAO = "V453"
 # True (nao-dict) -> False - todos batendo com o esperado.
 #
 # Arquivo alterado: principal.py.
+
+# ---------------------------------------------------------------------------
+# V454 — direção do candle na narração e percentual do radar
+# ---------------------------------------------------------------------------
+# A narração de fechamento sem sinal deixa de chamar a relação MA21 x MA50
+# de direção do candle. Agora informa separadamente a direção efetiva do
+# candle (fechamento contra abertura) e a tendência estrutural das médias.
+# Exemplo de conflito: "O candle fechou em alta, mas a tendência das médias
+# ainda é de baixa. Nenhum sinal de entrada foi confirmado."
+#
+# O heartbeat do radar passa a mostrar seu progresso técnico em percentual
+# ao lado do quadrado colorido, no mesmo padrão visual da posição aberta:
+# "50% ■". A lógica de sinais, ordens e classificação não foi alterada.
+#
+# Arquivos alterados: principal.py, versionamento.py, changelog.md.
