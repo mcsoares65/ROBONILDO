@@ -171,6 +171,7 @@ class LeitorDDE:
         if self._linha_ativo is None:
             raise RuntimeError("Chame localizar_ativo() antes de ler_preco().")
 
+        ultimo_erro = None
         for tentativa in range(1, tentativas + 1):
             try:
                 celula = f"{COLUNA_PRECO}{self._linha_ativo}"
@@ -178,11 +179,12 @@ class LeitorDDE:
                 if valor is not None:
                     return float(valor)
             except Exception as e:
-                print(f"[LEITOR_DDE] Tentativa {tentativa}/{tentativas} falhou: {e}")
+                ultimo_erro = e
             _time.sleep(espera_segundos)
 
-        print(f"[LEITOR_DDE] Falha ao ler preco apos {tentativas} tentativas - "
-              f"pulando esta leitura (instabilidade conhecida do DDE).")
+        detalhe = f": {ultimo_erro}" if ultimo_erro is not None else ""
+        print(f"[LEITOR_DDE] Falha ao ler preco apos {tentativas} tentativas{detalhe} - "
+              "pulando esta leitura (instabilidade conhecida do DDE).")
         return None
 
     def ler_horario_mercado(self, tentativas: int = 3, espera_segundos: float = 0.5) -> Optional[datetime]:
@@ -202,6 +204,7 @@ class LeitorDDE:
             return None
 
         import time as _time
+        ultimo_erro = None
         for tentativa in range(1, tentativas + 1):
             try:
                 aba = self._planilha.Sheets(NOME_ABA_DDE)
@@ -215,10 +218,12 @@ class LeitorDDE:
                     hora_str = hora_str.strftime("%H:%M:%S")
                 return datetime.strptime(f"{data_str} {hora_str}", "%d/%m/%Y %H:%M:%S")
             except Exception as e:
-                print(f"[LEITOR_DDE] Tentativa {tentativa}/{tentativas} (horario) falhou: {e}")
+                ultimo_erro = e
                 _time.sleep(espera_segundos)
 
-        print(f"[LEITOR_DDE] Falha ao ler horario apos {tentativas} tentativas - pulando esta leitura.")
+        detalhe = f": {ultimo_erro}" if ultimo_erro is not None else ""
+        print(f"[LEITOR_DDE] Falha ao ler horario apos {tentativas} tentativas{detalhe} - "
+              "pulando esta leitura.")
         return None
 
     def verificar_integridade(self, preco_atual: float, horario_mercado: datetime,

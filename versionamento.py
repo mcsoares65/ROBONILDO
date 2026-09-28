@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V454"
+VERSAO = "V455"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -777,3 +777,22 @@ VERSAO = "V454"
 # "50% ■". A lógica de sinais, ordens e classificação não foi alterada.
 #
 # Arquivos alterados: principal.py, versionamento.py, changelog.md.
+
+# ---------------------------------------------------------------------------
+# V455 — radar quantitativo, sustentacao de 100% e DDE silencioso em retry
+# ---------------------------------------------------------------------------
+# O radar mantem o fechamento visual "100% ■" e passa a quantificar, quando
+# o cartucho fornece telemetria, a primeira condicao pendente. Ao atingir
+# 100%, mostra tambem por quantos segundos a mesma oportunidade permaneceu
+# continuamente confirmada. A perda de qualquer condicao zera a contagem.
+#
+# O cartucho titular Grok recebeu apenas telemetria opcional (campo detalhe):
+# nenhum limiar, prioridade ou retorno de gerar_sinal() foi alterado.
+#
+# leitor_dde.py deixa de imprimir erros das tentativas 1/3 e 2/3 quando uma
+# tentativa seguinte recupera a leitura. Se as tres falharem, continua
+# emitindo uma unica mensagem final com o ultimo erro COM e pula o ciclo.
+#
+# Arquivos alterados: principal.py, leitor_dde.py,
+# estrategia/entrada/titular/entrada_grok_3_v1.py, versionamento.py,
+# changelog.md.
