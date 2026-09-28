@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V450"
+VERSAO = "V451"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -465,6 +465,14 @@ VERSAO = "V450"
 # largura fixa, evitando deslocamento das colunas quando os números crescem.
 # O prefixo "R$" foi removido e os separadores ganharam espaçamento. Nenhuma
 # regra operacional foi alterada.
+
+# ---------------------------------------------------------------------------
+# V451 — grade do radar alinhada
+# ---------------------------------------------------------------------------
+# Ajuste exclusivamente visual em principal.py. Preço, tendência, estratégia,
+# confirmações, condição faltante e quadrado passam a ocupar colunas estáveis.
+# A condição faltante usa largura fixa para impedir que o quadrado se desloque
+# quando a estratégia prioritária muda. Nenhuma regra operacional foi alterada.
 
 # ---------------------------------------------------------------------------
 # V441 — [CENARIO EM FORMACAO] agora e FALADO, nao so impresso no log
