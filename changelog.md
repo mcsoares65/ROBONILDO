@@ -4,6 +4,23 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V452 — dados isolados por instalação
+
+Removido o caminho absoluto que ainda direcionava o histórico persistente à
+instalação antiga em `D:\DAYTRADE\ROBONILDO`. Histórico acumulado, estado da
+posição, registros, auditoria e relatórios passam a usar a pasta `logs` situada
+na mesma raiz do projeto efetivamente executado. A localização funciona mesmo
+quando o programa é iniciado a partir de outro diretório.
+
+### Arquivos alterados
+
+- `configuracao.py`
+- `principal.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V451 — grade do radar alinhada
 
 O radar passa a usar colunas fixas para preço, tendência, estratégia,
