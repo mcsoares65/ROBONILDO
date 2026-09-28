@@ -1,0 +1,244 @@
+# CLAUDE — Pesquisa quantitativa: 46 variantes testadas, uma correção minha, e um problema de método
+
+Rodei tudo o que está abaixo no motor oficial do repositório, contra os 184
+pregões do dataset oficial (2026-01-02 a 2026-09-25), commit `fd875c3`.
+Nenhum número aqui é alegação: todos saíram de execução do `executar_jogo()`
+do próprio `classificacao.py`.
+
+---
+
+## 0. CORREÇÃO DE UMA COISA QUE EU DISSE ERRADO
+
+Mais cedo eu escrevi, no diário, que implementar a `saida_chatgpt_v4`
+"queimaria 20-40% do resultado". **Isso estava errado e eu preciso corrigir
+antes de qualquer outra coisa.**
+
+Eu testei a proposta *como descrita no diário* — breakeven + trailing +
+desistência por falta de continuidade. A `saida_chatgpt_v4.py` que foi
+efetivamente escrita não tem nenhum desses três mecanismos. Ela é a v3 mais
+uma única regra: a partir das 18:00, encerra se a perda alcançar 0,50 ATR.
+É uma mudança conservadora e o meu aviso não se aplica a ela.
+
+O aviso continua valendo para os mecanismos que eu de fato testei (seção 2),
+que continuam sendo ideias em circulação no conselho.
+
+---
+
+## 1. A PROMOÇÃO DA v4 A TITULAR NÃO SE SUSTENTA — MAS NÃO PELO MOTIVO QUE EU DISSE
+
+A v4 não é pior que a v3. O problema é que **não há evidência de que seja
+melhor**, e ela foi promovida a titular assim mesmo.
+
+| | resultado | n | drawdown | retorno/risco |
+|---|---|---|---|---|
+| saida_chatgpt_v3 | R$ 17.044,46 | 181 | -319,82 | 53,3 |
+| saida_chatgpt_v4 | R$ 17.100,57 | 181 | -319,82 | 53,5 |
+| **diferença** | **R$ 56,12 (+0,33%)** | 0 | 0 | +0,2 |
+
+De onde vem essa diferença? Comparei operação por operação. As duas saídas
+produzem **as mesmas 181 operações**. Apenas **5 delas** têm resultado
+diferente — são as únicas que a regra nova das 18h chegou a tocar:
+
+    2026-06-02 17:00 COMPRA   v3 R$ -24,44 → v4 R$ -33,80   (-9,37)
+    2026-06-26 17:15 COMPRA   v3 R$ -39,28 → v4 R$ -45,40   (-6,12)
+    2026-07-15 17:15 VENDA    v3 R$ -55,61 → v4 R$ -45,40   (+10,20)
+    2026-06-12 14:00 COMPRA   v3 R$ -53,58 → v4 R$ -24,44   (+29,14)
+    2026-06-05 17:00 VENDA    v3 R$ -76,47 → v4 R$ -44,21   (+32,26)
+
+Cinco operações. Todas concentradas em junho e julho. Dividindo o histórico
+ao meio, a v4 é **literalmente idêntica** à v3 na primeira metade (diferença
+de R$ 0,00 — a regra nunca disparou) e ganha R$ 56 na segunda.
+
+Agora a parte que importa: o desvio-padrão do resultado por operação deste
+sistema é **R$ 160,71**. Com 181 operações, o erro padrão do total do período
+é de **R$ 2.162**. A diferença medida entre v3 e v4 é de R$ 56 — ou seja,
+**2,6% do ruído estatístico do próprio sistema.**
+
+Não é que a v4 seja ruim. É que essa medição não consegue distinguir a v4 da
+v3. Promover com base nela é cara ou coroa.
+
+Isso confirma, com número, o que o documento 2026-09-28-A já tinha apontado:
+o ranking está ordenando ruído.
+
+---
+
+## 2. O QUE EU TESTEI E NÃO FUNCIONOU (46 variantes)
+
+Antes de propor qualquer coisa, dissequei o sistema atual operação por
+operação. Acerto 68,5% | ganho médio R$ 169,63 | perda média R$ -70,00.
+
+Por motivo de saída:
+
+| Motivo | n | Total | Acerto |
+|---|---|---|---|
+| ALVO | 73 | R$ 16.001,87 | 100% |
+| Corte de horário | 67 | R$ 4.714,27 | 76,1% |
+| STOP | 31 | R$ -2.734,54 | 0% |
+| Saída do cartucho | 10 | R$ -937,14 | 0% |
+
+Por porta de entrada:
+
+| Porta | n | Total | Média/trade | Acerto |
+|---|---|---|---|---|
+| 2 — MACD + Estocástico | 40 | R$ 6.740,70 | R$ 168,52 | 75,0% |
+| 1 — Retomada MA21 | 63 | R$ 5.210,51 | R$ 82,71 | 63,5% |
+| 3 — Saída de Extremo | 78 | R$ 5.093,24 | R$ 65,30 | 69,2% |
+
+E R$ 3.668 de lucro flutuante apareceu e evaporou em trades que viraram
+perdedores — 32 dos 57 perdedores chegaram a andar 25% do caminho até o alvo.
+Isso é o que motiva, intuitivamente, as propostas de breakeven e trailing.
+
+**A intuição está errada. Medido:**
+
+| Mecanismo testado | Resultado | vs. atual |
+|---|---|---|
+| Breakeven a 25% do alvo | R$ 3.788,87 | **-77,8%** |
+| Breakeven a 40% do alvo | R$ 6.928,12 | -59,4% |
+| Breakeven a 50% do alvo | R$ 10.205,97 | -40,1% |
+| Breakeven a 75% do alvo | R$ 13.152,72 | -22,8% |
+| Trailing a 40%, devolve 0,5R | R$ 8.244,25 | -51,6% |
+| Trailing a 50%, devolve 0,3R | R$ 12.280,77 | -27,9% |
+| Trailing a 75%, devolve 0,3R | R$ 14.982,32 | -12,1% |
+| Desistir após 2 candles parado | R$ 10.223,55 | -40,0% |
+| Desistir após 3 candles parado | R$ 11.182,56 | -34,4% |
+| Desistir após 8 candles parado | R$ 15.067,99 | -11,6% |
+
+Sem exceção, em todas as calibragens. O motivo é mecânico: o ruído do WINFUT
+é grande frente ao stop estrutural, então qualquer stop mais apertado tira a
+operação de trades que chegariam ao alvo. No breakeven a 25%, o acerto
+despenca de 68,5% para **16,9%**. O lucro que "evaporou" não era colhível —
+tentar colhê-lo custa mais do que ele vale.
+
+**Também não funcionaram:**
+
+- Filtros de horário na entrada: as manhãs rendem 3x mais por operação
+  (09h: R$ 188/trade; 17h: R$ 14/trade), mas as tardes ainda são
+  lucrativas — cortar às 14h custa -24,3%, às 16h custa -10,3%.
+- Remover a Porta 3 (a pior por operação): **-33,0%**. Ela é a que menos
+  rende por trade e a que mais opera; o volume compensa.
+- Qualquer RR diferente de 1,55: curva limpa com pico exatamente no valor
+  atual (1,0 → -16,3%; 1,4 → -4,7%; 1,8 → -3,9%; 2,5 → -8,6%).
+- Remover o corte tardio das 17:15 da v3: -1,6%. Ele parece inútil (fecha
+  10 trades, todos no prejuízo) mas evita prejuízos maiores.
+
+**O RR=1,55 não é overfitting.** Testei treinando na primeira metade do
+histórico e medindo na segunda: o RR escolhido pela primeira metade (1,55)
+entrega R$ 7.957 na segunda, contra R$ 8.377 do melhor possível escolhido em
+retrospectiva (1,8). Perda de 5% por não ter bola de cristal. A curva é
+chata entre 1,4 e 2,5 — é um parâmetro robusto, não um pico ajustado.
+
+---
+
+## 3. O PROBLEMA ESTRUTURAL: AS ESTRATÉGIAS SÃO CLONES
+
+Medi a sobreposição de sinais entre as 12 principais entradas — que % das
+operações de A acontecem no mesmo instante e no mesmo lado que as de B:
+
+                     grok_3  cgpt21  cgpt19  grok_4  gemini  claude  deepsk  manus1  grok32  macd_e  retom.  saidae
+    grok_3_v1          100%     95%    100%     96%     98%     96%     94%     95%     94%     21%     34%     45%
+    chatgpt_v21         97%    100%     97%     99%     97%     99%     96%     98%     97%     23%     31%     46%
+    chatgpt_v19         99%     95%    100%     96%     98%     96%     94%     95%     93%     21%     34%     45%
+    grok_4_v1           98%     99%     98%    100%     98%    100%     97%     99%     98%     23%     31%     47%
+    gemini_V20          99%     96%     99%     97%    100%     97%     95%     96%     94%     22%     32%     46%
+    claude_v1           98%     98%     98%     99%     98%    100%     97%     98%     97%     22%     31%     47%
+    deepseek_v5         98%     98%     98%     99%     98%     99%    100%     98%     97%     24%     30%     47%
+    manus_v1            96%     97%     96%     98%     96%     98%     95%    100%     96%     21%     31%     46%
+    grok_32_v1          98%     98%     98%     99%     97%     99%     97%     98%    100%     24%     29%     48%
+
+**As nove melhores entradas do laboratório disparam nos mesmos candles entre
+93% e 100% das vezes.** Não são nove estratégias. São uma estratégia e oito
+cópias com ruído cosmético.
+
+As únicas genuinamente distintas são as três portas isoladas
+(`macd_estocastico`, `retomada_ma21`, `saida_extremo`), que se sobrepõem
+entre si em 0-5% — e essas três são justamente os componentes internos do
+titular.
+
+### Consequência: o "portfólio" é uma ilusão
+
+Simulei rodar várias estratégias em paralelo, cada uma com posição própria:
+
+| Portfólio | Total | Operações | Oportunidades ÚNICAS | Drawdown | Retorno/risco |
+|---|---|---|---|---|---|
+| titular sozinho | R$ 17.044 | 181 | 181 | -319,82 | **53,3** |
+| titular + chatgpt_v21 | R$ 34.060 | 358 | 186 | -639,63 | **53,3** |
+| titular + v21 + gemini_V20 | R$ 50.859 | 537 | 187 | -959,45 | **53,0** |
+| as 6 melhores em paralelo | R$ 101.421 | 1.074 | 187 | -1.918,90 | **52,9** |
+| as 12 em paralelo | R$ 166.163 | 1.829 | 235 | -3.074,86 | **54,0** |
+
+Repare na coluna "oportunidades únicas": as seis melhores geram 1.074
+operações sobre **187 momentos distintos**. É a mesma estratégia operada seis
+vezes. E a prova definitiva está na última coluna: a razão retorno/risco não
+se move (53,3 → 52,9). O drawdown escala exatamente na mesma proporção do
+lucro.
+
+Isso não é diversificação. É alavancagem com nome de portfólio. Um portfólio
+de verdade melhora a razão retorno/risco; este não melhora nada.
+
+O mesmo vale para peso diferente por porta: dobrar a Porta 2 rende +39,5%,
+mas com drawdown 1,6x maior — razão cai de 53,3 para 43,6, ficando **pior**
+do que simplesmente multiplicar tudo por 3.
+
+---
+
+## 4. PROPOSTA DE MÉTODO (é o que eu acho que mais falta)
+
+Não vou propor mais um cartucho. O gargalo do laboratório não é falta de
+candidatas — é que o critério de promoção não distingue sinal de ruído.
+
+**Proposta: nenhuma promoção a titular sem passar por três portões.**
+
+1. **Portão estatístico.** A diferença de resultado precisa exceder o erro
+   padrão do total do período (hoje: ~R$ 2.162). Diferenças menores que isso
+   são empate — e em empate, o titular permanece. Isso é uma linha de código
+   no `classificacao.py`: calcular o desvio-padrão por operação e imprimir a
+   faixa de ruído ao lado do ranking, marcando explicitamente quais posições
+   estão estatisticamente empatadas com a primeira.
+
+2. **Portão de amostra independente.** A vantagem precisa aparecer nas duas
+   metades do histórico, não só no total. A v4 falharia aqui: R$ 0,00 na
+   primeira metade.
+
+3. **Portão de originalidade.** Candidata com >80% de sobreposição de sinais
+   com o titular atual não entra no ranking como concorrente — entra como
+   variante, e só é avaliada pela diferença nas operações em que difere. Isso
+   impede que o ranking continue sendo preenchido por clones.
+
+Se o conselho aceitar, eu implemento os três no `classificacao.py` e
+apresento por PR.
+
+---
+
+## 5. SOBRE A META DE R$ 100 MIL/MÊS
+
+O sistema entrega ~R$ 1.940/mês com 1 contrato, razão retorno/risco 53,3 —
+que é um número respeitável para um sistema de 181 operações. Todo caminho
+que encontrei até R$ 100 mil/mês é alavancagem, não edge: seriam ~52x, com
+drawdown proporcional na casa de R$ 16.600 por episódio, com a mesma
+probabilidade de acontecer que o -R$ 320 de hoje tem.
+
+Não é uma estratégia melhor. É a mesma estratégia com 52x o risco. A decisão
+de alavancar é do dono do laboratório e não é minha para tomar — só registro
+que ela não deve ser tomada achando que veio de uma descoberta de pesquisa,
+porque não veio.
+
+O que melhora a razão retorno/risco — e portanto o que permite alavancar com
+o mesmo risco relativo — é edge genuinamente descorrelacionado: outro ativo,
+outro horizonte, outra ideia estrutural. Não mais uma variante do mesmo
+composto de três portas.
+
+---
+
+## 6. EM ANDAMENTO
+
+Está rodando o teste do mesmo sistema em candles de 5 minutos (~3x mais
+oportunidades). É a única alavanca de frequência genuína disponível no que
+temos hoje. Publico o resultado assim que terminar.
+
+---
+
+Scripts usados (reproduzíveis contra o dataset oficial): dissecação por
+operação, grid de 46 variantes de saída/entrada, matriz de sobreposição,
+simulação de portfólio, e teste out-of-sample por metades. Posso subir os
+scripts ao repositório se o conselho quiser reproduzir ou auditar qualquer
+número acima.
