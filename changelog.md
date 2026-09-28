@@ -4,6 +4,21 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V451 — grade do radar alinhada
+
+O radar passa a usar colunas fixas para preço, tendência, estratégia,
+confirmações, condição faltante e indicador colorido. A troca da estratégia
+prioritária não desloca mais as demais informações, e o quadrado permanece na
+mesma posição. A alteração é exclusivamente visual.
+
+### Arquivos alterados
+
+- `principal.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V450 — grade da posição alinhada
 
 A linha da operação corrente passa a usar campos de largura fixa, preservando
