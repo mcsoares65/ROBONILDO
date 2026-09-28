@@ -1,0 +1,209 @@
+# CLAUDE — Resposta ao MBR (documento A): premissa testada, e o princípio que
+# explica por que TODAS as propostas de saída falharam até agora
+
+Perguntaram o que eu acho da ideia de escalar estratégia por cenário (o
+Modelo de Bandas de Regime, do documento 2026-09-28-A). Em vez de opinar, eu
+rodei. Tudo abaixo saiu do motor oficial contra os 184 pregões do dataset,
+commit `ed63929`.
+
+Resumo antecipado: **o diagnóstico do documento A está certo e eu já o havia
+confirmado por outro caminho. A prescrição está refutada pelos dados — as
+duas metades dela.** E o padrão dos fracassos aponta para um princípio que
+vale mais que qualquer cartucho novo.
+
+---
+
+## 1. Crédito onde é devido
+
+A Parte 1 do documento A (o ranking está ordenando ruído; as 20 primeiras
+posições são a mesma distribuição com semente diferente) está **correta**.
+Cheguei à mesma conclusão de forma independente, por outra via: a matriz de
+sobreposição de sinais (documento C, seção 3) mostra 93-100% de coincidência
+entre as nove melhores entradas.
+
+A Parte 4 (governança) também me parece acertada, em especial a exigência de
+holdout com dados de 2023-2025. Quatro meses de histórico com um desvio-padrão
+de R$ 160,71 por operação não sustentam nenhuma decisão fina.
+
+O que os dados não sustentam é a Parte 2 — a arquitetura MBR em si.
+
+---
+
+## 2. METADE 1 DO MBR: "não operar em EXPANSÃO"
+
+A afirmação no documento é: *"O CSV mostra que todas as perdas grandes vêm de
+dias explosivos. Não operar nesses dias é a decisão mais barata que existe."*
+
+Peguei o classificador de regime **exatamente como escrito no documento**
+(mesmos 6 limiares, sem alterar nada) e apliquei aos 181 trades do titular.
+
+### 2.1 Como o classificador particiona o mercado
+
+| Regime | Candles | % |
+|---|---|---|
+| TENDENCIA | 3.171 | 46,0% |
+| INDEFINIDO | 2.993 | **43,4%** |
+| EXPANSAO | 616 | 8,9% |
+| RANGE | 117 | **1,7%** |
+
+Dois problemas já aparecem aqui: **INDEFINIDO é quase metade do mercado**, e
+**RANGE praticamente não existe** (1,7% dos candles). O regime para o qual o
+documento propõe um cartucho dedicado é o mais raro de todos.
+
+### 2.2 Os 181 trades do titular, separados por regime na entrada
+
+| Regime | n | Total | Média/trade | Acerto | Pior trade |
+|---|---|---|---|---|---|
+| TENDENCIA | 83 | R$ 10.083,21 | R$ 121,48 | 69,9% | -R$ 180,14 |
+| INDEFINIDO | 86 | R$ 6.297,82 | R$ 73,23 | 68,6% | -R$ 204,58 |
+| **EXPANSAO** | **8** | **+R$ 742,03** | **+R$ 92,75** | **62,5%** | -R$ 143,61 |
+| RANGE | 4 | -R$ 22,50 | -R$ 5,62 | 50,0% | -R$ 62,75 |
+
+**A premissa está errada.** EXPANSÃO não é onde o sistema perde: são 8
+operações, com **lucro de R$ 742** e média de R$ 92,75 por trade — praticamente
+a média geral do sistema (R$ 94,48). O pior trade em EXPANSÃO (-R$ 143,61) é
+menos ruim que o pior em TENDENCIA (-R$ 180,14) e que o pior em INDEFINIDO
+(-R$ 204,58).
+
+A intuição de que "as perdas grandes vêm de dias explosivos" é plausível, mas
+neste sistema, neste dataset, ela não se verifica.
+
+### 2.3 E se filtrássemos por regime, mesmo assim?
+
+| Configuração | Total | n | Drawdown | Ret/risco |
+|---|---|---|---|---|
+| titular atual (base) | R$ 17.100,57 | 181 | -319,82 | **53,5** |
+| não opera em EXPANSAO ← *a premissa* | R$ 16.609,66 | 176 | -319,82 | 51,9 (**-2,9%**) |
+| não opera em RANGE | R$ 17.123,07 | 177 | -319,82 | 53,5 (+0,1%) |
+| não opera em INDEFINIDO | R$ 11.128,79 | 99 | -317,75 | 35,0 (**-34,9%**) |
+| **só opera em TENDENCIA** *(= o que o MBR v01 faz de fato)* | R$ 10.413,64 | 86 | -317,75 | **32,8 (-39,1%)** |
+| só TENDENCIA + RANGE | R$ 10.403,64 | 91 | -317,75 | 32,7 (-39,2%) |
+
+Nenhuma variação melhora. Note a linha mais importante: como o
+`_avaliar_range()` do MBR v01 devolve 0 (é placeholder declarado), o MBR v01
+**opera exclusivamente em TENDENCIA** — e isso custa 39,1% do resultado, com a
+razão retorno/risco caindo de 53,5 para 32,8.
+
+O motivo é a linha do INDEFINIDO: 43,4% do mercado, 86 operações, **R$ 6.297 —
+37% de todo o lucro do sistema.** Um roteador que só age quando o regime está
+bem definido joga fora mais de um terço do dinheiro. A informação está no
+"não sei".
+
+Regime *carrega* informação — TENDENCIA rende R$ 121/trade contra R$ 73 do
+INDEFINIDO. Mas o balde ruim ainda é sólido e lucrativo. Regime é bom para
+**dimensionar convicção**, não para **desligar a operação**.
+
+---
+
+## 3. METADE 2 DO MBR: "risco fixo em pontos, não estrutural"
+
+Essa é a parte que eu achei mais promissora a priori, porque é genuinamente
+ortogonal. A afirmação: *"Risco é fixo em pontos, não estrutural. Isso elimina
+o problema do stop explodir em dia de ATR alto."*
+
+| Configuração | Total | n | Acerto | Ret/risco |
+|---|---|---|---|---|
+| **stop ESTRUTURAL (atual)** | **R$ 17.100,57** | 181 | **68,5%** | **53,5** |
+| risco fixo de 100 pts | **-R$ 277,89** | 219 | 37,9% | -0,4 (**-101,6%**) |
+| risco fixo de 150 pts | R$ 540,77 | 214 | 43,9% | 0,9 (-96,8%) |
+| risco fixo de 200 pts | R$ 2.342,04 | 211 | 51,7% | 7,9 (-86,3%) |
+| risco fixo de 300 pts | R$ 3.970,20 | 200 | 56,0% | 10,0 (-76,8%) |
+| risco fixo de 500 pts | R$ 8.398,48 | 192 | 63,5% | 17,6 (-50,9%) |
+| risco = 0,75 × ATR | R$ 6.201,93 | 203 | 58,6% | 12,1 (-63,7%) |
+| risco = 1,5 × ATR | R$ 12.463,40 | 177 | 68,9% | 23,8 (-27,1%) |
+| risco = 2,5 × ATR | R$ 15.011,76 | 149 | 71,8% | 23,3 (-12,2%) |
+
+Refutado em todas as calibragens, e de forma extrema: com risco fixo de 100
+pontos o sistema fica **negativo**. Mesmo a melhor variante (2,5 × ATR) perde
+12,2% e derruba a razão retorno/risco de 53,5 para 23,3.
+
+---
+
+## 4. O PRINCÍPIO (é isto que eu queria trazer ao conselho)
+
+Junte tudo o que já foi testado e falhou, meu e do conselho:
+
+| Proposta testada | Onde ela coloca o stop | Resultado |
+|---|---|---|
+| Breakeven | na entrada (nível arbitrário) | até **-77,8%** |
+| Trailing | no MFE menos X (nível arbitrário) | até -58,0% |
+| Desistir por tempo | no preço de agora (arbitrário) | até -40,0% |
+| Risco fixo em pontos | a N pontos da entrada (arbitrário) | até **-101,6%** |
+| Risco proporcional ao ATR | a N×ATR da entrada (arbitrário) | até -82,4% |
+| **Stop estrutural (atual)** | **na mínima/máxima de 5 candles** | **referência** |
+
+**Todo fracasso é um stop colocado num nível que o mercado não conhece.**
+
+O stop estrutural não é apenas uma *distância* — é uma *localização com
+memória*: o ponto onde o preço de fato reverteu nos últimos candles. O mercado
+respeita esse nível porque ele foi construído pelo próprio mercado. Qualquer
+stop definido por cálculo (entrada + X, MFE − Y, N pontos, N×ATR) fica num
+lugar sem significado, e o ruído do WINFUT — que é grande — o atravessa.
+
+Isso não é filosofia: é a explicação que unifica 46 resultados negativos e que
+**teria previsto todos eles antes de gastar o trabalho.**
+
+### O que esse princípio permite (e proíbe)
+
+**Proíbe:** qualquer candidata de saída cujo stop seja uma distância calculada.
+Podemos parar de testar essa família — ela já foi falseada em 5 formas
+diferentes e ~20 calibragens.
+
+**Permite, e é onde eu apostaria o próximo esforço:** saídas cujo stop se mova
+de um nível estrutural para **outro nível estrutural**. Exemplos concretos e
+testáveis:
+
+1. Stop na mínima/máxima dos últimos 5 candles, **recalculado a cada candle**
+   (trailing estrutural, não trailing por distância) — é o único tipo de
+   trailing que o princípio não condena.
+2. Stop na mínima/máxima do **dia anterior**.
+3. Stop no extremo do candle de entrada (nível com memória, ao contrário da
+   entrada).
+4. Lookback do swing diferente de 4 candles (3, 6, 8) — testa se a
+   *localização* pode ser melhor escolhida sem sair da família estrutural.
+
+O item 1 é o que eu imploro para alguém do conselho escrever, porque ele captura
+a intuição correta por trás de todas as propostas de trailing (proteger lucro
+que apareceu) **sem** cometer o erro que as mata (colocar o stop num lugar
+arbitrário). Se alguém quiser, eu escrevo e meço.
+
+---
+
+## 5. RESSALVA HONESTA SOBRE ESTE TESTE
+
+Testei os dois mecanismos do MBR **separadamente**, cada um enxertado no
+sistema atual — não a arquitetura MBR completa, com os três cartuchos e o
+roteador rodando juntos. É possível que haja interação que eu não capturei:
+por exemplo, risco fixo pode fazer mais sentido se combinado com entradas
+específicas de regime, que é o desenho original.
+
+O que os números acima autorizam a afirmar é mais modesto do que "o MBR não
+funciona": é que **as duas premissas que sustentam o MBR não se verificam
+isoladamente neste dataset**, e que cada uma delas, sozinha, piora o sistema.
+Quem quiser defender o MBR completo tem um caminho legítimo — construir e
+medir — e eu reviso com prazer, sem torcida.
+
+Também vale registrar: o MBR introduz ~8 limiares novos
+(SEPARACAO_TENDENCIA_MIN=60, SEPARACAO_RANGE_MAX=45, quatro faixas de
+ATR_REL, DIST_MA21_TENDENCIA_MAX=180). Com 184 pregões e ruído de R$ 2.162 no
+total do período, calibrar 8 parâmetros livres produziria algo excelente
+dentro da amostra e sem significado fora dela. Isso é exatamente o erro que a
+Parte 1 do próprio documento A denuncia — e é por isso que eu testei os
+limiares **como vieram**, sem otimizar nenhum: otimizá-los geraria um número
+bonito e falso.
+
+---
+
+## 6. RESPOSTA CURTA À PERGUNTA
+
+"Escalar estratégia por cenário" é o **eixo certo** — é a única família de
+ideias que ataca o problema real do laboratório (clones com 97% de
+sobreposição). Mas as duas apostas específicas deste desenho estão refutadas:
+expansão dá lucro, e risco calculado perde para risco estrutural.
+
+A forma de aproveitar regime que os dados **sugerem** é a que não desliga
+nada: usar o regime para **dimensionar convicção** (TENDENCIA rende 66% mais
+por operação que INDEFINIDO), não para vetar operação. Isso, porém, é
+alavancagem condicional — melhora o resultado sem melhorar a razão
+retorno/risco — e cai na mesma crítica que fiz à meta de R$ 100 mil/mês no
+documento C. Não é descoberta; é escolha de risco.
