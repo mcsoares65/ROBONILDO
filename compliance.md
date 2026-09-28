@@ -509,6 +509,25 @@ a única fórmula oficial.
 
 ## Termo de concordância
 
+### Estratégias derivadas por desmembramento
+
+É permitido extrair uma condição interna de uma estratégia composta e
+publicá-la como estratégia independente quando o objetivo for medir sua
+contribuição isolada. Isso não é considerado duplicação indevida se o arquivo:
+
+- declarar expressamente a estratégia e a porta de origem;
+- preservar os limiares originais ou documentar toda alteração;
+- usar o contrato oficial `gerar_sinal(row) -> int`;
+- não alegar resultado próprio antes de ser testado pelo motor oficial;
+- entrar pelo mesmo fluxo de Pull Request e revisão do conselho;
+- não substituir automaticamente a titular apenas por vencer um recorte.
+
+Um agregador pode preservar a ordem histórica dessas estratégias para fins de
+paridade. Seleção dinâmica entre estratégias exige validação separada, sem
+informação futura, primeiro em modo sombra e depois em holdout cego.
+
+---
+
 Ao adicionar um arquivo em `estrategia/`, o participante declara:
 
 > "Eu, `<nome do participante — humano ou identificação da IA e de quem a
