@@ -1,0 +1,48 @@
+Vou parar de argumentar e ir procurar de verdade. Tenho o dataset e o motor aqui — dá para fazer pesquisa quantitativa real em vez de opinar. Vou primeiro dissecar onde o dinheiro está sendo ganho e perdido hoje, operação por operação, e a partir daí construir e testar candidatas.Agora escrevo o script de pesquisa que extrai cada operação individual com contexto enriquecido.Achados fortes. Deixa eu atacar os pontos mais promissores com experimentos medidos.Resultado importante — e desconfortável: **nenhuma das variações melhorou**. Vou registrar isso direito e partir para alavancas genuinamente diferentes.Achado da parte 1: só **5 sinais** foram bloqueados pelo limite diário em 184 pregões — o limite não é gargalo. A frequência é limitada pela seletividade da estratégia, não pelas travas de risco.Sizing por porta é só alavancagem, não edge — o drawdown escala junto (veja: +109,7% de lucro com drawdown 2,6x maior, razão retorno/risco *piora* de 53,3 para 43,6). Agora a alavanca genuinamente diferente: o mesmo sistema em timeframe de 5 minutos, que daria ~3x mais oportunidades.Enquanto o teste de 5 minutos roda em background, vou validar o achado mais importante — se o RR=1,55 é edge real ou só overfitting ao dataset.O RR=1,55 passou no teste out-of-sample (entrega R$7.957 na 2ª metade contra R$8.377 do melhor possível em retrospectiva) — não é overfitting grosseiro. Vou ver o teste de 5 minutos.Enquanto isso, vou testar uma ideia estruturalmente diferente: as várias estratégias de entrada são realmente diferentes, ou disparam nos mesmos momentos? Se forem independentes, rodá-las em paralelo multiplicaria as operações com diversificação real.Esse é o achado mais importante da sessão. Deixa eu confirmar o último experimento antes de fechar.Procurei de verdade: **46 variantes testadas** no motor oficial, contra os 184 pregões. O resultado é incômodo mas é o que os dados dizem — **nenhuma bateu a configuração atual em retorno ajustado ao risco.** Abaixo o que foi medido.
+
+## O sistema atual, dissecado (181 operações)
+
+Acerto 68,5% | ganho médio R$169,63 | perda média R$-70,00. Por motivo de saída:
+
+| Motivo | n | Total | Acerto |
+|---|---|---|---|
+| ALVO | 73 | R$ 16.001,87 | 100% |
+| Corte de horário | 67 | R$ 4.714,27 | 76,1% |
+| STOP | 31 | R$ -2.734,54 | 0% |
+| Saída do cartucho | 10 | R$ -937,14 | 0% |
+
+## O que NÃO funcionou (e por quanto)
+
+**Breakeven e trailing destroem o sistema** — exatamente o que o ChatGPT propôs hoje e o que meu próprio palpite de mais cedo sugeria:
+
+| Mecanismo | Resultado | vs. atual |
+|---|---|---|
+| Breakeven a 25% do alvo | R$ 3.788,87 | **-77,8%** |
+| Breakeven a 50% do alvo | R$ 10.205,97 | -40,1% |
+| Trailing a 50%, devolve 0,5R | R$ 10.550,54 | -38,1% |
+| Trailing a 75%, devolve 0,3R | R$ 14.982,32 | -12,1% |
+| Desistir após 3 candles parado | R$ 11.182,56 | -34,4% |
+
+O motivo: o ruído do WINFUT é grande demais frente ao stop estrutural. Apertar o stop tira você de trades que iriam ao alvo — o acerto despenca de 68,5% para 16,9% no breakeven agressivo. **Se tivéssemos implementado a `saida_chatgpt_v4` sem testar, teríamos queimado 20-40% do resultado.**
+
+Também não funcionaram: filtros de horário (mesmo com as manhãs rendendo 3x mais por trade, cortar as tardes só corta lucro), remover a Porta 3 (-33%), e qualquer RR diferente de 1,55 (curva limpa com pico exatamente no valor atual — e passou no teste out-of-sample: treinado na 1ª metade do histórico, entrega R$7.957 na 2ª contra R$8.377 do melhor possível em retrospectiva).
+
+## O achado que muda o jogo
+
+Rodei a matriz de sobreposição entre as estratégias de entrada. **As 9 melhores disparam nos mesmos candles 93-100% das vezes.** Não são 17 estratégias — são ~3 ideias (as portas) e 12 clones quase idênticos do mesmo composto.
+
+Isso desmonta a ilusão do "portfólio". Rodar as 6 melhores em paralelo dá R$101.421 — parece a meta. Mas são 1.074 operações sobre apenas **187 oportunidades únicas**: é a mesma estratégia 6 vezes. A prova está na razão retorno/risco: base 53,3 → seis em paralelo 52,9. **Idêntica.** O drawdown escala exatamente 6x. É alavancagem pura com nome de diversificação.
+
+O mesmo vale para peso por porta: dobrar a Porta 2 rende +39,5%, mas com drawdown 1,6x maior — razão retorno/risco piora de 53,3 para 43,6, ficando **abaixo** de simplesmente multiplicar tudo por 3.
+
+## Sobre os R$100 mil/mês
+
+Todo caminho que encontrei para lá é alavancagem, não edge. O sistema entrega ~R$1.940/mês com 1 contrato e razão retorno/risco 53,3 — que é um número respeitável. Para R$100k/mês seria ~52x isso: drawdown na casa de **R$16.600** por episódio, com a mesma probabilidade de acontecer que o -R$320 de hoje. Não é uma estratégia melhor, é a mesma estratégia com 52x o risco. Não sou consultor financeiro e a decisão de alavancar é sua — só não quero que ela seja tomada achando que veio de uma descoberta.
+
+## O que eu faria a seguir
+
+1. **Parar de gerar variações do mesmo composto.** O conselho está produzindo clones com 97% de sobreposição — cada nova candidata "Manus v4" ou "Grok v7" adiciona quase nada. Vale mostrar essa matriz aos outros participantes.
+2. **Buscar edge genuinamente descorrelacionado**: outro ativo (WDO, ações), outro timeframe, ou uma ideia estruturalmente diferente (reversão à média intradiária, gap de abertura). Diversificação real melhora a razão retorno/risco; alavancagem não.
+3. Ainda está rodando em background o teste do mesmo sistema em **candles de 5 minutos** (3x mais oportunidades). É a única alavanca de frequência genuína que sobrou no que temos aqui — te aviso quando terminar.
+
+Quer que eu escreva isso no formato do `diario/` para o conselho, ou que eu ataque direto a busca por edge descorrelacionado?

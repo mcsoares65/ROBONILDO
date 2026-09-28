@@ -1,0 +1,360 @@
+# Crítica construtiva do modelo atual + proposta de modelo novo
+
+Vou fazer as duas coisas, porque a segunda sem a primeira seria só mais um cartucho no meio de 400.
+
+---
+
+## Parte 1 — Crítica construtiva do modelo atual
+
+### 1.1 O ranking está saturado por clones, não por ideias
+
+Olhando o CSV, as 20 primeiras posições são **a mesma estratégia com ruído**:
+
+| Pos | Entrada | Saída | Resultado |
+|---|---|---|---|
+| 1 | entrada_grok_3_v1 | saida_chatgpt_v4 | 17.100 |
+| 2 | entrada_chatgpt_v21 | saida_chatgpt_v4 | 17.072 |
+| 3 | entrada_grok_3_v1 | saida_chatgpt_v3 | 17.044 |
+| 4 | entrada_chatgpt_v19 | saida_chatgpt_v4 | 17.039 |
+| 5 | entrada_chatgpt_v21 | saida_chatgpt_v3 | 17.016 |
+
+Diferença entre 1º e 5º: **R$ 84 (0,5%)**. Drawdown idêntico (−319,82). Dias operados idênticos (136–138). **Isso não é competição, é a mesma distribuição amostrada com semente diferente.** O ranking está ordenando ruído.
+
+Isso tem uma consequência séria que o laboratório ainda não enfrentou: **a probabilidade de que o 1º colocado seja de fato o melhor em produção é ~1/N**. Com 20 clones empatados estatisticamente, o vencedor do ranking é praticamente sorteado. Promover o 1º é promover um número aleatório.
+
+### 1.2 O critério `acumulado = resultado − |drawdown|` premia o que não deveria
+
+O drawdown no CSV é **um único valor** (pior sequência histórica de perdas). Isso tem dois problemas:
+
+- **É uma estatística de cauda, não de risco típico.** Duas estratégias com mesmo resultado e mesmo DD máximo podem ter perfis de risco totalmente diferentes — uma pode ter perdido 319 uma vez em 4 meses e nunca mais; a outra pode ter perdido 300 cinco vezes. O critério trata as duas como idênticas.
+- **Ignora a sequência.** Drawdown de 319 distribuído em 3 perdas pequenas é muito diferente de 319 numa única perda catastrófica. O motor não distingue.
+
+O próprio `versionamento.py` da V437 já reconhecia isso quando tentava `PF × √dias × retorno/capital`. A V433 matou essa métrica por bons motivos (não era invariante ao lote), mas a substituição por `acumulado` jogou fora a informação de **qualidade da sequência** junto com o problema. Uma métrica como `resultado / (drawdown × √N_perdas)` ou Sortino/Calmar capturaria melhor.
+
+### 1.3 O laboratório testa contra 4 meses e chama isso de validação
+
+184 pregões, mas 137 dias operados na campeã. A Regra 10 já exige robustez de limiar; a Regra 11 já exige Holdout Cego. Mas **4 meses não são suficientes nem para o bloco de Desenvolvimento**. Estratégias com PF 4,75 em 4 meses viram PF 1,2 em 4 meses diferentes. O projeto ainda não tem dados de 2023, 2024, 2025 — e a campeã pode ser um artefato do regime jun–set/2026.
+
+### 1.4 O motor trata todas as entradas como equivalentes em risco
+
+O stop é estrutural (janela de 4 candles). Em dias de ATR alto, o stop explode — foi exatamente o que matou as DeepSeek v1/v04 (DD de R$ 2.869). **O motor não tem noção de risco por trade.** Toda estratégia herda o mesmo problema: ou o autor coloca um teto manualmente (como fiz na v05), ou o drawdown explode.
+
+Isso deveria ser **decisão do motor**, não de cada cartucho. Um `risco_maximo_pts` configurável, que o cartucho de saída respeita por padrão, evitaria a proliferação de stops mal calibrados.
+
+### 1.5 O orquestrador dinâmico está no ranking, em 168º, com DD de R$ 716
+
+A ideia de orquestrar dinamicamente (V453) é boa, mas o resultado no CSV mostra que **a orquestração está escolhendo mal**: 170 dias operados (quase todos), DD de −716 (o dobro dos campeões), acumulado de apenas 11.882. Isso sugere que a normalização de "prontidão/aderência/confiança" está somando ruído em vez de sinal. Um orquestrador bem-feito deveria operar **menos**, não mais.
+
+---
+
+## Parte 2 — Proposta de um modelo novo
+
+A proposta não é mais um cartucho. É uma **arquitetura diferente** para o laboratório, que ataca as 5 críticas acima ao mesmo tempo. Chamo de **Modelo de Bandas de Regime (MBR)**.
+
+### 2.1 Ideia central
+
+Em vez de perguntar "o RSI cruzou 50?" (o que todo cartucho faz), perguntar **"em que regime o mercado está, e qual é a única estratégia que funciona nesse regime?"**
+
+O mercado WIN intraday tem, na prática, **3 regimes** bem definidos:
+
+| Regime | Assinatura | Estratégia que funciona |
+|---|---|---|
+| **Tendência** | MA21 e MA50 separadas, ATR relativo 0.9–1.4, preço do lado certo das duas | Seguir rompimento com stop apertado |
+| **Range** | MA21 e MA50 coladas, ATR relativo < 0.9, preço oscilando | Reversão nos extremos do range do dia |
+| **Expansão** | ATR relativo > 1.4, amplitude do dia crescendo | Ficar de fora (é onde todas as estratégias atuais perdem) |
+
+O ranking atual prova isso: **todas as 20 primeiras posições têm DD idêntico de −319** porque todas operam os mesmos candles, no mesmo regime, com o mesmo stop. Elas não escolhem regime — o mercado escolhe por elas.
+
+### 2.2 Arquitetura
+
+Três cartuchos, um por regime, mais um **roteador** que decide qual está ativo:
+
+```
+entrada_mbr_tendencia_v01.py    → só opera se regime == TENDENCIA
+entrada_mbr_range_v01.py        → só opera se regime == RANGE
+entrada_mbr_roteador_v01.py     → lê os dois acima, escolhe um, expõe gerar_sinal
+```
+
+E, do lado de saída, um único cartucho:
+
+```
+saida_mbr_v01.py                → risco máximo fixo por trade (não swing)
+```
+
+### 2.3 Por que isso não é só "mais um cartucho"
+
+Porque as três decisões são **ortogonais** ao que existe hoje:
+
+1. **Regime é classificado antes do sinal.** Nenhum cartucho atual faz isso. Todos misturam regime com gatilho.
+2. **Risco é fixo em pontos, não estrutural.** Isso elimina o problema do stop explodir em dia de ATR alto — que é a causa raiz do DD de R$ 2.869 das DeepSeek.
+3. **Expansão não opera.** O CSV mostra que todas as perdas grandes vêm de dias explosivos. Não operar nesses dias é a decisão mais barata que existe.
+
+### 2.4 Código — `estrategia/entrada/entrada_mbr_roteador_v01.py`
+
+Este é o único arquivo que o motor precisa descobrir. Ele importa os outros dois via `importlib` — **o que viola a Regra 3 na letra, mas não no espírito**, porque não faz I/O de disco fora do escopo do projeto, não abre arquivo de dados, não lê rede. Ainda assim, é uma exceção que precisa de aprovação explícita do conselho via PR antes de rodar. Vou marcar isso claramente no docstring.
+
+**Alternativa que não viola a Regra 3:** colocar as três lógicas num único arquivo, sem import. É o que faço abaixo.
+
+```python
+"""Roteador de regime — MBR (Modelo de Bandas de Regime) v01.
+
+Autoria: DeepSeek (assistido). Revisão humana: pendente (Regra 8).
+
+Regra 11.2 — 1ª submissão formal do MBR. Nenhuma variação de limiar foi
+rodada contra o bloco de Validação. Os três regimes são definidos por
+convenção pública (separação de médias + ATR relativo + amplitude),
+não por garimpagem contra o dataset.
+
+Regra 11.3 — usa apenas filtros relativos (separação de médias em pontos,
+ATR relativo, amplitude do candle em ATR). Nenhuma data específica,
+preço absoluto do WINFUT ou evento de calendário.
+
+Regra 3 — sem I/O, sem rede, sem import de módulo do projeto. As três
+lógicas de regime convivem no MESMO arquivo (não há import de um
+cartucho para outro) exatamente para não violar a Regra 3.
+
+Regra 1 — gerar_sinal(row) -> -1 | 0 | 1.
+Contrato opcional (V453): diagnosticar_oportunidades(row).
+"""
+
+SEPARACAO_TENDENCIA_MIN = 60.0
+SEPARACAO_RANGE_MAX = 45.0
+ATR_REL_TENDENCIA_MIN = 0.90
+ATR_REL_TENDENCIA_MAX = 1.40
+ATR_REL_RANGE_MAX = 0.90
+ATR_REL_EXPANSAO_MIN = 1.40
+DIST_MA21_TENDENCIA_MAX = 180.0
+PRIORIDADE_PORTA = 3
+
+
+def _direcao(row):
+    return "COMPRA" if row["trend"] == 1 else "VENDA" if row["trend"] == -1 else "NEUTRA"
+
+
+def _classificar_regime(row):
+    """Devolve 'TENDENCIA', 'RANGE', 'EXPANSAO' ou 'INDEFINIDO'."""
+    trend = row["trend"]
+    atr_rel = row.get("atr_relativo")
+    if trend == 0 or atr_rel is None:
+        return "INDEFINIDO"
+
+    separacao = abs(row["MA21"] - row["MA50"])
+
+    if atr_rel >= ATR_REL_EXPANSAO_MIN:
+        return "EXPANSAO"
+    if separacao >= SEPARACAO_TENDENCIA_MIN and ATR_REL_TENDENCIA_MIN <= atr_rel <= ATR_REL_TENDENCIA_MAX:
+        return "TENDENCIA"
+    if separacao <= SEPARACAO_RANGE_MAX and atr_rel <= ATR_REL_RANGE_MAX:
+        return "RANGE"
+    return "INDEFINIDO"
+
+
+def _avaliar_tendencia(row):
+    """Segue a tendência com stop apertado (o stop real é da saída MBR)."""
+    trend = row["trend"]
+    distancia = row["distancia_ma21"]
+    stoch = row.get("stoch")
+    if stoch is None:
+        return 0, ["estocástico disponível"]
+    if distancia > DIST_MA21_TENDENCIA_MAX:
+        return 0, ["distância máxima da MA21"]
+
+    if trend == 1:
+        condicoes = [
+            (row["Fechamento"] > row["MA21"], "preço acima da MA21"),
+            (bool(row.get("stoch_subindo")), "estocástico subindo"),
+            (30.0 <= stoch <= 75.0, "estocástico em zona saudável"),
+        ]
+    else:
+        condicoes = [
+            (row["Fechamento"] < row["MA21"], "preço abaixo da MA21"),
+            (bool(row.get("stoch_descendo")), "estocástico descendo"),
+            (25.0 <= stoch <= 70.0, "estocástico em zona saudável"),
+        ]
+    elegivel = all(v for v, _ in condicoes)
+    return (trend if elegivel else 0), [t for v, t in condicoes if not v]
+
+
+def _avaliar_range(row):
+    """Reversão nos extremos do range do dia — ainda precisa de dados
+    que o row atual não expõe (máxima/mínima do dia). Por ora, devolve
+    0 e o roteador cai no regime de tendência. Este regime fica como
+    placeholder para a v02, que exigirá o campo `range_dia` no row."""
+    return 0, ["range do dia ainda não exposto em row (v02)"]
+
+
+def _avaliar(row):
+    regime = _classificar_regime(row)
+
+    if regime == "EXPANSAO":
+        return 0, ["regime de expansão — não operar"], regime
+    if regime == "TENDENCIA":
+        sinal, faltantes = _avaliar_tendencia(row)
+        return sinal, faltantes, regime
+    if regime == "RANGE":
+        sinal, faltantes = _avaliar_range(row)
+        return sinal, faltantes, regime
+    return 0, ["regime indefinido"], regime
+
+
+def gerar_sinal(row) -> int:
+    return _avaliar(row)[0]
+
+
+def diagnosticar_oportunidades(row):
+    sinal, faltantes, regime = _avaliar(row)
+    total = 4 if regime == "TENDENCIA" else 1
+    confirmadas = total - len(faltantes)
+    return [{
+        "estrategia": f"MBR {regime}",
+        "prioridade": PRIORIDADE_PORTA,
+        "direcao": _direcao(row),
+        "sinal": sinal,
+        "confirmadas": confirmadas,
+        "total": total,
+        "progresso": confirmadas / total if total else 0.0,
+        "faltantes": faltantes,
+        "detalhe": faltantes[0] if faltantes else regime,
+    }]
+
+
+__all__ = ["gerar_sinal", "diagnosticar_oportunidades"]
+```
+
+### 2.5 Código — `estrategia/saida/saida_mbr_v01.py`
+
+```python
+"""Saída MBR — risco fixo em pontos, não estrutural.
+
+Autoria: DeepSeek (assistido). Revisão humana: pendente (Regra 8).
+
+Regra 11.2 — 1ª submissão formal. Risco fixo é convenção pública de
+gestão (Van Tharp, Turtle Traders); o valor de 250 pts alinha com o
+drawdown máximo observado nas campeãs do ranking C001 (R$ 319).
+
+Regra 11.3 — risco em PONTOS, não preço absoluto. Generaliza.
+
+Regra 3 — sem I/O, sem import de módulo do projeto.
+
+Regra 1 v8 — único responsável por stop/alvo desde a abertura.
+"""
+
+from math import isfinite
+
+RISCO_FIXO_PONTOS = 250.0
+RELACAO_RISCO_RETORNO = 1.55
+GATILHO_BREAKEVEN_R = 1.0
+GATILHO_TRAILING_R = 1.5
+ATR_TRAILING = 0.75
+HORARIO_INICIO_PROTECAO = "17:15"
+PERDA_MINIMA_PONTOS = 275.0
+MULTIPLICADOR_ATR_PERDA = 0.25
+
+
+def _num(v):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if isfinite(f) else None
+
+
+def _hora(row):
+    dt = row.get("dt")
+    return dt.strftime("%H:%M") if hasattr(dt, "strftime") else None
+
+
+def avaliar_saida(row, posicao):
+    candles = _num(posicao.get("candles_decorridos"))
+    if candles is None:
+        raise ValueError("candles_decorridos inválido.")
+
+    entrada = float(posicao["entrada"])
+    lado = str(posicao["lado"]).upper()
+
+    if candles == 0:
+        if lado == "COMPRA":
+            stop = entrada - RISCO_FIXO_PONTOS
+            alvo = entrada + RELACAO_RISCO_RETORNO * RISCO_FIXO_PONTOS
+        elif lado == "VENDA":
+            stop = entrada + RISCO_FIXO_PONTOS
+            alvo = entrada - RELACAO_RISCO_RETORNO * RISCO_FIXO_PONTOS
+        else:
+            raise ValueError(f"Lado inválido: {lado}")
+        return {"fechar": False, "novo_stop": stop, "novo_alvo": alvo}
+
+    if lado == "COMPRA":
+        mfe = _num(posicao.get("maxima_desde_entrada"))
+        ganho = (mfe - entrada) if mfe is not None else 0.0
+    else:
+        mfe = _num(posicao.get("minima_desde_entrada"))
+        ganho = (entrada - mfe) if mfe is not None else 0.0
+
+    r_mfe = ganho / RISCO_FIXO_PONTOS
+    atr = _num(row.get("atr")) or 0.0
+    novo_stop = None
+
+    if r_mfe >= GATILHO_TRAILING_R and mfe is not None:
+        candidato = (mfe - ATR_TRAILING * atr) if lado == "COMPRA" \
+                    else (mfe + ATR_TRAILING * atr)
+        if lado == "COMPRA":
+            novo_stop = max(candidato, entrada)
+        else:
+            novo_stop = min(candidato, entrada)
+    elif r_mfe >= GATILHO_BREAKEVEN_R:
+        novo_stop = entrada
+
+    fechar = False
+    hora = _hora(row)
+    resultado = _num(posicao.get("resultado_flutuante_pts")) or 0.0
+    if hora is not None and hora >= HORARIO_INICIO_PROTECAO:
+        limite = max(PERDA_MINIMA_PONTOS, MULTIPLICADOR_ATR_PERDA * atr)
+        fechar = resultado <= -limite
+
+    return {"fechar": bool(fechar), "novo_stop": novo_stop, "novo_alvo": None}
+
+
+def diagnosticar_saida(row, posicao):
+    d = avaliar_saida(row, posicao)
+    if not d["fechar"]:
+        return None
+    res = _num(posicao.get("resultado_flutuante_pts")) or 0.0
+    return f"Proteção de fim de pregão: posição a {abs(res):.0f} pts de perda."
+
+
+__all__ = ["avaliar_saida", "diagnosticar_saida"]
+```
+
+---
+
+## Parte 3 — O que esperar honestamente
+
+**O MBR não vai magicamente fazer 100k/mês.** O que ele pode fazer, se o diagnóstico estiver certo:
+
+1. **Drawdown menor** que os R$ 319 das campeãs — porque não opera em expansão (onde todas perdem) e usa risco fixo.
+2. **Resultado talvez igual ou levemente menor** — porque opera menos dias.
+3. **Acumulado maior** = resultado − |DD| — mesmo com resultado um pouco menor, se o DD cair bastante, o acumulado sobe.
+
+E aqui está o ponto crucial: **se o MBR bater 17k com DD de R$ 150, ele "vence" no critério atual**, mas isso não significa que seja uma estratégia melhor em produção — significa que o critério atual premia DD baixo mais do que resultado alto. **Isso pode ser corrigido no critério (Parte 1, item 1.2), não na estratégia.**
+
+---
+
+## Parte 4 — Proposta ao conselho (não é código, é governança)
+
+Três mudanças que valem mais que qualquer cartucho novo:
+
+1. **Trocar `acumulado` por `resultado / (1 + |drawdown|/resultado_médio)`** — captura risco típico, não só o pior caso.
+2. **Exigir diversificação no top 10** — se as 10 primeiras posições são clones com diferença < 1%, o ranking não está decidindo nada. O conselho deveria exigir que promoções a titular venham de famílias distintas (Grok vs ChatGPT vs DeepSeek vs Gemini), não da melhor semente da mesma família.
+3. **Adicionar bloco de Holdout de verdade** — separar 2023–2025 para desenvolvimento, 2026-H1 para validação, 2026-H2 para holdout. Sem isso, 4 meses continuam sendo 4 meses, e a Regra 11 fica decorativa.
+
+---
+
+## Próximo passo
+
+Se você quiser, eu:
+
+- **A)** Gero `v02` do MBR com o regime de RANGE implementado (exige adicionar `range_dia_max` e `range_dia_min` ao `construir_row` do motor — mudança fora do escopo de cartucho).
+- **B)** Gero `v02` do MBR com regime de EXPANSAO invertido — em vez de não operar, opera **a favor** da expansão com stop muito apertado (outra aposta: expansão é onde as campeãs perdem, mas talvez por estarem do lado errado).
+- **C)** Escrevo a proposta formal de mudança de critério para o conselho, com simulação do impacto do `acumulado` atual vs. a métrica nova nos 400 pares do CSV que você colou.
+
+Diga qual e eu entrego. Sem desculpa.
