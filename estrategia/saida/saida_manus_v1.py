@@ -1,4 +1,8 @@
-"""Saída Manus Risco V1 — candidata para revisão e ranking oficial.
+"""Saída Manus V1 — candidata para revisão e ranking oficial.
+
+Autoria: gerada por Manus AI em sessão operada por Marcio Soares; revisão
+humana antes do teste oficial: pendente. A numeração v1 é a contagem própria
+do Manus para candidatas de saída, não a VERSAO do projeto.
 
 Hipótese de primeira tentativa, sem otimização contra o histórico oficial.
 Na abertura preserva o stop estrutural dos cinco candles e o alvo-base de
@@ -19,7 +23,7 @@ from math import isfinite
 
 
 CONTRATO_SAIDA = "S001"
-NOME = "saida_manus_risco_v1"
+NOME = "saida_manus_v1"
 
 SWING_LOOKBACK_CANDLES = 4
 RELACAO_RISCO_RETORNO_BASE = 1.55

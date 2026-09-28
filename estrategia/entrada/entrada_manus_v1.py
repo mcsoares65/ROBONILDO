@@ -1,4 +1,8 @@
-"""Entrada Manus Rompimento V1 — candidata para revisão e ranking oficial.
+"""Entrada Manus V1 — candidata para revisão e ranking oficial.
+
+Autoria: gerada por Manus AI em sessão operada por Marcio Soares; revisão
+humana antes do teste oficial: pendente. A numeração v1 é a contagem própria
+do Manus para candidatas de entrada, não a VERSAO do projeto.
 
 Hipótese de primeira tentativa, sem otimização contra o histórico oficial.
 Mantém integralmente as três portas da entrada_grok_3_v1 e acrescenta uma
