@@ -757,7 +757,18 @@ def rodar():
                     "resultado_flutuante_pts": resultado_especulativo,
                 }
                 try:
-                    saida_se_aproximando = bool(_modulo_saida.avaliar_saida(row_indicadores, posicao_especulativa))
+                    decisao_saida_especulativa = _modulo_saida.avaliar_saida(row_indicadores, posicao_especulativa)
+                    # avaliar_saida() sempre retorna um dict (Regra 1 v10), mesmo
+                    # quando não há fechamento (ex: {"fechar": False, ...}). Um dict
+                    # não-vazio é truthy em Python, então bool(dict) daria sempre
+                    # True aqui - o narrador avisaria "saída se aproximando" em
+                    # TODO candle com posição aberta, e não só quando o cartucho
+                    # realmente sinaliza fechamento. Por isso é obrigatório checar
+                    # especificamente a chave "fechar".
+                    saida_se_aproximando = (
+                        isinstance(decisao_saida_especulativa, dict)
+                        and bool(decisao_saida_especulativa.get("fechar", False))
+                    )
                 except Exception:
                     saida_se_aproximando = False
 
