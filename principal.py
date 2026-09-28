@@ -477,7 +477,7 @@ def _salvar_historico_persistente(candles: List[Candle], sobrescrever: bool = Fa
 
 def rodar():
     construtor = ConstrutorCandle(minutos=cfg.TIMEFRAME_MINUTOS)
-    registrador = Registrador()
+    registrador = Registrador(pasta_logs=cfg.PASTA_LOGS_AUDITORIA)
     auditor = AuditorExecucao(
         pasta_logs=cfg.PASTA_LOGS_AUDITORIA,
         habilitado=cfg.AUDITORIA_EXECUCAO_ATIVA,
@@ -540,6 +540,7 @@ def rodar():
 
     gestor = MotorRobonildo(
         gerar_sinal=_modulo_estrategia.gerar_sinal,
+        arquivo_estado=cfg.CAMINHO_ESTADO_RISCO,
         horario_mercado_inicial=horario_inicial,
         avaliar_saida=_modulo_saida.avaliar_saida,
         diagnosticar_oportunidades=diagnosticar_oportunidades,
