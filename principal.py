@@ -904,26 +904,36 @@ def rodar():
             else:
                 if ma21 is not None and ma50 is not None and candle_atual is not None:
                     cor_tendencia = COR_ALTA if tendencia == "ALTA" else COR_BAIXA
-                    tendencia_colorida = f"{cor_tendencia}{tendencia}{COR_RESET}"
+                    tendencia_colorida = (
+                        f"{cor_tendencia}{tendencia:<5}{COR_RESET}"
+                    )
                     if oportunidade_prioritaria:
+                        nome_radar = str(
+                            oportunidade_prioritaria["estrategia"]
+                        )
                         status_sinal = (
-                            f"{COR_PRONTO}{oportunidade_prioritaria['estrategia']} "
+                            f"{COR_PRONTO}{nome_radar:<19}{COR_RESET}"
+                        )
+                        confirmacoes_radar = (
                             f"{oportunidade_prioritaria['confirmadas']}/"
-                            f"{oportunidade_prioritaria['total']}{COR_RESET}"
+                            f"{oportunidade_prioritaria['total']}"
                         )
                     else:
+                        nome_radar = "EXPECTATIVA" if dentro_da_faixa else "espera"
                         status_sinal = (
-                            f"{COR_PRONTO}EXPECTATIVA{COR_RESET}"
-                            if dentro_da_faixa else "espera"
+                            f"{COR_PRONTO}{nome_radar:<19}{COR_RESET}"
+                            if dentro_da_faixa else f"{nome_radar:<19}"
                         )
+                        confirmacoes_radar = "-/-"
 
-                    faltante = ""
                     if oportunidade_prioritaria:
                         itens = oportunidade_prioritaria.get("faltantes") or []
-                        faltante = f" | Falta:{itens[0]}" if itens else " | CONFIRMADA"
-                    print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
-                          f"Tend:{tendencia_colorida} | RADAR:{status_sinal}"
-                          f"{faltante} | {quadro}")
+                        faltante = str(itens[0]) if itens else "nenhuma"
+                    else:
+                        faltante = "aguardando oportunidade"
+                    print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
+                          f"{tendencia_colorida} | Radar {status_sinal} | "
+                          f"{confirmacoes_radar:^3} | Falta {faltante:<37} | {quadro}")
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")
