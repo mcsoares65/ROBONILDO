@@ -893,13 +893,13 @@ def rodar():
                     lado_colorido = f"{COR_BAIXA}VENDA{COR_RESET}"
                 quadro_posicao = _quadro_resultado(pos, preco)
                 progresso_pct = abs(_progresso_posicao(pos, preco)) * 100
-                alvo_txt = (f"Alvo:{pos.alvo:.0f} Faltam:{abs(pos.alvo - preco):.0f}pts"
+                alvo_txt = (f"Alvo:{pos.alvo:.0f}({abs(pos.alvo - preco):.0f})"
                             if pos.alvo is not None else "Alvo:-")
-                stop_txt = (f"Stop:{pos.stop:.0f} Margem:{abs(preco - pos.stop):.0f}pts"
+                stop_txt = (f"Stop:{pos.stop:.0f}({abs(preco - pos.stop):.0f})"
                             if pos.stop is not None else "Stop:-")
                 print(f"[{agora.strftime('%H:%M:%S')}] {lado_colorido} | "
-                      f"Ent:{pos.entrada:.0f} Atual:{preco:.0f} | Res:{resultado_colorido} | "
-                      f"{alvo_txt} | {stop_txt} | Caminho:{progresso_pct:.0f}% {quadro_posicao}")
+                      f"Ent:{pos.entrada:.0f}>Atual:{preco:.0f} | {resultado_colorido} | "
+                      f"{alvo_txt} {stop_txt} | {progresso_pct:.0f}% {quadro_posicao}")
             else:
                 if ma21 is not None and ma50 is not None and candle_atual is not None:
                     cor_tendencia = COR_ALTA if tendencia == "ALTA" else COR_BAIXA
