@@ -4,6 +4,26 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V454 — direção do candle e percentual do radar
+
+A narração de fechamento sem entrada agora diferencia a direção efetiva do
+candle da tendência estrutural das médias. Quando elas divergem, a mensagem é
+objetiva: “O candle fechou em alta, mas a tendência das médias ainda é de
+baixa. Nenhum sinal de entrada foi confirmado.” O cenário inverso também é
+tratado, assim como candles alinhados ou estáveis.
+
+O radar passa a apresentar o percentual de maturação ao lado do quadrado
+colorido, no mesmo padrão da análise de uma posição aberta, por exemplo:
+`50% ■`. A mudança é informativa e não altera sinais ou ordens.
+
+### Arquivos alterados
+
+- `principal.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V453 — candidato de orquestração dinâmica
 
 Adicionado um cartucho capaz de descobrir e avaliar simultaneamente qualquer
