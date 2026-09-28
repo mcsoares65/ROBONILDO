@@ -93,6 +93,24 @@ def diagnosticar_oportunidades(row):
             "amplitude válida", "corpo sem exaustão", "saída da zona extrema do estocástico",
         ], direcao if e3 and all(c3) else 0),
     ]
+    # Telemetria opcional para o painel. Nao participa de gerar_sinal() e nao
+    # altera nenhum limiar da estrategia; apenas quantifica a primeira
+    # pendencia que o radar ja apresentava em texto.
+    for oportunidade in oportunidades:
+        faltante = oportunidade["faltantes"][0] if oportunidade["faltantes"] else "nenhuma"
+        detalhe = faltante
+        if faltante == "aproximação da MA21":
+            detalhe = f"dist. MA21 {row['distancia_ma21']:.0f} (máx. 90)"
+        elif faltante == "estocástico fora dos extremos":
+            detalhe = f"estoc. {row['stoch']:.1f} (16,5-83,5)"
+        elif faltante == "afastamento superior a 200 pontos":
+            detalhe = f"afastamento {row['distancia_ma21']:.0f}/200 pts"
+        elif faltante == "variação mínima do estocástico":
+            detalhe = f"var. estoc. {variacao_stoch:.1f}/4,5"
+        elif faltante == "corpo sem exaustão":
+            proporcao_corpo = (corpo / amplitude * 100.0) if amplitude > 0 else 0.0
+            detalhe = f"corpo {proporcao_corpo:.0f}% (máx. 70%)"
+        oportunidade["detalhe"] = detalhe
     return sorted(oportunidades, key=lambda item: (-item["progresso"], item["prioridade"]))
 
 
