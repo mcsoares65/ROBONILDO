@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V449"
+VERSAO = "V450"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -456,6 +456,15 @@ VERSAO = "V449"
 # abrevia distâncias entre parênteses e remove rótulos redundantes, mantendo
 # em uma linha: lado, entrada, preço atual, resultado, alvo, stop e progresso.
 # Nenhuma regra de entrada, saída, risco, radar ou envio de ordem foi alterada.
+
+# ---------------------------------------------------------------------------
+# V450 — grade da posição alinhada e resultado sem prefixo monetário
+# ---------------------------------------------------------------------------
+# Ajuste exclusivamente visual em principal.py. Lado, entrada, preço atual,
+# resultado, alvo, stop, distâncias e percentual passam a ocupar campos de
+# largura fixa, evitando deslocamento das colunas quando os números crescem.
+# O prefixo "R$" foi removido e os separadores ganharam espaçamento. Nenhuma
+# regra operacional foi alterada.
 
 # ---------------------------------------------------------------------------
 # V441 — [CENARIO EM FORMACAO] agora e FALADO, nao so impresso no log

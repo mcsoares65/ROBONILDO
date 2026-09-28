@@ -4,6 +4,21 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V450 — grade da posição alinhada
+
+A linha da operação corrente passa a usar campos de largura fixa, preservando
+o alinhamento quando lado, resultado, distâncias ou percentual mudam de
+tamanho. Foram acrescentados espaços entre as colunas e o prefixo `R$` foi
+removido do resultado. A alteração é exclusivamente visual.
+
+### Arquivos alterados
+
+- `principal.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V449 — linha de posição compacta
 
 Corrigida a quebra de linha no Prompt de Comando durante posição aberta. A
