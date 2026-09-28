@@ -417,13 +417,17 @@ class MotorRobonildo:
         arquivo_estado: Optional[str] = "logs/estado_risco.json",
         horario_mercado_inicial: Optional[datetime] = None,
         avaliar_saida=None,
+        diagnosticar_oportunidades=None,
     ):
         if not callable(gerar_sinal):
             raise TypeError("O cartucho precisa fornecer gerar_sinal(row).")
         if avaliar_saida is not None and not callable(avaliar_saida):
             raise TypeError("O cartucho de saída precisa fornecer avaliar_saida(row, posicao).")
+        if diagnosticar_oportunidades is not None and not callable(diagnosticar_oportunidades):
+            raise TypeError("O radar de entrada precisa fornecer diagnosticar_oportunidades(row).")
         self.gerar_sinal = gerar_sinal
         self.avaliar_saida = avaliar_saida
+        self.diagnosticar_oportunidades = diagnosticar_oportunidades
         self.ultimo_erro_saida: Optional[str] = None  # diagnostico - se o
                                                         # cartucho de saida
                                                         # lancar excecao, fica
@@ -443,6 +447,28 @@ class MotorRobonildo:
     # ---------- Cartucho e indicadores ----------
     def construir_row(self, candles: List[Candle]) -> Optional[dict]:
         return construir_row(candles)
+
+    def radar_oportunidades(self, row: Optional[dict]) -> list[dict]:
+        """Consolida o radar opcional do cartucho sem interferir no sinal.
+
+        A lista é ordenada por maior progresso e, no empate, pela prioridade
+        histórica declarada. Cartuchos antigos continuam válidos e apenas
+        retornam radar vazio.
+        """
+        if row is None or self.diagnosticar_oportunidades is None:
+            return []
+        oportunidades = self.diagnosticar_oportunidades(row)
+        if not isinstance(oportunidades, (list, tuple)):
+            raise TypeError("diagnosticar_oportunidades(row) precisa retornar uma lista.")
+        normalizadas = []
+        for item in oportunidades:
+            if not isinstance(item, dict):
+                raise TypeError("Cada oportunidade do radar precisa ser um dict.")
+            copia = dict(item)
+            copia["progresso"] = max(0.0, min(1.0, float(copia.get("progresso", 0.0))))
+            copia["prioridade"] = int(copia.get("prioridade", 999))
+            normalizadas.append(copia)
+        return sorted(normalizadas, key=lambda item: (-item["progresso"], item["prioridade"]))
 
     def avaliar_candle(self, candles: List[Candle]) -> Optional[Sinal]:
         row = construir_row(candles)
