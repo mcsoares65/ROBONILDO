@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V445"
+VERSAO = "V447"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -632,3 +632,63 @@ VERSAO = "V445"
 # Arquivo novo: estrategia/saida/saida_claude_v4.py (candidata, nao
 # titular). Arquivo removido do laboratorio: saida_claude_v3.py (superada
 # pela v4, mesma ideia com o bug do stop inicial corrigido).
+
+# ---------------------------------------------------------------------------
+# V446 — classificacao.py gera log automatico de historico (PR #8)
+# ---------------------------------------------------------------------------
+# Pedido do dono do laboratorio: "e se cada vez que eu (ou a propria IA)
+# rodar o classificacao.py ele gerasse um arquivo de historico/log?" - para
+# nao depender de ninguem colar manualmente um resultado no chat ou num PR
+# (compliance.md, Regra 4: nenhum resultado vale sem ter sido rodado de novo
+# contra o motor atual).
+#
+# classificacao.py:
+# - Nova funcao _git_sha_atual() - devolve o SHA do commit HEAD do
+#   repositorio (fallback "sem-git" se rodar fora de um clone git).
+# - Novo context manager _capturar_e_imprimir() - deixa o ranking aparecer
+#   no terminal normalmente (cores ANSI preservadas) e ao mesmo tempo
+#   captura o texto para gravar no log.
+# - Nova funcao _registrar_historico(titulo, texto) - remove os codigos
+#   ANSI e faz APPEND (nunca sobrescreve) em
+#   logs/classificacao_historico.md, carimbado com data/hora e o SHA do
+#   commit atual.
+# - Os tres pontos de impressao (RANKING ENTRADA, RANKING SAIDA, RANKING
+#   CRUZADO) passaram a chamar essas funcoes automaticamente.
+#
+# Testado: py_compile OK; teste isolado das 3 funcoes novas confirmando SHA
+# correto (bate com git rev-parse HEAD), terminal continua colorido, e o
+# arquivo de log cresce por append (duas rodadas seguidas coexistiram, nada
+# foi apagado).
+#
+# Arquivo alterado: classificacao.py.
+
+# ---------------------------------------------------------------------------
+# V447 — narracao de saida nao confundia mais dict(fechar=False) com "fechar" (PR #9)
+# ---------------------------------------------------------------------------
+# Bug identificado pelo ChatGPT e confirmado no codigo real de main: em
+# principal.py, a narracao especulativa de saida fazia
+# "saida_se_aproximando = bool(_modulo_saida.avaliar_saida(...))". Como
+# avaliar_saida() sempre devolve um dict (contrato Regra 1 v10), mesmo sem
+# fechamento (ex: {"fechar": False, "novo_stop": None, "novo_alvo": None}),
+# um dict nao-vazio e truthy em Python - bool(dict) dava sempre True,
+# independente do valor real de "fechar". Resultado: o narrador anunciava
+# "saida se aproximando" em TODO candle com posicao aberta.
+#
+# Escopo confirmado antes de mexer: a variavel saida_se_aproximando so
+# alimenta a frase de narracao especulativa - nao aparece em mais nenhum
+# lugar do arquivo. Nao afeta a entrada, a ordem real enviada ao Profit, nem
+# o fechamento efetivo da posicao (essa parte ja usava .get("fechar")
+# corretamente). Bug puramente cosmetico na narracao.
+#
+# Corrigido checando especificamente a chave "fechar" do dict retornado,
+# com isinstance() de guarda:
+# saida_se_aproximando = (
+#     isinstance(decisao_saida_especulativa, dict)
+#     and bool(decisao_saida_especulativa.get("fechar", False))
+# )
+#
+# Testado: py_compile OK; logica isolada testada com {"fechar": False, ...}
+# -> False, {"fechar": True, ...} -> True, {} -> False, None -> False,
+# True (nao-dict) -> False - todos batendo com o esperado.
+#
+# Arquivo alterado: principal.py.

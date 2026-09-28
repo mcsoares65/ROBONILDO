@@ -4,6 +4,47 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V447 — narração de saída não confundia mais dict(fechar=False) com "fechar" (PR #9)
+
+Bug apontado pelo ChatGPT e confirmado direto no código de `main`: a
+narração especulativa de saída fazia `bool(avaliar_saida(...))`. Como
+`avaliar_saida()` sempre devolve um dict (mesmo sem fechamento, ex.
+`{"fechar": False, ...}`), e um dict não-vazio é sempre "verdadeiro" em
+Python, o narrador avisava "saída se aproximando" em **todo** candle com
+posição aberta — não só quando o cartucho realmente sinalizava
+fechamento.
+
+Corrigido para checar especificamente a chave `"fechar"` do dict. Escopo
+confirmado antes de mexer: essa variável só alimenta a frase narrada —
+não afeta a entrada, a ordem enviada ao Profit, nem o fechamento real da
+posição. Era um bug cosmético na narração.
+
+### Arquivo alterado
+
+- `principal.py`
+
+---
+
+## V446 — classificacao.py passa a gerar log automático de resultado (PR #8)
+
+Pedido do dono do laboratório: em vez de depender de alguém colar
+manualmente o resultado de uma rodada no chat ou num PR, o próprio
+`classificacao.py` agora grava sozinho o histórico de cada rodada.
+
+Toda vez que o RANKING ENTRADA, RANKING SAÍDA ou RANKING CRUZADO é
+impresso, o resultado também é gravado — em modo *append*, nunca
+sobrescreve — em `logs/classificacao_historico.md`, carimbado com
+data/hora e o SHA do commit do repositório em que rodou. Serve
+diretamente a Regra 4 do `compliance.md`: dá para conferir depois se um
+resultado foi mesmo rodado contra o motor atual, sem depender da palavra
+de quem rodou.
+
+### Arquivo alterado
+
+- `classificacao.py`
+
+---
+
 ## V445 — motor deixa de ter fórmula própria de saída
 
 Pedido explícito do dono do laboratório, esclarecido em duas rodadas: a
