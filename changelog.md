@@ -4,6 +4,38 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V448 — estratégias isoladas e radar de oportunidades
+
+As três portas ocultas da entrada titular Grok passam a existir também como
+estratégias independentes e classificáveis: `Retomada MA21`,
+`MACD + Estocástico` e `Saída de Extremo`. O agregador titular preserva os
+mesmos limiares e a prioridade histórica, sem ativar seleção dinâmica de
+ordens nesta etapa.
+
+O novo radar mostra a estratégia mais próxima, confirmações `X/Y`, direção e
+primeira condição faltante. O gradiente agora representa progresso técnico,
+de roxo a verde-limão, em vez de permanecer roxo até surgir um sinal completo.
+A narração anuncia cenários a partir de 70% e identifica nominalmente a
+estratégia que confirmou a entrada. Durante posição aberta, a linha principal
+prioriza entrada, preço atual, resultado, alvo, stop e distâncias.
+
+### Arquivos alterados
+
+- `motor.py`
+- `principal.py`
+- `estrategia/entrada/titular/entrada_grok_3_v1.py`
+- `versionamento.py`
+- `changelog.md`
+- `compliance.md`
+
+### Arquivos novos
+
+- `estrategia/entrada/entrada_retomada_ma21_grok_v1.py`
+- `estrategia/entrada/entrada_macd_estocastico_grok_v1.py`
+- `estrategia/entrada/entrada_saida_extremo_grok_v1.py`
+
+---
+
 ## V447 — narração de saída não confundia mais dict(fechar=False) com "fechar" (PR #9)
 
 Bug apontado pelo ChatGPT e confirmado direto no código de `main`: a
