@@ -2,6 +2,7 @@
 
 **Versão 8 (PROPOSTA — pendente de ratificação pelo conselho)**
 
+> O objetivo principal do projeto é o foco no resultado financeiro, a busca constante pela melhoria dos resultados é nossa unico objetivo.
 > Este documento simplifica o critério de vitória conforme decisão do dono
 > do laboratório. A Pontuação Composta, o fator de presença e o multi deixam
 > de ordenar os rankings. Entradas, saídas e combinações cruzadas passam a
