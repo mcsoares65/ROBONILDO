@@ -117,7 +117,7 @@ LAB_CAMINHO_HISTORICO_AQUECIMENTO = CAMINHO_HISTORICO_PERSISTENTE
 # ---------- Notificação por e-mail (abertura/fechamento de posição) ----------
 EMAIL_NOTIFICACAO_ATIVO = True   # False = desligado por padrao (opt-in). So liga
                                    # depois de preencher os campos abaixo e testar.
-EMAIL_NOTIFICACAO_DESTINATARIO = "marciocubasoares@gmail.com"  # PREENCHER - para onde o
+EMAIL_NOTIFICACAO_DESTINATARIO = "marciocubasoares@gmail.com, roselipsoares@gmail.com"  # 
                                                             # resumo de cada operacao vai
 EMAIL_NOTIFICACAO_REMETENTE = "marciocubasoares@gmail.com"   # PREENCHER - conta que ENVIA
 # Nunca grave senha no arquivo. No Windows, antes de iniciar o robô, use:
