@@ -636,3 +636,23 @@ importado no laboratório.
 - **v2**: adicionada a seção "Objetivo do laboratório", Regras 9 (dataset
   explícito) e 10 (teste de robustez), expandidas as Regras 2, 4, 5 e 7.
 - **v1**: versão original, 8 regras.
+# Contrato do orquestrador dinâmico (V453)
+
+Uma estratégia só pode participar do orquestrador se fornecer, sem I/O e sem
+acesso a dados futuros:
+
+```python
+gerar_sinal(row) -> -1, 0 ou 1
+diagnosticar_oportunidades(row) -> list[dict]
+```
+
+Cada oportunidade deve informar `estrategia`, `sinal`, `confirmadas`, `total`,
+`progresso`, `faltantes` e `prioridade`. Opcionalmente pode informar
+`aderencia_regime` e `confianca`, ambas entre 0 e 1. Cartucho com falha é
+isolado e não pode derrubar os demais. Sinais opostos praticamente empatados
+são bloqueados por segurança.
+
+O orquestrador é um cartucho candidato comum: precisa ser executado pelo mesmo
+`motor.py`, aparecer no ranking oficial e vencer pelos critérios vigentes antes
+de substituir o titular. É proibido escolher estratégia usando resultado do
+próprio candle, classificação futura ou qualquer dado posterior a `row['dt']`.

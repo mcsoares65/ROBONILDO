@@ -4,6 +4,30 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V453 — candidato de orquestração dinâmica
+
+Adicionado um cartucho capaz de descobrir e avaliar simultaneamente qualquer
+quantidade de estratégias de entrada que forneçam o contrato completo de
+telemetria. O orquestrador normaliza prontidão, aderência ao regime e confiança,
+coloca a melhor oportunidade no radar e, quando houver confirmação, escolhe o
+sinal de maior score. Conflitos direcionais quase empatados são bloqueados.
+
+O orquestrador foi incluído como candidato do ranking e não foi promovido para
+produção sem backtest. Ele não consulta resultados futuros nem arquivos de
+classificação. Estratégias sem `diagnosticar_oportunidades(row)` continuam no
+ranking individual, mas não participam da orquestração.
+
+### Arquivos alterados
+
+- `versionamento.py`
+- `changelog.md`
+
+### Arquivo novo
+
+- `estrategia/entrada/entrada_orquestrador_dinamico_v1.py`
+
+---
+
 ## V452 — dados isolados por instalação
 
 Removido o caminho absoluto que ainda direcionava o histórico persistente à

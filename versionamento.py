@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V452"
+VERSAO = "V453"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -482,6 +482,17 @@ VERSAO = "V452"
 # pasta logs da instalação efetivamente executada, sem referência absoluta à
 # antiga D:\DAYTRADE\ROBONILDO. principal.py fornece explicitamente esses
 # caminhos ao motor e ao registrador. Nenhuma regra de negociação foi alterada.
+
+# ---------------------------------------------------------------------------
+# V453 — candidato de orquestração dinâmica de entradas
+# ---------------------------------------------------------------------------
+# Novo cartucho entrada_orquestrador_dinamico_v1.py descobre automaticamente
+# todos os cartuchos de entrada que oferecem gerar_sinal(row) e
+# diagnosticar_oportunidades(row), normaliza prontidão/aderência/confiança e
+# escolhe a oportunidade de maior score no contexto corrente. Conflitos de
+# direção com scores praticamente empatados bloqueiam a entrada. O cartucho
+# entra no ranking oficial como CANDIDATO; não substitui o titular sem vencer
+# backtest no mesmo motor. Nenhuma informação futura ou ranking salvo é lido.
 
 # ---------------------------------------------------------------------------
 # V441 — [CENARIO EM FORMACAO] agora e FALADO, nao so impresso no log
