@@ -62,7 +62,7 @@ def _quadro_proximidade(progresso: float, segundos_restantes: float,
     """
     quadrado = "■"
     if not COR_RESET:  # colorama indisponivel - fallback sem cor
-        return f"[{round(max(0.0, min(1.0, progresso)) * 100):.0f}%]"
+        return quadrado
 
     paleta = [93, 129, 165, 201, 207, 220, 226, 154, 118, 82, 46]
     progresso = max(0.0, min(1.0, float(progresso)))
@@ -876,6 +876,7 @@ def rodar():
             quadro = _quadro_proximidade(
                 progresso_radar, segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
             )
+            progresso_radar_pct = max(0.0, min(1.0, float(progresso_radar))) * 100
             if gestor.posicao_aberta:
                 pos = gestor.posicao_aberta
                 resultado_reais = _resultado_liquido_reais(pos, preco)
@@ -934,7 +935,8 @@ def rodar():
                         faltante = "aguardando oportunidade"
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
                           f"{tendencia_colorida} | Radar {status_sinal} | "
-                          f"{confirmacoes_radar:^3} | Falta {faltante:<37} | {quadro}")
+                          f"{confirmacoes_radar:^3} | Falta {faltante:<37} | "
+                          f"{progresso_radar_pct:3.0f}% {quadro}")
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")
@@ -1268,11 +1270,30 @@ def rodar():
                         )
                 else:
                     if tendencia_fechamento is not None:
-                        narrar(
-                            f"O candle foi confirmado com tendência de "
-                            f"{tendencia_fechamento.lower()}. Nenhum sinal de entrada "
-                            "foi confirmado."
-                        )
+                        if candle_fechado.fechamento > candle_fechado.abertura:
+                            direcao_candle = "alta"
+                        elif candle_fechado.fechamento < candle_fechado.abertura:
+                            direcao_candle = "baixa"
+                        else:
+                            direcao_candle = "estável"
+
+                        tendencia_medias = tendencia_fechamento.lower()
+                        if direcao_candle == "estável":
+                            frase_candle = (
+                                "O candle fechou estável e a tendência das médias "
+                                f"permanece de {tendencia_medias}."
+                            )
+                        elif direcao_candle == tendencia_medias:
+                            frase_candle = (
+                                f"O candle fechou em {direcao_candle}, acompanhando a "
+                                f"tendência de {tendencia_medias} das médias."
+                            )
+                        else:
+                            frase_candle = (
+                                f"O candle fechou em {direcao_candle}, mas a tendência "
+                                f"das médias ainda é de {tendencia_medias}."
+                            )
+                        narrar(f"{frase_candle} Nenhum sinal de entrada foi confirmado.")
             elif not gestor.posicao_aberta and houve_saida_neste_candle:
                 decisao_auditoria = "SAIDA_SEM_REENTRADA"
                 motivo_auditoria = "Regra de paridade: não reutilizar o candle da saída"
