@@ -580,6 +580,8 @@ def rodar():
     ultima_expectativa_narrada = None  # (candle, porta, lado), evita repetição da explicação
     ultima_expectativa_perdida = None  # evita repetir a perda da mesma expectativa
     ultima_prioridade_radar_narrada = None  # (candle, estratégia, lado, faixa de 10%)
+    radar_100_chave = None       # oportunidade que permanece continuamente em 100%
+    radar_100_desde = None       # relogio real; mede estabilidade sem depender do DDE
     ultima_saida_especulativa_narrada = None  # (candle, horario_entrada), evita repetir o
                                                 # aviso de "saida se aproximando" no mesmo candle
     ultimo_candle_beep = None          # um único alerta sonoro perto do fechamento
@@ -677,6 +679,18 @@ def rodar():
         if radar:
             oportunidade_prioritaria = radar[0]
             progresso_radar = oportunidade_prioritaria["progresso"]
+        if oportunidade_prioritaria and progresso_radar >= 1.0:
+            chave_100_atual = (
+                candle_atual.horario if candle_atual is not None else None,
+                oportunidade_prioritaria.get("estrategia"),
+                oportunidade_prioritaria.get("direcao"),
+            )
+            if radar_100_chave != chave_100_atual:
+                radar_100_chave = chave_100_atual
+                radar_100_desde = agora_real
+        else:
+            radar_100_chave = None
+            radar_100_desde = None
         if ma21 is not None and ma50 is not None and candle_atual is not None:
             tendencia = "ALTA" if ma21 > ma50 else "BAIXA"
 
@@ -931,12 +945,23 @@ def rodar():
                     if oportunidade_prioritaria:
                         itens = oportunidade_prioritaria.get("faltantes") or []
                         faltante = str(itens[0]) if itens else "nenhuma"
+                        detalhe_radar = str(
+                            oportunidade_prioritaria.get("detalhe") or faltante
+                        )
                     else:
                         faltante = "aguardando oportunidade"
+                        detalhe_radar = faltante
+                    if len(detalhe_radar) > 29:
+                        detalhe_radar = detalhe_radar[:28] + "…"
+                    sustentacao = ""
+                    if radar_100_desde is not None and progresso_radar >= 1.0:
+                        segundos_100 = max(0, int((agora_real - radar_100_desde).total_seconds()))
+                        sustentacao = f" | há {segundos_100}s"
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
                           f"{tendencia_colorida} | Radar {status_sinal} | "
-                          f"{confirmacoes_radar:^3} | Falta {faltante:<37} | "
-                          f"{progresso_radar_pct:3.0f}% {quadro}")
+                          f"{confirmacoes_radar:^3} | Falta {detalhe_radar:<29}"
+                          f"{sustentacao}"
+                          f" | {progresso_radar_pct:3.0f}% {quadro}")
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")
