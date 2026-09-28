@@ -14,7 +14,11 @@ from __future__ import annotations
 
 import csv
 import importlib.util
+import io
 import math
+import re
+import subprocess
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +32,62 @@ from motor import Candle, MotorRobonildo, construir_row
 # ordenação ou apresentação da classificação incrementam esta constante sem
 # alterar a versão operacional do Robonildo definida em configuracao.py.
 VERSAO_CLASSIFICACAO = "C001"
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _git_sha_atual() -> str:
+    """SHA do commit atual do repositório, ou "sem-git" se não estiver
+    rodando dentro de um clone git (ex: pasta copiada manualmente). Usado só
+    para carimbar `logs/classificacao_historico.md` - nunca falha o
+    programa, silenciosamente vira "sem-git"."""
+    try:
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=Path(__file__).resolve().parent,
+                stderr=subprocess.DEVNULL,
+            )
+            .decode()
+            .strip()
+        )
+    except Exception:
+        return "sem-git"
+
+
+def _registrar_historico(titulo: str, texto: str) -> None:
+    """Acrescenta (NUNCA sobrescreve) o resultado desta rodada em
+    `logs/classificacao_historico.md`, carimbado com data/hora e o SHA do
+    commit atual do repositório.
+
+    Existe para que nenhuma promoção de titular dependa de alguém (humano
+    ou IA) colar manualmente um resultado no chat ou num PR - o próprio
+    `classificacao.py` já deixa a prova gravada, atrelada ao commit exato
+    em que rodou (compliance.md, Regra 4: nenhum resultado vale sem ter
+    sido rodado de novo contra o motor atual - o SHA aqui é o que permite
+    conferir isso depois, sem confiar na palavra de quem rodou).
+    """
+    pasta_logs = Path(cfg.PASTA_LOGS_AUDITORIA)
+    pasta_logs.mkdir(parents=True, exist_ok=True)
+    caminho = pasta_logs / "classificacao_historico.md"
+    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sha = _git_sha_atual()
+    texto_limpo = _ANSI_RE.sub("", texto).rstrip()
+    bloco = f"\n## {agora} — commit `{sha}`\n\n{titulo}\n\n```\n{texto_limpo}\n```\n"
+    with caminho.open("a", encoding="utf-8") as f:
+        f.write(bloco)
+
+
+@contextlib.contextmanager
+def _capturar_e_imprimir():
+    """Deixa o bloco `with` imprimir normalmente no terminal E devolve o
+    texto capturado (sem códigos ANSI removidos ainda - isso é feito em
+    `_registrar_historico`) para gravar no histórico."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        yield buf
+    texto = buf.getvalue()
+    print(texto, end="")
 
 try:
     import colorama
@@ -959,12 +1019,17 @@ def executar(caminho_csv: Optional[str] = None):
         )
         for i, r in enumerate(rank_entrada, 1):
             r["pos"] = i
-        _imprimir_ranking_simples(
+        titulo_entrada = (
             f"RANKING ENTRADA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
-            f"saída titular: {saida_titular.nome})",
-            rank_entrada,
-            chave_nome="estrategia",
+            f"saída titular: {saida_titular.nome})"
         )
+        with _capturar_e_imprimir() as _buf_entrada:
+            _imprimir_ranking_simples(
+                titulo_entrada,
+                rank_entrada,
+                chave_nome="estrategia",
+            )
+        _registrar_historico(titulo_entrada, _buf_entrada.getvalue())
 
     # ----- Ranking SAÍDA (modo S) -----
     if modo == "S":
@@ -991,12 +1056,17 @@ def executar(caminho_csv: Optional[str] = None):
         )
         for i, r in enumerate(rank_saida, 1):
             r["pos"] = i
-        _imprimir_ranking_simples(
+        titulo_saida = (
             f"RANKING SAÍDA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
-            f"entrada titular: {entrada_titular.nome})",
-            rank_saida,
-            chave_nome="estrategia",
+            f"entrada titular: {entrada_titular.nome})"
         )
+        with _capturar_e_imprimir() as _buf_saida:
+            _imprimir_ranking_simples(
+                titulo_saida,
+                rank_saida,
+                chave_nome="estrategia",
+            )
+        _registrar_historico(titulo_saida, _buf_saida.getvalue())
 
     # ----- Ranking CRUZADO (modo C) -----
     if modo == "C":
@@ -1012,7 +1082,10 @@ def executar(caminho_csv: Optional[str] = None):
         )
         for i, r in enumerate(rank_cruzado, 1):
             r["pos"] = i
-        _imprimir_ranking_cruzado(rank_cruzado, total_pregoes=len(dias))
+        titulo_cruzado = f"RANKING CRUZADO {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO})"
+        with _capturar_e_imprimir() as _buf_cruzado:
+            _imprimir_ranking_cruzado(rank_cruzado, total_pregoes=len(dias))
+        _registrar_historico(titulo_cruzado, _buf_cruzado.getvalue())
 
     if modo in ("E", "S"):
         ativos = [n for n in ("longo", "mensal", "diario") if disponibilidade.get(n)]
