@@ -4,6 +4,21 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V449 — linha de posição compacta
+
+Corrigida a quebra de linha no Prompt de Comando durante posição aberta. A
+apresentação mantém lado, entrada, preço atual, resultado, alvo, stop,
+distâncias e progresso, mas remove palavras redundantes. Não há alteração em
+sinais, risco, saídas ou ordens.
+
+### Arquivos alterados
+
+- `principal.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V448 — estratégias isoladas e radar de oportunidades
 
 As três portas ocultas da entrada titular Grok passam a existir também como
