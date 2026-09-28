@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V451"
+VERSAO = "V452"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -473,6 +473,15 @@ VERSAO = "V451"
 # confirmações, condição faltante e quadrado passam a ocupar colunas estáveis.
 # A condição faltante usa largura fixa para impedir que o quadrado se desloque
 # quando a estratégia prioritária muda. Nenhuma regra operacional foi alterada.
+
+# ---------------------------------------------------------------------------
+# V452 — caminhos locais e portáveis por instalação
+# ---------------------------------------------------------------------------
+# configuracao.py passa a derivar a raiz do projeto de __file__. Histórico
+# persistente, estado de risco, auditoria, registros e relatórios ficam na
+# pasta logs da instalação efetivamente executada, sem referência absoluta à
+# antiga D:\DAYTRADE\ROBONILDO. principal.py fornece explicitamente esses
+# caminhos ao motor e ao registrador. Nenhuma regra de negociação foi alterada.
 
 # ---------------------------------------------------------------------------
 # V441 — [CENARIO EM FORMACAO] agora e FALADO, nao so impresso no log
