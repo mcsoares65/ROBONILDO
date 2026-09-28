@@ -53,29 +53,21 @@ def cor_termometro(faltam: float) -> str:
         return COR_FRIO
 
 
-def _quadro_proximidade(dentro_da_faixa: bool, segundos_restantes: float,
+def _quadro_proximidade(progresso: float, segundos_restantes: float,
                         duracao_total_segundos: float) -> str:
     """
-    Marcador de maturacao do sinal. Roxo significa que a estrategia ainda nao
-    confirma entrada; quando o sinal especulativo aparece, avanca por magenta,
-    amarelo e verde ate lime conforme o candle se aproxima do fechamento.
-    Se o sinal desaparecer, volta imediatamente ao roxo.
+    Radar de maturação da estratégia prioritária. A cor representa condições
+    técnicas confirmadas, não apenas o tempo restante do candle: roxo em 0%,
+    passando por magenta/amarelo/verde, até verde-limão em 100%.
     """
     quadrado = "■"
     if not COR_RESET:  # colorama indisponivel - fallback sem cor
-        return "[SINAL]" if dentro_da_faixa else "[....]"
+        return f"[{round(max(0.0, min(1.0, progresso)) * 100):.0f}%]"
 
-    if not dentro_da_faixa:
-        codigo_cor = 93  # roxo: ainda sem confirmacao da estrategia
-    else:
-        proximidade_tempo = 1 - max(
-            0.0, min(1.0, segundos_restantes / duracao_total_segundos)
-        )
-        # A metade superior da escala fica reservada ao sinal confirmado.
-        # Paleta discreta ANSI 256: magenta -> laranja -> amarelo -> verde -> lime.
-        paleta = [165, 201, 207, 208, 220, 226, 154, 118, 82, 46]
-        indice = min(len(paleta) - 1, int(proximidade_tempo * len(paleta)))
-        codigo_cor = paleta[indice]
+    paleta = [93, 129, 165, 201, 207, 220, 226, 154, 118, 82, 46]
+    progresso = max(0.0, min(1.0, float(progresso)))
+    indice = min(len(paleta) - 1, round(progresso * (len(paleta) - 1)))
+    codigo_cor = paleta[indice]
     return f"\x1b[38;5;{codigo_cor}m{quadrado}{COR_RESET}"
 
 
@@ -309,6 +301,7 @@ def _descobrir_cartucho(nome_pasta: str, funcao_obrigatoria: str):
 
 _nome_estrategia, _modulo_estrategia = _descobrir_cartucho("entrada", "gerar_sinal")
 diagnosticar_sinal = getattr(_modulo_estrategia, "diagnosticar_sinal", None)
+diagnosticar_oportunidades = getattr(_modulo_estrategia, "diagnosticar_oportunidades", None)
 print(f"Cartucho de entrada: {_nome_estrategia}.py  [estrategia/entrada/titular/]")
 
 _nome_saida, _modulo_saida = _descobrir_cartucho("saida", "avaliar_saida")
@@ -549,6 +542,7 @@ def rodar():
         gerar_sinal=_modulo_estrategia.gerar_sinal,
         horario_mercado_inicial=horario_inicial,
         avaliar_saida=_modulo_saida.avaliar_saida,
+        diagnosticar_oportunidades=diagnosticar_oportunidades,
     )
     if gestor.posicao_aberta:
         pos = gestor.posicao_aberta
@@ -584,6 +578,7 @@ def rodar():
     ultimo_candle_narracao_periodica = None  # evita repetir a narracao de acompanhamento no mesmo candle
     ultima_expectativa_narrada = None  # (candle, porta, lado), evita repetição da explicação
     ultima_expectativa_perdida = None  # evita repetir a perda da mesma expectativa
+    ultima_prioridade_radar_narrada = None  # (candle, estratégia, lado, faixa de 10%)
     ultima_saida_especulativa_narrada = None  # (candle, horario_entrada), evita repetir o
                                                 # aviso de "saida se aproximando" no mesmo candle
     ultimo_candle_beep = None          # um único alerta sonoro perto do fechamento
@@ -668,12 +663,19 @@ def rodar():
         tendencia = None
         sinal_especulativo = None
         diagnostico = None
+        radar = []
+        oportunidade_prioritaria = None
+        progresso_radar = 0.0
         candle_atual = construtor.candle_em_formacao()
         candles_para_ma = historico_candles + ([candle_atual] if candle_atual else [])
         ma21 = media_movel(candles_para_ma, cfg.MA_RAPIDA)
         ma50 = media_movel(candles_para_ma, cfg.MA_LENTA)
         row_indicadores = (gestor.construir_row(candles_para_ma)
                            if candle_atual is not None else None)
+        radar = gestor.radar_oportunidades(row_indicadores)
+        if radar:
+            oportunidade_prioritaria = radar[0]
+            progresso_radar = oportunidade_prioritaria["progresso"]
         if ma21 is not None and ma50 is not None and candle_atual is not None:
             tendencia = "ALTA" if ma21 > ma50 else "BAIXA"
 
@@ -692,10 +694,8 @@ def rodar():
                 if dentro_da_faixa:
                     tendencia = "ALTA" if sinal_especulativo.lado == "COMPRA" else "BAIXA"
 
-                diagnostico = (
-                    diagnosticar_sinal(row_indicadores)
-                    if dentro_da_faixa and diagnosticar_sinal is not None else None
-                )
+                diagnostico = (diagnosticar_sinal(row_indicadores)
+                               if diagnosticar_sinal is not None else None)
                 if dentro_da_faixa:
                     porta = diagnostico.get("porta") if diagnostico else None
                     lado = sinal_especulativo.lado
@@ -731,6 +731,33 @@ def rodar():
                     print(f"[CENÁRIO EM FORMAÇÃO] {frase_perdida}")
                     narrar(frase_perdida)
                     ultima_expectativa_perdida = ultima_expectativa_narrada
+
+                # O radar avisa antes da confirmação completa. Só narra a partir
+                # de 70% para não transformar pequenas oscilações em promessa de
+                # entrada nem poluir o áudio a cada leitura DDE.
+                if (not dentro_da_faixa and oportunidade_prioritaria
+                        and progresso_radar >= 0.70):
+                    faixa = int(progresso_radar * 10)
+                    chave_radar = (
+                        candle_atual.horario,
+                        oportunidade_prioritaria.get("estrategia"),
+                        oportunidade_prioritaria.get("direcao"),
+                        faixa,
+                    )
+                    if ultima_prioridade_radar_narrada != chave_radar:
+                        faltantes = oportunidade_prioritaria.get("faltantes") or []
+                        proxima = faltantes[0] if faltantes else "confirmação no fechamento"
+                        explicacao = (
+                            f"A estratégia {oportunidade_prioritaria['estrategia']} "
+                            f"assumiu a prioridade para {oportunidade_prioritaria['direcao'].lower()}, "
+                            f"com {oportunidade_prioritaria['confirmadas']} de "
+                            f"{oportunidade_prioritaria['total']} condições. "
+                            f"Ainda aguardamos {proxima}."
+                        )
+                        print(f"[RADAR] {explicacao}")
+                        narrar(explicacao)
+                        ultima_prioridade_radar_narrada = chave_radar
+                        ultima_expectativa_perdida = None
 
                 if (dentro_da_faixa and 0 < segundos_restantes <= cfg.BEEP_SEGUNDOS_ANTES
                         and ultimo_candle_beep != candle_atual.horario):
@@ -835,7 +862,7 @@ def rodar():
                         )
                 print(f"[CENÁRIO EM FORMAÇÃO] {frase}")
                 narrar(frase)
-            elif tendencia is not None:
+            elif tendencia is not None and not radar:
                 chave = (tendencia, "DENTRO" if dentro_da_faixa else "FORA")
                 frase = frases.FRASES_PERIODICAS_SEM_POSICAO.get(chave)
                 if frase:
@@ -846,7 +873,7 @@ def rodar():
         if (agora_real - ultimo_heartbeat).total_seconds() >= HEARTBEAT_SEGUNDOS:
             indicadores_texto = _texto_indicadores(row_indicadores)
             quadro = _quadro_proximidade(
-                dentro_da_faixa, segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
+                progresso_radar, segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
             )
             if gestor.posicao_aberta:
                 pos = gestor.posicao_aberta
@@ -865,17 +892,23 @@ def rodar():
                 else:
                     lado_colorido = f"{COR_BAIXA}VENDA{COR_RESET}"
                 quadro_posicao = _quadro_resultado(pos, preco)
-                print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
-                      f"{lado_colorido} | Res:{resultado_colorido} | "
-                      f"{indicadores_texto} | {quadro_posicao}")
+                progresso_pct = abs(_progresso_posicao(pos, preco)) * 100
+                alvo_txt = (f"Alvo:{pos.alvo:.0f} Faltam:{abs(pos.alvo - preco):.0f}pts"
+                            if pos.alvo is not None else "Alvo:-")
+                stop_txt = (f"Stop:{pos.stop:.0f} Margem:{abs(preco - pos.stop):.0f}pts"
+                            if pos.stop is not None else "Stop:-")
+                print(f"[{agora.strftime('%H:%M:%S')}] {lado_colorido} | "
+                      f"Ent:{pos.entrada:.0f} Atual:{preco:.0f} | Res:{resultado_colorido} | "
+                      f"{alvo_txt} | {stop_txt} | Caminho:{progresso_pct:.0f}% {quadro_posicao}")
             else:
                 if ma21 is not None and ma50 is not None and candle_atual is not None:
                     cor_tendencia = COR_ALTA if tendencia == "ALTA" else COR_BAIXA
                     tendencia_colorida = f"{cor_tendencia}{tendencia}{COR_RESET}"
-                    if dentro_da_faixa and diagnostico:
+                    if oportunidade_prioritaria:
                         status_sinal = (
-                            f"{COR_PRONTO}Porta {diagnostico['porta']} "
-                            f"{diagnostico['lado']}{COR_RESET}"
+                            f"{COR_PRONTO}{oportunidade_prioritaria['estrategia']} "
+                            f"{oportunidade_prioritaria['confirmadas']}/"
+                            f"{oportunidade_prioritaria['total']}{COR_RESET}"
                         )
                     else:
                         status_sinal = (
@@ -883,9 +916,13 @@ def rodar():
                             if dentro_da_faixa else "espera"
                         )
 
+                    faltante = ""
+                    if oportunidade_prioritaria:
+                        itens = oportunidade_prioritaria.get("faltantes") or []
+                        faltante = f" | Falta:{itens[0]}" if itens else " | CONFIRMADA"
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
-                          f"Tend:{tendencia_colorida} | "
-                          f"{status_sinal} | {indicadores_texto} | {quadro}")
+                          f"Tend:{tendencia_colorida} | RADAR:{status_sinal}"
+                          f"{faltante} | {quadro}")
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")
@@ -1143,9 +1180,13 @@ def rodar():
                     )
                     pode, motivo_bloqueio = gestor.pode_abrir_posicao(sinal.horario)
                     if pode:
+                        origem_sinal = (
+                            diagnostico_fechamento.get("estrategia")
+                            if diagnostico_fechamento else "estratégia titular"
+                        )
                         print(
                             f"\x1b[38;5;46m[{agora.strftime('%H:%M:%S')}] "
-                            f"GATILHO 2/2 | SINAL {sinal.lado} CONFIRMADO"
+                            f"{origem_sinal} | SINAL {sinal.lado} CONFIRMADO"
                             f"{COR_RESET}"
                         )
                         if sinal.lado == "COMPRA":
