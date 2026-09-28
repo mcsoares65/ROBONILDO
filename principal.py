@@ -885,21 +885,22 @@ def rodar():
                 else:
                     cor_resultado = ""
                 resultado_colorido = (
-                    f"{cor_resultado}R${resultado_reais:+.2f}{COR_RESET}"
+                    f"{cor_resultado}{resultado_reais:+8.2f}{COR_RESET}"
                 )
                 if pos.lado == "COMPRA":
-                    lado_colorido = f"\x1b[38;5;46mCOMPRA{COR_RESET}"
+                    lado_colorido = f"\x1b[38;5;46m{'COMPRA':<6}{COR_RESET}"
                 else:
-                    lado_colorido = f"{COR_BAIXA}VENDA{COR_RESET}"
+                    lado_colorido = f"{COR_BAIXA}{'VENDA':<6}{COR_RESET}"
                 quadro_posicao = _quadro_resultado(pos, preco)
                 progresso_pct = abs(_progresso_posicao(pos, preco)) * 100
-                alvo_txt = (f"Alvo:{pos.alvo:.0f}({abs(pos.alvo - preco):.0f})"
-                            if pos.alvo is not None else "Alvo:-")
-                stop_txt = (f"Stop:{pos.stop:.0f}({abs(preco - pos.stop):.0f})"
-                            if pos.stop is not None else "Stop:-")
+                alvo_txt = (f"Alvo {pos.alvo:6.0f} ({abs(pos.alvo - preco):4.0f})"
+                            if pos.alvo is not None else "Alvo      - (   -)")
+                stop_txt = (f"Stop {pos.stop:6.0f} ({abs(preco - pos.stop):4.0f})"
+                            if pos.stop is not None else "Stop      - (   -)")
                 print(f"[{agora.strftime('%H:%M:%S')}] {lado_colorido} | "
-                      f"Ent:{pos.entrada:.0f}>Atual:{preco:.0f} | {resultado_colorido} | "
-                      f"{alvo_txt} {stop_txt} | {progresso_pct:.0f}% {quadro_posicao}")
+                      f"Ent {pos.entrada:6.0f} | Atual {preco:6.0f} | "
+                      f"Res {resultado_colorido} | {alvo_txt} | {stop_txt} | "
+                      f"{progresso_pct:3.0f}% {quadro_posicao}")
             else:
                 if ma21 is not None and ma50 is not None and candle_atual is not None:
                     cor_tendencia = COR_ALTA if tendencia == "ALTA" else COR_BAIXA
