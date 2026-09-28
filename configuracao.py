@@ -15,13 +15,22 @@ de resultado no projeto original.
 # linhas de comentario aqui, poluindo este arquivo - agora so a versao
 # corrente, importada de la).
 import os
+from pathlib import Path
 
 from versionamento import VERSAO
+
+# Raiz descoberta pela localizacao deste arquivo. Os dados gerados pelo robo
+# permanecem junto da instalacao em uso, independentemente do diretorio atual
+# do Prompt de Comando.
+RAIZ_PROJETO = Path(__file__).resolve().parent
+PASTA_LOGS = RAIZ_PROJETO / "logs"
+
 ATIVO = "WINV26"          # contrato vigente - ATUALIZAR a cada rolagem (bimestral, meses pares)
 TIMEFRAME_MINUTOS = 15
 NOME_TELA_PROFIT = "ProfitPro"  # usado para confirmar foco antes de enviar ordem
 CAMINHO_HISTORICO_INICIAL = r"D:\DAYTRADE\HISTORICO\WINFUT_F_0_15min.csv"  # so para a carga UNICA inicial
-CAMINHO_HISTORICO_PERSISTENTE = r"D:\DAYTRADE\ROBONILDO\logs\historico_acumulado.csv"  # o robo mantem sozinho
+CAMINHO_HISTORICO_PERSISTENTE = str(PASTA_LOGS / "historico_acumulado.csv")  # o robo mantem sozinho
+CAMINHO_ESTADO_RISCO = str(PASTA_LOGS / "estado_risco.json")
 GAP_MAXIMO_HORAS_HISTORICO = 48   # se o robo ficar parado mais que isso, o historico
                                    # acumulado e descartado (misturar cenarios de
                                    # mercado tao distantes na mesma media nao faz
@@ -37,7 +46,7 @@ RECONCILIAR_OHLC_OFICIAL_NO_REPLAY = True
 
 # ---------- Auditoria da execução ao vivo ----------
 AUDITORIA_EXECUCAO_ATIVA = True
-PASTA_LOGS_AUDITORIA = "logs"
+PASTA_LOGS_AUDITORIA = str(PASTA_LOGS)
 
 # ---------- Estrategia (regra congelada MA_v2) ----------
 MA_RAPIDA = 21            # aritmetica (SMA) - confirmado no Profit
