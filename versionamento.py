@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V447"
+VERSAO = "V448"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -423,6 +423,31 @@ VERSAO = "V447"
 # generico). Os 3 se comportaram como esperado.
 #
 # Arquivo alterado: principal.py.
+
+# ---------------------------------------------------------------------------
+# V448 — estratégias isoladas + radar de oportunidades
+# ---------------------------------------------------------------------------
+# As três antigas portas da entrada titular Grok foram extraídas como
+# estratégias candidatas independentes: Retomada MA21, MACD + Estocástico e
+# Saída de Extremo. O agregador titular mantém exatamente os mesmos limiares
+# e a prioridade histórica 1 -> 2 -> 3, portanto esta etapa não ativa troca
+# dinâmica de ordens nem altera deliberadamente o comportamento operacional.
+#
+# Novo contrato opcional diagnosticar_oportunidades(row): cada estratégia
+# informa nome, direção, condições confirmadas, total, faltantes, progresso e
+# sinal. MotorRobonildo valida e ordena esse radar; cartuchos antigos seguem
+# compatíveis e apenas não oferecem telemetria detalhada.
+#
+# principal.py passa a exibir a estratégia mais avançada, X/Y confirmações e
+# a próxima condição faltante. O quadrado usa o progresso técnico de 0% a
+# 100%, não o tempo restante do candle. A narração avisa quando uma estratégia
+# ultrapassa 70%, sem prometer entrada. Com posição aberta, a linha principal
+# mostra entrada, preço atual, resultado, alvo, stop e distâncias.
+#
+# Arquivos novos: entrada_retomada_ma21_grok_v1.py,
+# entrada_macd_estocastico_grok_v1.py e entrada_saida_extremo_grok_v1.py.
+# Arquivos alterados: motor.py, principal.py, entrada_grok_3_v1.py,
+# compliance.md, versionamento.py e changelog.md.
 
 # ---------------------------------------------------------------------------
 # V441 — [CENARIO EM FORMACAO] agora e FALADO, nao so impresso no log
