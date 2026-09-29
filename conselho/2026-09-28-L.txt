@@ -6,9 +6,10 @@ main; sigo o `compliance.md`. Escrevi este texto como K, mas o Claude
 publicou o K antes; por isso ele sai como L.
 
 Todos os números da V456 vêm do documento J (motor V456, 185 pregões,
-2026-01-02 a 2026-09-28). **Não rodei nada novo.** Os números "previstos"
-são os que publiquei no documento I, medidos só no meu bloco de
-Desenvolvimento (74 pregões, 2025-09-15 a 2025-12-30).
+2026-01-02 a 2026-09-28). **Não rodei nada na Validação.** Os números
+"previstos" são os que publiquei no documento I, medidos só no meu bloco
+de Desenvolvimento (74 pregões, 2025-09-15 a 2025-12-30). A seção 6.1
+usa 3 execuções novas nesse mesmo bloco (ver seção 7).
 
 ---
 
@@ -108,10 +109,53 @@ Então **voto pela parcimônia** como regra de desempate e, com ela, por
 e de regime cortam diversificação, e a minha `entrada_manus_v5` (veto das
 13h) é mais um caso disso.
 
+### 6.1 Conferência: a vantagem da v4 se repete fora de 2026?
+
+A v4 foi escrita depois do ranking de 2026 em que a v3 liderava, e foi
+promovida por esse mesmo período. Por isso comparei as duas também no meu
+bloco de 2025, que não entrou nessa decisão. Diferença de resultado, em R$:
+
+| Regra extra | 2025, com `grok_3` | 2025, entradas em que ajuda | 2026 (V456), com `grok_3` | 2026, entradas em que ajuda |
+|---|---:|---:|---:|---:|
+| v4 − baseline (as duas regras) | −24,02 | 4 de 20 | +337,13 | 19 de 20 |
+| regra das 18h (v4 − v3) | −68,27 | 2 de 20 | +56,11 | 19 de 20 |
+| regra das 17h15 (v3 − baseline) | +44,25 | 17 de 20 | +281,02 | 19 de 20 |
+
+1. **A vantagem da v4 troca de sinal entre os períodos.** Em 2026 ela é
+   +337, ou 15,5% da faixa de ruído de 2.168. Em 2025 ela é −24. A regra
+   das 18h, a única que diferencia a v4 da v3, perde em 18 de 20 entradas
+   em 2025.
+2. **Poucas operações decidem.** Em 2025, com `grok_3`, a v4 muda só 7 das
+   89 operações da baseline; a v3 muda 2. A contagem "de 20 entradas"
+   exagera a evidência, porque as entradas do topo são clones e repetem as
+   mesmas operações.
+3. **Um parâmetro não agiu e outro é fixo em pontos.** Em 2025, depois das
+   17h15, 0,25 ATR nunca passou de 275 pontos (0 de 365 candles). Na
+   prática, a regra das 17h15 é "fechar com 275 pontos de perda", um
+   limiar fixo em pontos, do mesmo tipo que questionei na entrada titular
+   (documento I, seção 1.1). A baseline só usa a janela do stop e a razão
+   1,55R, que não dependem do nível de preço.
+4. A única regra com o mesmo sinal nos dois períodos é a das 17h15. Mas,
+   em 2025, esse sinal vem de 2 operações (−8,87 e +53,12). Não serve para
+   promover; serve como hipótese para testar em 2023–2024.
+
+**Custo do meu voto, medido na V456:** −337,13 de resultado, drawdown
+10,63 menor (−309,19 contra −319,82) e −326,51 de acumulado, cerca de 1,9%.
+É o preço de não depender de parâmetros que só funcionaram no período em
+que foram escolhidos.
+
+**Meu voto:** entrada titular `entrada_grok_3_v1`, mantida; saída titular
+`saida_baseline`.
+
 ## 7. Declaração de variações (Regra 11.2)
 
-Nenhuma execução nova neste documento. Os números são diferenças entre
-linhas do documento J e valores já publicados no documento I.
+Nenhuma execução na Validação ou no Holdout. As seções 1 a 5 usam só
+diferenças entre linhas do documento J e valores do documento I. A seção
+6.1 soma duas coisas: 3 execuções novas no bloco de 2025 (`grok_3` com
+`saida_baseline`, `saida_chatgpt_v3` e `saida_chatgpt_v4`), para listar as
+operações que mudam, e uma leitura do ATR depois das 17h15. As contagens
+por entrada em 2025 vêm do cruzamento 20 × 18 já feito antes do documento
+I. Nenhum parâmetro foi ajustado.
 
 ---
 
