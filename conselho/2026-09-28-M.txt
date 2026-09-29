@@ -1,0 +1,181 @@
+# MANUS — Saída por reversão de fluxo: 7 hipóteses pré-registradas, nenhuma aprovada
+
+Base consultada: `main` @ `061cbde4fb4d5dd22a53bbee16ee4bb03dfca4a2`
+(2026-09-28 23:08, "removidas estrategias de saida"). `REGRAS_DO_JOGO.md`
+não existe nesta main; sigo o `compliance.md`. A letra L está reservada
+pelo meu PR #30, ainda aberto; por isso este documento sai como M.
+
+As execuções rodaram na main `88ff55a`. Entre `88ff55a` e `061cbde`, não
+mudaram `motor.py`, `classificacao.py`, `configuracao.py`,
+`saida_baseline.py`, as duas titulares e as quatro entradas Grok e
+orquestrador que usei. As outras duas entradas do teste
+(`entrada_deepseek_mbr_v01`, `entrada_deepseek_v05`) foram removidas pelo
+`061cbde` depois do teste. A seção 2 mostra que a conclusão é a mesma sem
+elas.
+
+**Não rodei nada na Validação (2026) nem no Holdout.** Tudo aqui vem do meu
+bloco de Desenvolvimento (74 pregões, 2025-09-15 a 2025-12-30), rodado no
+motor oficial via `classificacao.executar_jogo`.
+
+---
+
+## 1. A pergunta e o método
+
+O dono perguntou se dá para superar a `saida_baseline` sem partir da v3
+ou da v4, usando indicadores que prevejam reversão de fluxo.
+
+Transformei isso numa pergunta testável: **um sinal de reversão, visto com
+a posição aberta, indica que o resto da operação vai render menos que
+zero?** Se indica, fechar no sinal supera a baseline. Se não, nenhuma saída
+baseada nele supera.
+
+Para não repetir o erro das minhas V5/V4 (documento L, seção 3), gravei
+hipóteses, parâmetros e critério **antes** de rodar. O arquivo de
+pré-registro tem sha256 `f9fd5881c441a559004993f2a191ca160e56466a26056aa0aa22dec40441ea80`
+e foi selado às 22:51, antes da primeira execução.
+
+- **Construção igual para todas:** `saida_baseline` intacta (stop no
+  extremo de 5 candles, alvo 1,55R). A partir do 1º candle depois da
+  entrada, se o sinal dispara contra a posição, o cartucho pede
+  `fechar=True`. O motor testa stop e alvo antes e, se nenhum for tocado,
+  fecha no fechamento do candle. Nada mais muda.
+- **Parâmetros canônicos, sem ajuste.** Cada hipótese rodou uma única vez.
+- **Critério fixado antes, com todos os itens obrigatórios:**
+  1. ganho contra a baseline com `grok_3`;
+  2. ganho nas duas metades do bloco (37 + 37 pregões);
+  3. ganho em pelo menos 5 das 7 entradas;
+  4. p < 0,0071 no bootstrap por pregão (0,05 / 7, correção de
+     Bonferroni).
+
+Sinais (para compra; na venda é o espelho):
+
+| Id | Sinal contra a posição | Está no `row`? |
+|---|---|---|
+| H1 | cruzamento do MACD (12/26/9 do motor) | sim |
+| H2 | estocástico cruza 80 para baixo | sim |
+| H3 | RSI sai de cima de 70 | sim |
+| H4 | engolfo contra (dois últimos candles de `ohlc_recentes`) | sim |
+| H5 | fechamento abaixo da MA21 | sim |
+| H6 | candle contra com volume ≥ 2× a média de 20 candles | **não** |
+| H7 | fechamento abaixo da VWAP do pregão | **não** |
+
+H6 e H7 usam a quantidade do CSV, que não entra no `row` (motor, docstring
+de `construir_row`). Testei as duas só para saber se valeria pedir volume
+no motor. Nenhum cartucho pode usá-las hoje.
+
+Entradas: a titular `entrada_grok_3_v1` e seis de famílias diferentes
+(`orquestrador_dinamico_v1`, `deepseek_mbr_v01`, `macd_estocastico_grok_v1`,
+`retomada_ma21_grok_v1`, `saida_extremo_grok_v1`, `deepseek_v05`). Não usei
+os clones do topo, que repetiriam as mesmas operações (documento C).
+
+## 2. Resultado: 0 de 7 aprovadas
+
+Diferença contra a `saida_baseline`, em R$. Com `grok_3`, a baseline fez
+R$ 2.762,73 de resultado, drawdown de −R$ 333,32 e 89 operações.
+
+| Hipótese | Δ resultado | Δ acumulado | 1ª metade | 2ª metade | Ganha em (de 7) | Ganha em (de 5 que seguem na main) | p |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| H1 MACD | −150,16 | −117,40 | −115,82 | −34,34 | 1 | 1 | 0,61 |
+| H2 estocástico | −528,13 | −434,28 | −365,66 | −162,48 | 1 | 0 | 0,91 |
+| H3 RSI | −328,88 | −357,60 | −177,75 | −151,13 | 0 | 0 | 1,00 |
+| H4 engolfo | −1.195,72 | −1.215,46 | −791,80 | −403,92 | 0 | 0 | 0,99 |
+| H5 MA21 | −1.349,92 | −1.295,40 | −753,77 | −596,14 | 1 | 1 | 0,97 |
+| H6 clímax de volume | −692,94 | −639,76 | −855,94 | +162,99 | 3 | 1 | 0,92 |
+| H7 VWAP | −1.526,58 | −1.468,03 | −782,03 | −744,55 | 1 | 1 | 0,98 |
+
+Nenhuma hipótese cumpre nem o item 1. Somadas as 7 entradas, todas perdem:
+de −R$ 895 (H3) a −R$ 4.925 (H7). Os poucos ganhos são pequenos e aparecem
+em entradas fracas (baseline entre R$ 301 e R$ 797 no bloco). Só um é
+positivo nas duas metades: H7 com `saida_extremo_grok_v1`, +R$ 23,56.
+
+## 3. Por que falham: os sinais medem enfraquecimento, não reversão
+
+Depois do primeiro disparo, comparei quanto a operação ainda rendeu com a
+média das operações abertas há o mesmo número de candles. Entrada
+`grok_3`, R$ brutos por operação:
+
+| Sinal | Disparos | Rende depois do sinal | Rende no mesmo estágio | Chega ao alvo depois do sinal | Chega ao alvo no mesmo estágio |
+|---|---:|---:|---:|---:|---:|
+| H1 MACD | 14 | +12,53 | +34,21 | 21% | 46% |
+| H2 estocástico | 18 | +25,23 | +39,80 | 39% | 50% |
+| H5 MA21 | 60 | +18,92 | +34,71 | 33% | 45% |
+| H7 VWAP | 37 | +29,35 | +33,40 | 41% | 44% |
+
+O MACD contra informa algo: a chance de alvo cai pela metade. Mas o que a
+operação ainda rende continua **positivo**. Fechar ali troca um valor
+esperado positivo por zero, e por isso perde. Para superar a baseline, o
+sinal precisa achar momentos de expectativa **negativa**. Enfraquecimento
+não basta.
+
+## 4. Onde a baseline tem expectativa perto de zero
+
+Valor médio que a operação da baseline ainda rende (entrada `grok_3`, R$
+brutos), por horário e resultado flutuante em múltiplos do risco R. É uma
+medida descritiva: os candles de uma mesma operação não são independentes.
+
+| Horário | < −0,5R | −0,5R a 0 | 0 a 0,5R | 0,5R a 1R | ≥ 1R |
+|---|---:|---:|---:|---:|---:|
+| antes das 12h | +63,4 | +81,8 | +68,3 | +84,0 | +36,8 |
+| 12h a 15h | +7,3 | +11,7 | +39,9 | +34,4 | +60,6 |
+| 15h a 17h | +15,2 | +18,1 | +37,0 | +49,1 | +37,0 |
+| depois das 17h | +6,0 | +13,5 | +6,9 | +31,4 | +27,2 |
+
+1. **As 20 células são positivas.** Com `orquestrador_dinamico`, 20 de 20
+   também são; com `retomada_ma21`, 18 de 20.
+2. **As únicas perto de zero** são perdas depois das 12h e o fim do
+   pregão. É exatamente onde a v3 (17h15) e a v4 (18h) agem. Uma busca de
+   saída "inteligente" nesse espaço acaba chegando a elas. Isso é coerente
+   com o empate delas com a baseline no portão da Regra 14 e com o sinal
+   que troca entre 2025 e 2026 (documento L, seção 6.1): perto de zero,
+   qualquer corte é decidido por poucas operações.
+3. **O dinheiro existe, mas não é previsível com esses sinais.** Fechar
+   sempre no melhor candle antes da saída, sabendo o futuro, renderia
+   +R$ 2.250 com `grok_3` no bloco. É uma estimativa por operação, sem o
+   efeito de liberar vagas no limite diário. Nenhum dos 7 sinais captura
+   uma parte disso.
+
+## 5. Meu posicionamento
+
+1. **Mantenho o voto do documento L.** Entrada titular:
+   `entrada_grok_3_v1`. Saída titular: `saida_baseline`. Este teste
+   reforça a parcimônia: no bloco medido, a baseline não tem região de
+   expectativa negativa que os indicadores de preço identifiquem.
+2. **Não submeto cartucho de saída por reversão.** Nenhuma hipótese passou
+   no critério fixado antes. Recalibrar limiares até alguma passar seria a
+   garimpagem que a Regra 11 proíbe.
+3. **Apoio o congelamento da saída (documento G, item 1).** Somo 7
+   hipóteses de reversão às ~81 calibragens do G, todas sem ganho acima do
+   ruído. Proponho que uma nova saída só entre no ranking se trouxer
+   **informação que o `row` ainda não tem**, e não outro limiar sobre os
+   mesmos preços.
+4. **Fluxo de verdade exige outro dado.** O CSV só tem o volume total de
+   cada candle, sem o lado agressor, e H6 e H7 falharam com ele. Por isso
+   **não peço volume total no `row`**: o teste não justifica. O que poderia
+   antecipar uma virada é saldo de agressão por candle, times & trades ou
+   livro de ofertas, e nada disso existe no histórico nem no motor. Ao vivo,
+   isso exigiria mudar a captura (`construtor_candle.py`, `leitor_dde.py`)
+   e o motor, decisão exclusiva do dono. Proponho a ordem:
+   1. exportar do Profit um histórico com agressão compradora e vendedora;
+   2. pré-registrar a hipótese aqui;
+   3. testar no Desenvolvimento e depois em 2023–2024;
+   4. só então discutir mudança no motor.
+5. **Pedido de retirada (documento L, seção 5.1).** O `061cbde` já removeu
+   a `saida_manus_v3`. Continuam na main as saídas Manus v1, v2 e v4 e as
+   entradas Manus v3 e v5, que peço para retirar. Mantenho o pedido e
+   **não removo nada sem autorização**.
+
+## 6. Declaração de variações (Regra 11.2)
+
+- 7 hipóteses × 7 entradas = 49 execuções no bloco de 2025, uma vez cada,
+  com os parâmetros do pré-registro. Nenhum parâmetro ajustado depois de
+  ver resultado.
+- Mais 3 medições descritivas, que não escolheram nada: rendimento depois
+  do disparo, mapa horário × R e teto com conhecimento do futuro.
+- Bootstrap: 10.000 reamostragens por pregão, semente fixa, p unilateral,
+  só com `grok_3`.
+- Nenhuma execução na Validação ou no Holdout. Nenhum cartucho criado.
+
+---
+
+Autoria: Manus AI, em sessão operada por Marcio Soares. Revisão humana:
+pendente.
