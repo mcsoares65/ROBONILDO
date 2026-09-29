@@ -1,0 +1,64 @@
+Parte 3 — Carta ao conselho: sobre os clones e a arquitetura do sistema
+Assunto: Proposta de mudança no critério de ranking, na estrutura de promoção, e no bloco de validação.
+
+De: DeepSeek (assistido)
+Para: Conselho do Laboratório ROBONILDO
+Data: [data da submissão]
+Referência: Ranking C001 (motor V455), 399 pares entrada×saída
+
+3.1 Contexto
+O ranking cruzado C001 tem 399 linhas. As 20 primeiras são ocupadas por 7 estratégias de entrada e 5 estratégias de saída, todas com resultado entre R
+16.200
+e
+R
+16.200eR 17.100 (amplitude de 5,5%) e drawdown entre −309 e −320 (amplitude de 3,5%). Isso não é competição — é a mesma distribuição amostrada com sementes diferentes.
+
+O mesmo padrão aparece no ranking de entrada (top 6 com amplitude de 1,7%) e, pela simetria dos pares, no de saída.
+
+Isso é um problema estrutural, não um problema de estratégia. O sistema atual:
+
+Premia ruído. Com 20 clones empatados, o 1º colocado é praticamente sorteado. Promovê-lo a titular é uma decisão baseada em 1,7% de diferença que não sobrevive a uma reamostragem.
+
+Não mede diversificação. Não há incentivo para propor algo genuinamente diferente — só para ser o melhor clone.
+
+Confunde edge com overfitting de regime. 4 meses de dados, todas as estratégias de continuação — o laboratório está calibrado para um único regime e chama isso de validação.
+
+3.2 Proposta 1 — Substituir o critério único por um painel
+O acumulado = resultado − |drawdown| é uma métrica de cauda, não de risco típico. Duas estratégias com o mesmo acumulado podem ter perfis totalmente diferentes. Proponho substituir por um painel de três métricas, todas obrigatórias para promoção:
+
+Métrica	Fórmula	O que mede
+Calmar ajustado	resultado / (drawdown_medio × √N_perdas)	risco típico, não cauda
+Consistência mensal	% de meses positivos	robustez temporal
+Correlação com o titular	1 − ρ(retornos diários)	diversificação real
+Uma estratégia só é promovida a titular se bater o titular atual em pelo menos 2 das 3 métricas e não perder em nenhuma por margem > 20%. Isso elimina a promoção por 1,7% de diferença.
+
+Custo: exige classificacao.py calcular retornos diários por par (não só o total). Mudança moderada.
+
+Benefício: promoções passam a ser decisões estatisticamente defensáveis, não sorteios.
+
+3.3 Proposta 2 — Exigir diversificação de família no top 10
+Se o top 10 é ocupado por clones, o ranking perde função. Proponho:
+
+Top 10 deve conter pelo menos 3 famílias distintas (Grok, ChatGPT, DeepSeek, Gemini, Claude, Manus, outras).
+
+Se uma família ocupa > 50% do top 10, o conselho deve solicitar explicitamente à família dominante que proponha variações genuinamente diferentes, não ajustes de limiar. A família deve declarar, no PR, em que difere da sua versão campeã.
+
+Nenhum clone pode ser promovido sobre o titular da mesma família. Se grok_3_v1 é titular, grok_4_v1 só pode ser promovido se bater grok_3_v1 em Calmar por margem > 20% — não por 1,7%.
+
+Custo: mudança de governança, não de código.
+
+Benefício: incentiva diversificação real e impede que o ranking seja monopolizado por uma família.
+
+3.4 Proposta 3 — Bloco de validação com regime, não só com tempo
+A Regra 11 já exige divisão em Desenvolvimento/Validação/Holdout. Proponho adicionar uma dimensão: regime. O bloco de Validação deve conter pelo menos 2 regimes distintos (tendência e range), com data de corte explícita. Uma estratégia só é validada se não perder dinheiro em nenhum dos dois regimes — ou, se perder, perder pouco (< 20% do ganho no outro).
+
+Custo: exige classificar os 184 dias em regimes (usando os preços brutos, não os agregados). Mudança pequena em classificacao.py, mudança média em governança.
+
+Benefício: elimina o risco de overfitting de regime, que é o risco dominante no laboratório hoje.
+
+3.5 Proposta 4 — Auditoria de correlação entre campeãs
+Antes de qualquer promoção, o conselho deve rodar correlação de retornos diários entre o titular atual e a candidata. Se ρ > 0,90, a candidata não é uma estratégia nova — é o titular com outro nome. A promoção deve ser bloqueada, e a candidata devolvida ao autor com pedido de variação genuína.
+
+Custo: adicionar cálculo de correlação em classificacao.py. Mudança pequena.
+
+Benefício: fecha a porta para a promoção de clones — que é o problema dominante hoje.

@@ -1,0 +1,133 @@
+
+D:\DAYTRADE\ROBONILDO>classificacao.py
+----------------------------------------------------------------------------------------------------
+CARTUCHOS NO DISCO (entrada/saída — sem laboratório)
+  estrategia/entrada/titular/  → D:\DAYTRADE\ROBONILDO\estrategia\entrada\titular
+    • entrada_grok_3_v1.py [TITULAR]
+  estrategia/entrada/ (candidatas) → D:\DAYTRADE\ROBONILDO\estrategia\entrada
+    • entrada_chatgpt_v19.py
+    • entrada_chatgpt_v21.py
+    • entrada_claude_v1.py
+    • entrada_deepseek_mbr_v01.py
+    • entrada_deepseek_v05.py
+    • entrada_deepseek_v5.py
+    • entrada_gemini_V20.py
+    • entrada_grok_32_v1.py
+    • entrada_grok_3_v1.py
+    • entrada_grok_4_v1.py
+    • entrada_grok_5_v1.py
+    • entrada_grok_v6.py
+    • entrada_macd_estocastico_grok_v1.py
+    • entrada_manus_v1.py
+    • entrada_manus_v2.py
+    • entrada_manus_v3.py
+    • entrada_orquestrador_dinamico_v1.py
+    • entrada_retomada_ma21_grok_v1.py
+    • entrada_saida_extremo_grok_v1.py
+  estrategia/saida/titular/    → D:\DAYTRADE\ROBONILDO\estrategia\saida\titular
+    • saida_chatgpt_v4.py [TITULAR]
+  estrategia/saida/ (candidatas)   → D:\DAYTRADE\ROBONILDO\estrategia\saida
+    • saida_baseline.py
+    • saida_chatgpt_v2.py
+    • saida_chatgpt_v3.py
+    • saida_chatgpt_v4.py
+    • saida_claude_v2.py
+    • saida_claude_v4.py
+    • saida_deepseek_mbr_v01.py
+    • saida_deepseek_v03.py
+    • saida_deepseek_v05.py
+    • saida_gemini_v01.py
+    • saida_gemini_v06.py
+    • saida_grok_v10.py
+    • saida_grok_v6.py
+    • saida_grok_v9.py
+    • saida_manus_v1.py
+    • saida_manus_v2.py
+    • saida_manus_v3.py
+----------------------------------------------------------------------------------------------------
+Qual ranking deseja? Entradas (E), Saídas (S) ou Cruzada (C): e
+[MODO] Ranking escolhido: E — ENTRADA (pareado com saída titular)
+[LEITURA] Abrindo D:\DAYTRADE\HISTORICO\WINFUT_F_0_15min.csv
+[LEITURA] 1647404/1647404 (100.00%) | 18604 candles válidos
+====================================================================================================
+CLASSIFICAÇÃO [C001] — ROBONILDO [V455] (ENTRADA (pareado com saída titular))
+Histórico: 2023-01-02 09:00:00 até 2024-12-30 18:15:00 | 18604 candles | 499 pregões
+Entrada titular: entrada_grok_3_v1.py
+Saída titular  : saida_chatgpt_v4.py
+Entradas no ranking: 19 | Saídas no ranking: 17
+Multi = score ABSOLUTO individual (50/30/20) — sem percentil entre concorrentes.
+====================================================================================================
+[ETAPA 1/2] Calculando indicadores com o motor oficial...
+[INDICADORES] 18539/18539 (100.00%)
+[CONTRATO] Validando proteção inicial dos cartuchos de saída...
+  saida_chatgpt_v4
+  saida_baseline
+  saida_chatgpt_v2
+  saida_chatgpt_v3
+  saida_claude_v2
+  saida_claude_v4
+  saida_deepseek_mbr_v01
+  saida_deepseek_v03
+  saida_deepseek_v05
+  saida_gemini_v01
+  saida_gemini_v06
+  saida_grok_v10
+  saida_grok_v6
+  saida_grok_v9
+  saida_manus_v1
+  saida_manus_v2
+  saida_manus_v3
+[CONTRATO] Saídas compatíveis: 17 | Combinações a executar: 19
+[ETAPA 2/2] Executando 19 combinação(ões)...
+  [1/19] entrada_grok_3_v1 × saida_chatgpt_v4... ok | 475 ops | -386,92
+  [2/19] entrada_chatgpt_v19 × saida_chatgpt_v4... ok | 476 ops | -378,72
+  [3/19] entrada_chatgpt_v21 × saida_chatgpt_v4... ok | 464 ops | -563,20
+  [4/19] entrada_claude_v1 × saida_chatgpt_v4... ok | 469 ops | -245,88
+  [5/19] entrada_deepseek_mbr_v01 × saida_chatgpt_v4... ok | 195 ops | -558,39
+  [6/19] entrada_deepseek_v05 × saida_chatgpt_v4... ok | 106 ops | -1.242,12
+  [7/19] entrada_deepseek_v5 × saida_chatgpt_v4... ok | 458 ops | 577,11
+  [8/19] entrada_gemini_V20 × saida_chatgpt_v4... ok | 469 ops | -201,67
+  [9/19] entrada_grok_32_v1 × saida_chatgpt_v4... ok | 466 ops | -863,70
+  [10/19] entrada_grok_4_v1 × saida_chatgpt_v4... ok | 467 ops | -223,38
+  [11/19] entrada_grok_5_v1 × saida_chatgpt_v4... ok | 412 ops | -882,80
+  [12/19] entrada_grok_v6 × saida_chatgpt_v4... ok | 432 ops | -209,71
+  [13/19] entrada_macd_estocastico_grok_v1 × saida_chatgpt_v4... ok | 155 ops | 314,00
+  [14/19] entrada_manus_v1 × saida_chatgpt_v4... ok | 482 ops | 662,33
+  [15/19] entrada_manus_v2 × saida_chatgpt_v4... ok | 433 ops | -1.251,71
+  [16/19] entrada_manus_v3 × saida_chatgpt_v4... ok | 407 ops | 1.175,62
+  [17/19] entrada_orquestrador_dinamico_v1 × saida_chatgpt_v4... ok | 536 ops | 500,45
+  [18/19] entrada_retomada_ma21_grok_v1 × saida_chatgpt_v4... ok | 213 ops | 1.228,18
+  [19/19] entrada_saida_extremo_grok_v1 × saida_chatgpt_v4... ok | 212 ops | 175,54
+
+========== RANKING ENTRADA C001 (motor V455; saída titular: saida_chatgpt_v4) ==========
+pos                         estratégia  resultado  diária dias aproveit   drawdown   cap_min  acumulado
+-------------------------------------------------------------------------------------------------------
+  1      entrada_retomada_ma21_grok_v1   1.228,18    2,46  183     6,71  -1.211,23  1.367,23      16,95
+  2      entrada_saida_extremo_grok_v1     175,54    0,35  179     0,98  -1.206,67  1.362,67  -1.031,12
+  3                   entrada_manus_v3   1.175,62    2,36  329     3,57  -2.417,78  2.573,78  -1.242,16
+  4   entrada_macd_estocastico_grok_v1     314,00    0,63  145     2,17  -2.217,58  2.373,58  -1.903,57
+  5                entrada_deepseek_v5     577,11    1,16  350     1,65  -2.529,90  2.685,90  -1.952,79
+  6           entrada_deepseek_mbr_v01    -558,39   -1,12  172    -3,25  -1.505,38  1.661,38  -2.063,77
+  7                   entrada_manus_v1     662,33    1,33  367     1,80  -2.811,36  2.967,36  -2.149,03
+  8               entrada_deepseek_v05  -1.242,12   -2,49   97   -12,81  -1.353,19  1.509,19  -2.595,31
+  9   entrada_orquestrador_dinamico_v1     500,45    1,00  393     1,27  -3.455,00  3.611,00  -2.954,55
+ 10                    entrada_grok_v6    -209,71   -0,42  337    -0,62  -2.934,10  3.090,10  -3.143,81
+ 11                  entrada_grok_4_v1    -223,38   -0,45  355    -0,63  -3.061,43  3.217,43  -3.284,81
+ 12                  entrada_claude_v1    -245,88   -0,49  356    -0,69  -3.053,24  3.209,24  -3.299,11
+ 13                 entrada_gemini_V20    -201,67   -0,40  357    -0,56  -3.116,36  3.272,36  -3.318,03
+ 14                entrada_chatgpt_v19    -378,72   -0,76  361    -1,05  -2.982,15  3.138,15  -3.360,87
+ 15                  entrada_grok_3_v1    -386,92   -0,78  360    -1,07  -2.990,34  3.146,34  -3.377,26
+ 16                entrada_chatgpt_v21    -563,20   -1,13  354    -1,59  -3.211,61  3.367,61  -3.774,81
+ 17                  entrada_grok_5_v1    -882,80   -1,77  321    -2,75  -3.081,07  3.237,07  -3.963,87
+ 18                 entrada_grok_32_v1    -863,70   -1,73  353    -2,45  -3.381,14  3.537,14  -4.244,84
+ 19                   entrada_manus_v2  -1.251,71   -2,51  338    -3,70  -3.395,03  3.551,03  -4.646,74
+Verde=1º | Vermelho=último | Azul=titular do slot
+Acumulado = resultado - abs(drawdown). Maior acumulado vence.
+
+Horizontes (ranking entrada): longo, mensal, diario | confiança: ALTA
+
+Relatórios:
+  D:\DAYTRADE\ROBONILDO\logs\classificacao_entrada_c001_motor_v455.csv
+Limitação: OHLC 15min não revela ordem intrabar nem preço exato das 18:20.
+
+D:\DAYTRADE\ROBONILDO>
