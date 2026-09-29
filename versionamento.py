@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V456"
+VERSAO = "V457"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -841,3 +841,40 @@ VERSAO = "V456"
 # completa nos modos C e S contra o dataset oficial.
 #
 # Arquivo alterado: classificacao.py.
+
+# ---------------------------------------------------------------------------
+# V457 — narracao de expectativa nomeia o horario do fechamento
+# ---------------------------------------------------------------------------
+# Relato do dono do laboratorio no pregao de 29/09/2026: as 13:30:00 o log
+# imprimiu, em sequencia, "Nenhum sinal de entrada foi confirmado" e logo
+# abaixo "Se confirmado no fechamento, a ordem sera disparada" - e a leitura
+# natural e que a ordem deveria ter saido naquele fechamento.
+#
+# Nao havia bug. O candle que fecha as 13:30:00 e o candle ROTULADO 13:15
+# (row["dt"] e o horario de ABERTURA do candle, ver construir_row em
+# motor.py), e a Porta 1 do titular bloqueia "12:00" <= hora <= "13:15" -
+# ou seja, aquele era o ultimo candle do bloqueio. A frase de expectativa se
+# referia ao fechamento SEGUINTE (13:45), do candle rotulado 13:30, que ja
+# esta fora do bloqueio.
+#
+# Correcao exclusivamente de texto em principal.py: a frase passa a nomear o
+# horario - "Se confirmado no fechamento das 13:45, a ordem sera disparada".
+# O horario e calculado como candle_atual.horario + TIMEFRAME_MINUTOS.
+# A frase alternativa (usada quando o cartucho nao expoe diagnostico) trocou
+# "no fechamento deste candle" por "no fechamento do candle em formacao",
+# pela mesma razao.
+#
+# NENHUMA regra operacional mudou: nao ha alteracao de estrategia, de horario
+# de bloqueio, de motor ou de cartucho. So a narracao.
+#
+# Fica REGISTRADA, sem alteracao, uma ambiguidade real encontrada na Porta 1
+# do entrada_grok_3_v1: o bloqueio escrito como ate "13:15" se estende, em
+# horario de relogio, ate as 13:30, porque o rotulo do candle e a abertura.
+# Nao se sabe se foi intencional. Mudar isso e alteracao de estrategia e
+# precisa passar pelo classificacao.py nos dois periodos disponiveis
+# (2023-2024 e 2026) antes de qualquer decisao - nao foi tocado aqui.
+#
+# Testado: py_compile; conferencia do calculo do horario para os rotulos
+# 13:15 -> 13:30, 13:30 -> 13:45 e 18:00 -> 18:15.
+#
+# Arquivo alterado: principal.py.

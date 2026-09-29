@@ -719,7 +719,7 @@ def rodar():
                         explicacao = (
                             diagnostico["explicacao"] if diagnostico else
                             f"A estratégia identificou uma expectativa de "
-                            f"{lado.lower()} no fechamento deste candle."
+                            f"{lado.lower()} no fechamento do candle em formação."
                         )
                         # Se a estrategia expuser total_portas (opcional), deixa
                         # explicito QUAL das portas foi - nao e um funil
@@ -728,7 +728,20 @@ def rodar():
                         total_portas = diagnostico.get("total_portas") if diagnostico else None
                         if porta and total_portas:
                             explicacao = f"{explicacao} (porta {porta} de {total_portas})"
-                        explicacao = f"{explicacao} Se confirmado no fechamento, a ordem será disparada."
+                        # O candle em formacao fecha em horario + TIMEFRAME. Dizer
+                        # so "no fechamento" gera leitura ambigua: logo apos um
+                        # [CANDLE FECHADO] o operador le as duas frases em sequencia
+                        # ("nenhum sinal confirmado" + "sera disparada no
+                        # fechamento") e entende que a ordem deveria ter saido
+                        # AGORA, quando ela se refere ao fechamento SEGUINTE.
+                        # Nomear o horario elimina a ambiguidade.
+                        fechamento_previsto = (
+                            candle_atual.horario + timedelta(minutes=cfg.TIMEFRAME_MINUTOS)
+                        ).strftime("%H:%M")
+                        explicacao = (
+                            f"{explicacao} Se confirmado no fechamento das "
+                            f"{fechamento_previsto}, a ordem será disparada."
+                        )
                         print(f"[CENÁRIO EM FORMAÇÃO] {explicacao}")
                         narrar(explicacao)
                         ultima_expectativa_narrada = chave_expectativa
