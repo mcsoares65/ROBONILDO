@@ -4,6 +4,37 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V456 — portão estatístico: o ranking passa a mostrar quem empata com o 1º
+
+O ranking apresentava como 1º, 2º e 3º lugares resultados cuja diferença era
+menor que o ruído da própria amostra. O caso que motivou isto: a
+`saida_chatgpt_v4` foi promovida a titular sobre a `saida_chatgpt_v3` por
+R$ 56,12 — uma diferença que vem de apenas 5 operações entre as **mesmas 181**,
+contra um erro padrão de R$ 2.164 no total do período (2,6% do ruído), e que na
+primeira metade do histórico é exatamente R$ 0,00.
+
+O `classificacao.py` agora calcula o desvio-padrão do resultado por operação e
+o erro padrão do total do período, e imprime uma coluna nova, `emp`, marcando
+com `=` toda posição cuja diferença para a 1ª seja **menor que essa faixa de
+ruído**. No rodapé, informa a faixa em reais e em porcentagem, e quantas
+posições empatam no topo.
+
+Medido contra o dataset oficial (184 pregões): faixa de ruído de R$ 2.164,31 =
+**12,7%** do resultado do 1º lugar. No ranking cruzado, **133 das 238
+combinações empatam** com a primeira. No ranking de saída, **11 dos 17
+cartuchos empatam** com o primeiro.
+
+Nenhuma regra operacional mudou. O portão é informativo: não reordena, não
+filtra ninguém e não toca no motor nem em cartucho algum. Ele apenas torna
+visível a incerteza que já existia — e estabelece um piso verificável para
+promoções: vantagem acima da faixa de ruído.
+
+### Arquivo alterado
+
+- `classificacao.py`
+
+---
+
 ## V455 — radar quantitativo e recuperação silenciosa do DDE
 
 O percentual e o quadrado colorido permanecem no final da linha. O radar passa

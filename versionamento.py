@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V455"
+VERSAO = "V456"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -796,3 +796,48 @@ VERSAO = "V455"
 # Arquivos alterados: principal.py, leitor_dde.py,
 # estrategia/entrada/titular/entrada_grok_3_v1.py, versionamento.py,
 # changelog.md.
+
+# ---------------------------------------------------------------------------
+# V456 — portao estatistico no classificacao.py (Regra 14)
+# ---------------------------------------------------------------------------
+# Problema: o ranking apresentava como 1o, 2o e 3o lugares resultados cuja
+# diferenca era menor que o ruido da propria amostra. Caso concreto medido em
+# 28/09/2026: saida_chatgpt_v4 (R$17.100,57) foi promovida a titular sobre a
+# saida_chatgpt_v3 (R$17.044,46) - diferenca de R$56,12 vindo de apenas 5
+# operacoes entre as MESMAS 181, contra um erro padrao de R$2.164 no total do
+# periodo. A diferenca era 2,6% do ruido, e na primeira metade do historico
+# era exatamente R$0,00. Promover por isso e sortear, nao decidir.
+#
+# classificacao.py:
+# - Nova funcao _erro_padrao_total(trades): desvio-padrao amostral do
+#   resultado por operacao x sqrt(n) = erro padrao da soma. Devolve nan com
+#   menos de 2 operacoes.
+# - _resumo() passou a devolver "sd_operacao" e "erro_padrao_total", que o
+#   _montar_resultado_par ja propaga via **resumo.
+# - Nova funcao _marcar_empates_estatisticos(): escreve a coluna "emp" em
+#   cada linha - "1o" no lider, "=" em quem esta dentro da faixa de ruido,
+#   vazio em quem esta fora. Usa o MAIOR erro padrao entre o do lider e o da
+#   linha comparada (leitura conservadora: so declara vantagem quem a
+#   sustenta contra a incerteza dos dois lados).
+# - Nova funcao _rodape_portao_estatistico(): imprime o desvio-padrao por
+#   operacao, a faixa de ruido em reais e em % do resultado do 1o lugar, e
+#   quantas posicoes empatam no topo.
+# - Coluna "emp" adicionada ao RANKING PRINCIPAL (cruzado) e aos rankings
+#   simples de entrada e saida.
+#
+# Nenhuma regra operacional mudou: o portao e informativo, nao altera ordem,
+# nao filtra ninguem do ranking, nao mexe em motor.py nem em cartucho algum.
+# O que ele faz e tornar visivel a incerteza que ja existia.
+#
+# Medido ao rodar contra o dataset oficial (184 pregoes): desvio-padrao por
+# operacao R$160,87, faixa de ruido R$2.164,31 = 12,7% do resultado do 1o
+# lugar. No ranking CRUZADO, 133 das 238 combinacoes empatam com a 1a. No
+# ranking de SAIDA, 11 dos 17 cartuchos empatam com o 1o.
+#
+# Testado: py_compile; teste unitario de _erro_padrao_total (0, 1 e 5 trades,
+# conferido contra statistics.stdev), de _resumo (campos novos), de
+# _marcar_empates_estatisticos (lider, empate, nao-empate, e linha com ruido
+# nan caindo no ruido do lider) e do rodape nos dois cenarios; e execucao
+# completa nos modos C e S contra o dataset oficial.
+#
+# Arquivo alterado: classificacao.py.
