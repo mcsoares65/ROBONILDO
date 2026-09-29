@@ -1,0 +1,818 @@
+D:\DAYTRADE\ROBONILDO>classificacao.py
+----------------------------------------------------------------------------------------------------
+CARTUCHOS NO DISCO (entrada/saída — sem laboratório)
+  estrategia/entrada/titular/  → D:\DAYTRADE\ROBONILDO\estrategia\entrada\titular
+    • entrada_grok_3_v1.py [TITULAR]
+  estrategia/entrada/ (candidatas) → D:\DAYTRADE\ROBONILDO\estrategia\entrada
+    • entrada_chatgpt_v19.py
+    • entrada_chatgpt_v21.py
+    • entrada_claude_v1.py
+    • entrada_deepseek_mbr_v01.py
+    • entrada_deepseek_v05.py
+    • entrada_deepseek_v5.py
+    • entrada_gemini_V20.py
+    • entrada_grok_32_v1.py
+    • entrada_grok_3_v1.py
+    • entrada_grok_4_v1.py
+    • entrada_grok_5_v1.py
+    • entrada_grok_v6.py
+    • entrada_macd_estocastico_grok_v1.py
+    • entrada_manus_v1.py
+    • entrada_manus_v2.py
+    • entrada_manus_v3.py
+    • entrada_manus_v5.py
+    • entrada_orquestrador_dinamico_v1.py
+    • entrada_retomada_ma21_grok_v1.py
+    • entrada_saida_extremo_grok_v1.py
+  estrategia/saida/titular/    → D:\DAYTRADE\ROBONILDO\estrategia\saida\titular
+    • saida_chatgpt_v4.py [TITULAR]
+  estrategia/saida/ (candidatas)   → D:\DAYTRADE\ROBONILDO\estrategia\saida
+    • saida_baseline.py
+    • saida_chatgpt_v2.py
+    • saida_chatgpt_v3.py
+    • saida_chatgpt_v4.py
+    • saida_claude_v2.py
+    • saida_claude_v4.py
+    • saida_deepseek_mbr_v01.py
+    • saida_deepseek_v03.py
+    • saida_deepseek_v05.py
+    • saida_gemini_v01.py
+    • saida_gemini_v06.py
+    • saida_grok_v10.py
+    • saida_grok_v6.py
+    • saida_grok_v9.py
+    • saida_manus_v1.py
+    • saida_manus_v2.py
+    • saida_manus_v3.py
+    • saida_manus_v4.py
+----------------------------------------------------------------------------------------------------
+Qual ranking deseja? Entradas (E), Saídas (S) ou Cruzada (C): C
+[MODO] Ranking escolhido: C — CRUZADO (todas as combinações entrada × saída)
+[LEITURA] Abrindo D:\DAYTRADE\HISTORICO\WINFUT_F_0_15min.csv
+[LEITURA] 620533/620533 (100.00%) | 7000 candles válidos
+[LEITURA] 620533/620533 (100.00%) | 7000 candles válidos
+====================================================================================================
+CLASSIFICAÇÃO [C001] — ROBONILDO [V456] (CRUZADO (todas as combinações entrada × saída))
+Histórico: 2026-01-02 09:00:00 até 2026-09-28 18:15:00 | 7000 candles | 185 pregões
+Entrada titular: entrada_grok_3_v1.py
+Saída titular  : saida_chatgpt_v4.py
+Entradas no ranking: 20 | Saídas no ranking: 18
+Multi = score ABSOLUTO individual (50/30/20) — sem percentil entre concorrentes.
+====================================================================================================
+[ETAPA 1/2] Calculando indicadores com o motor oficial...
+[INDICADORES] 6935/6935 (100.00%)
+[CONTRATO] Validando proteção inicial dos cartuchos de saída...
+  saida_chatgpt_v4
+  saida_baseline
+  saida_chatgpt_v2
+  saida_chatgpt_v3
+  saida_claude_v2
+  saida_claude_v4
+  saida_deepseek_mbr_v01
+  saida_deepseek_v03
+  saida_deepseek_v05
+  saida_gemini_v01
+  saida_gemini_v06
+  saida_grok_v10
+  saida_grok_v6
+  saida_grok_v9
+  saida_manus_v1
+  saida_manus_v2
+  saida_manus_v3
+  saida_manus_v4
+[CONTRATO] Saídas compatíveis: 18 | Combinações a executar: 360
+[ETAPA 2/2] Executando 360 combinação(ões)...
+  [1/360] entrada_grok_3_v1 × saida_chatgpt_v4... ok | 182 ops | 17.061,07
+  [2/360] entrada_grok_3_v1 × saida_baseline... ok | 180 ops | 16.723,94
+  [3/360] entrada_grok_3_v1 × saida_chatgpt_v2... ok | 183 ops | 16.836,51
+  [4/360] entrada_grok_3_v1 × saida_chatgpt_v3... ok | 182 ops | 17.004,96
+  [5/360] entrada_grok_3_v1 × saida_claude_v2... ok | 185 ops | 15.662,97
+  [6/360] entrada_grok_3_v1 × saida_claude_v4... ok | 199 ops | 5.958,89
+  [7/360] entrada_grok_3_v1 × saida_deepseek_mbr_v01... ok | 212 ops | 796,26
+  [8/360] entrada_grok_3_v1 × saida_deepseek_v03... ok | 187 ops | 16.390,11
+  [9/360] entrada_grok_3_v1 × saida_deepseek_v05... ok | 213 ops | 1.311,92
+  [10/360] entrada_grok_3_v1 × saida_gemini_v01... ok | 182 ops | 16.163,48
+  [11/360] entrada_grok_3_v1 × saida_gemini_v06... ok | 204 ops | 9.404,42
+  [12/360] entrada_grok_3_v1 × saida_grok_v10... ok | 187 ops | 16.048,52
+  [13/360] entrada_grok_3_v1 × saida_grok_v6... ok | 181 ops | 16.461,68
+  [14/360] entrada_grok_3_v1 × saida_grok_v9... ok | 192 ops | 15.104,76
+  [15/360] entrada_grok_3_v1 × saida_manus_v1... ok | 181 ops | 15.514,98
+  [16/360] entrada_grok_3_v1 × saida_manus_v2... ok | 187 ops | 14.388,80
+  [17/360] entrada_grok_3_v1 × saida_manus_v3... ok | 190 ops | 8.900,85
+  [18/360] entrada_grok_3_v1 × saida_manus_v4... ok | 179 ops | 15.946,85
+  [19/360] entrada_chatgpt_v19 × saida_chatgpt_v4... ok | 183 ops | 17.000,36
+  [20/360] entrada_chatgpt_v19 × saida_baseline... ok | 181 ops | 16.663,23
+  [21/360] entrada_chatgpt_v19 × saida_chatgpt_v2... ok | 184 ops | 16.775,80
+  [22/360] entrada_chatgpt_v19 × saida_chatgpt_v3... ok | 183 ops | 16.944,25
+  [23/360] entrada_chatgpt_v19 × saida_claude_v2... ok | 186 ops | 15.602,26
+  [24/360] entrada_chatgpt_v19 × saida_claude_v4... ok | 200 ops | 5.898,18
+  [25/360] entrada_chatgpt_v19 × saida_deepseek_mbr_v01... ok | 213 ops | 745,76
+  [26/360] entrada_chatgpt_v19 × saida_deepseek_v03... ok | 188 ops | 16.329,40
+  [27/360] entrada_chatgpt_v19 × saida_deepseek_v05... ok | 214 ops | 1.251,21
+  [28/360] entrada_chatgpt_v19 × saida_gemini_v01... ok | 183 ops | 16.102,77
+  [29/360] entrada_chatgpt_v19 × saida_gemini_v06... ok | 205 ops | 9.343,71
+  [30/360] entrada_chatgpt_v19 × saida_grok_v10... ok | 188 ops | 15.987,81
+  [31/360] entrada_chatgpt_v19 × saida_grok_v6... ok | 182 ops | 16.400,97
+  [32/360] entrada_chatgpt_v19 × saida_grok_v9... ok | 193 ops | 15.044,05
+  [33/360] entrada_chatgpt_v19 × saida_manus_v1... ok | 182 ops | 15.454,27
+  [34/360] entrada_chatgpt_v19 × saida_manus_v2... ok | 188 ops | 14.328,09
+  [35/360] entrada_chatgpt_v19 × saida_manus_v3... ok | 191 ops | 8.840,14
+  [36/360] entrada_chatgpt_v19 × saida_manus_v4... ok | 180 ops | 15.886,14
+  [37/360] entrada_chatgpt_v21 × saida_chatgpt_v4... ok | 178 ops | 17.032,73
+  [38/360] entrada_chatgpt_v21 × saida_baseline... ok | 176 ops | 16.742,60
+  [39/360] entrada_chatgpt_v21 × saida_chatgpt_v2... ok | 179 ops | 16.776,18
+  [40/360] entrada_chatgpt_v21 × saida_chatgpt_v3... ok | 178 ops | 16.976,62
+  [41/360] entrada_chatgpt_v21 × saida_claude_v2... ok | 182 ops | 15.650,51
+  [42/360] entrada_chatgpt_v21 × saida_claude_v4... ok | 197 ops | 5.984,52
+  [43/360] entrada_chatgpt_v21 × saida_deepseek_mbr_v01... ok | 210 ops | 702,71
+  [44/360] entrada_chatgpt_v21 × saida_deepseek_v03... ok | 183 ops | 16.329,77
+  [45/360] entrada_chatgpt_v21 × saida_deepseek_v05... ok | 211 ops | 1.210,46
+  [46/360] entrada_chatgpt_v21 × saida_gemini_v01... ok | 178 ops | 16.182,15
+  [47/360] entrada_chatgpt_v21 × saida_gemini_v06... ok | 202 ops | 8.882,13
+  [48/360] entrada_chatgpt_v21 × saida_grok_v10... ok | 183 ops | 15.988,19
+  [49/360] entrada_chatgpt_v21 × saida_grok_v6... ok | 177 ops | 16.409,61
+  [50/360] entrada_chatgpt_v21 × saida_grok_v9... ok | 189 ops | 15.043,65
+  [51/360] entrada_chatgpt_v21 × saida_manus_v1... ok | 177 ops | 15.478,60
+  [52/360] entrada_chatgpt_v21 × saida_manus_v2... ok | 183 ops | 14.495,77
+  [53/360] entrada_chatgpt_v21 × saida_manus_v3... ok | 189 ops | 8.746,80
+  [54/360] entrada_chatgpt_v21 × saida_manus_v4... ok | 175 ops | 15.900,77
+  [55/360] entrada_claude_v1 × saida_chatgpt_v4... ok | 179 ops | 16.774,97
+  [56/360] entrada_claude_v1 × saida_baseline... ok | 177 ops | 16.484,83
+  [57/360] entrada_claude_v1 × saida_chatgpt_v2... ok | 180 ops | 16.518,41
+  [58/360] entrada_claude_v1 × saida_chatgpt_v3... ok | 179 ops | 16.718,85
+  [59/360] entrada_claude_v1 × saida_claude_v2... ok | 183 ops | 15.392,75
+  [60/360] entrada_claude_v1 × saida_claude_v4... ok | 198 ops | 5.796,10
+  [61/360] entrada_claude_v1 × saida_deepseek_mbr_v01... ok | 211 ops | 532,15
+  [62/360] entrada_claude_v1 × saida_deepseek_v03... ok | 184 ops | 16.072,01
+  [63/360] entrada_claude_v1 × saida_deepseek_v05... ok | 212 ops | 971,97
+  [64/360] entrada_claude_v1 × saida_gemini_v01... ok | 179 ops | 15.924,38
+  [65/360] entrada_claude_v1 × saida_gemini_v06... ok | 203 ops | 8.679,36
+  [66/360] entrada_claude_v1 × saida_grok_v10... ok | 184 ops | 15.730,42
+  [67/360] entrada_claude_v1 × saida_grok_v6... ok | 178 ops | 16.235,84
+  [68/360] entrada_claude_v1 × saida_grok_v9... ok | 190 ops | 14.785,88
+  [69/360] entrada_claude_v1 × saida_manus_v1... ok | 178 ops | 15.209,03
+  [70/360] entrada_claude_v1 × saida_manus_v2... ok | 184 ops | 14.238,01
+  [71/360] entrada_claude_v1 × saida_manus_v3... ok | 190 ops | 8.562,94
+  [72/360] entrada_claude_v1 × saida_manus_v4... ok | 176 ops | 15.627,66
+  [73/360] entrada_deepseek_mbr_v01 × saida_chatgpt_v4... ok | 58 ops | 1.337,78
+  [74/360] entrada_deepseek_mbr_v01 × saida_baseline... ok | 58 ops | 1.092,20
+  [75/360] entrada_deepseek_mbr_v01 × saida_chatgpt_v2... ok | 58 ops | 1.321,58
+  [76/360] entrada_deepseek_mbr_v01 × saida_chatgpt_v3... ok | 58 ops | 1.301,90
+  [77/360] entrada_deepseek_mbr_v01 × saida_claude_v2... ok | 58 ops | 967,23
+  [78/360] entrada_deepseek_mbr_v01 × saida_claude_v4... ok | 62 ops | 74,28
+  [79/360] entrada_deepseek_mbr_v01 × saida_deepseek_mbr_v01... ok | 68 ops | -1.074,05
+  [80/360] entrada_deepseek_mbr_v01 × saida_deepseek_v03... ok | 58 ops | 1.359,88
+  [81/360] entrada_deepseek_mbr_v01 × saida_deepseek_v05... ok | 66 ops | -1.146,23
+  [82/360] entrada_deepseek_mbr_v01 × saida_gemini_v01... ok | 58 ops | 1.092,20
+  [83/360] entrada_deepseek_mbr_v01 × saida_gemini_v06... ok | 65 ops | 961,97
+  [84/360] entrada_deepseek_mbr_v01 × saida_grok_v10... ok | 58 ops | 1.349,08
+  [85/360] entrada_deepseek_mbr_v01 × saida_grok_v6... ok | 58 ops | 1.090,10
+  [86/360] entrada_deepseek_mbr_v01 × saida_grok_v9... ok | 58 ops | 1.415,26
+  [87/360] entrada_deepseek_mbr_v01 × saida_manus_v1... ok | 57 ops | 1.084,06
+  [88/360] entrada_deepseek_mbr_v01 × saida_manus_v2... ok | 58 ops | 1.012,31
+  [89/360] entrada_deepseek_mbr_v01 × saida_manus_v3... ok | 60 ops | -125,52
+  [90/360] entrada_deepseek_mbr_v01 × saida_manus_v4... ok | 58 ops | 1.096,49
+  [91/360] entrada_deepseek_v05 × saida_chatgpt_v4... ok | 19 ops | 307,02
+  [92/360] entrada_deepseek_v05 × saida_baseline... ok | 19 ops | 179,09
+  [93/360] entrada_deepseek_v05 × saida_chatgpt_v2... ok | 19 ops | 368,74
+  [94/360] entrada_deepseek_v05 × saida_chatgpt_v3... ok | 19 ops | 307,02
+  [95/360] entrada_deepseek_v05 × saida_claude_v2... ok | 19 ops | 191,88
+  [96/360] entrada_deepseek_v05 × saida_claude_v4... ok | 19 ops | -637,81
+  [97/360] entrada_deepseek_v05 × saida_deepseek_mbr_v01... ok | 20 ops | -444,91
+  [98/360] entrada_deepseek_v05 × saida_deepseek_v03... ok | 19 ops | 328,15
+  [99/360] entrada_deepseek_v05 × saida_deepseek_v05... ok | 20 ops | -410,81
+  [100/360] entrada_deepseek_v05 × saida_gemini_v01... ok | 19 ops | 179,09
+  [101/360] entrada_deepseek_v05 × saida_gemini_v06... ok | 19 ops | 190,29
+  [102/360] entrada_deepseek_v05 × saida_grok_v10... ok | 19 ops | 343,15
+  [103/360] entrada_deepseek_v05 × saida_grok_v6... ok | 19 ops | 141,55
+  [104/360] entrada_deepseek_v05 × saida_grok_v9... ok | 19 ops | 473,24
+  [105/360] entrada_deepseek_v05 × saida_manus_v1... ok | 19 ops | 386,14
+  [106/360] entrada_deepseek_v05 × saida_manus_v2... ok | 19 ops | 198,25
+  [107/360] entrada_deepseek_v05 × saida_manus_v3... ok | 19 ops | -404,06
+  [108/360] entrada_deepseek_v05 × saida_manus_v4... ok | 19 ops | 159,96
+  [109/360] entrada_deepseek_v5 × saida_chatgpt_v4... ok | 175 ops | 16.560,94
+  [110/360] entrada_deepseek_v5 × saida_baseline... ok | 173 ops | 16.270,81
+  [111/360] entrada_deepseek_v5 × saida_chatgpt_v2... ok | 175 ops | 16.480,26
+  [112/360] entrada_deepseek_v5 × saida_chatgpt_v3... ok | 175 ops | 16.504,83
+  [113/360] entrada_deepseek_v5 × saida_claude_v2... ok | 179 ops | 15.178,72
+  [114/360] entrada_deepseek_v5 × saida_claude_v4... ok | 194 ops | 5.899,00
+  [115/360] entrada_deepseek_v5 × saida_deepseek_mbr_v01... ok | 206 ops | 767,99
+  [116/360] entrada_deepseek_v5 × saida_deepseek_v03... ok | 179 ops | 16.033,86
+  [117/360] entrada_deepseek_v5 × saida_deepseek_v05... ok | 207 ops | 1.212,15
+  [118/360] entrada_deepseek_v5 × saida_gemini_v01... ok | 175 ops | 15.710,35
+  [119/360] entrada_deepseek_v5 × saida_gemini_v06... ok | 198 ops | 8.406,74
+  [120/360] entrada_deepseek_v5 × saida_grok_v10... ok | 179 ops | 15.692,27
+  [121/360] entrada_deepseek_v5 × saida_grok_v6... ok | 174 ops | 16.021,82
+  [122/360] entrada_deepseek_v5 × saida_grok_v9... ok | 185 ops | 14.692,58
+  [123/360] entrada_deepseek_v5 × saida_manus_v1... ok | 174 ops | 14.947,45
+  [124/360] entrada_deepseek_v5 × saida_manus_v2... ok | 180 ops | 14.042,90
+  [125/360] entrada_deepseek_v5 × saida_manus_v3... ok | 185 ops | 8.080,81
+  [126/360] entrada_deepseek_v5 × saida_manus_v4... ok | 172 ops | 15.376,47
+  [127/360] entrada_gemini_V20 × saida_chatgpt_v4... ok | 180 ops | 16.815,96
+  [128/360] entrada_gemini_V20 × saida_baseline... ok | 178 ops | 16.525,83
+  [129/360] entrada_gemini_V20 × saida_chatgpt_v2... ok | 181 ops | 16.559,40
+  [130/360] entrada_gemini_V20 × saida_chatgpt_v3... ok | 180 ops | 16.759,85
+  [131/360] entrada_gemini_V20 × saida_claude_v2... ok | 183 ops | 15.464,86
+  [132/360] entrada_gemini_V20 × saida_claude_v4... ok | 198 ops | 5.758,18
+  [133/360] entrada_gemini_V20 × saida_deepseek_mbr_v01... ok | 211 ops | 691,65
+  [134/360] entrada_gemini_V20 × saida_deepseek_v03... ok | 185 ops | 16.113,00
+  [135/360] entrada_gemini_V20 × saida_deepseek_v05... ok | 212 ops | 1.132,83
+  [136/360] entrada_gemini_V20 × saida_gemini_v01... ok | 180 ops | 15.965,37
+  [137/360] entrada_gemini_V20 × saida_gemini_v06... ok | 203 ops | 9.111,71
+  [138/360] entrada_gemini_V20 × saida_grok_v10... ok | 185 ops | 15.767,25
+  [139/360] entrada_gemini_V20 × saida_grok_v6... ok | 179 ops | 16.250,04
+  [140/360] entrada_gemini_V20 × saida_grok_v9... ok | 190 ops | 14.936,49
+  [141/360] entrada_gemini_V20 × saida_manus_v1... ok | 179 ops | 15.255,17
+  [142/360] entrada_gemini_V20 × saida_manus_v2... ok | 185 ops | 14.143,69
+  [143/360] entrada_gemini_V20 × saida_manus_v3... ok | 189 ops | 8.656,34
+  [144/360] entrada_gemini_V20 × saida_manus_v4... ok | 177 ops | 15.677,24
+  [145/360] entrada_grok_32_v1 × saida_chatgpt_v4... ok | 175 ops | 16.372,72
+  [146/360] entrada_grok_32_v1 × saida_baseline... ok | 173 ops | 16.082,58
+  [147/360] entrada_grok_32_v1 × saida_chatgpt_v2... ok | 176 ops | 16.116,16
+  [148/360] entrada_grok_32_v1 × saida_chatgpt_v3... ok | 175 ops | 16.316,60
+  [149/360] entrada_grok_32_v1 × saida_claude_v2... ok | 178 ops | 15.095,28
+  [150/360] entrada_grok_32_v1 × saida_claude_v4... ok | 193 ops | 5.764,10
+  [151/360] entrada_grok_32_v1 × saida_deepseek_mbr_v01... ok | 206 ops | 612,93
+  [152/360] entrada_grok_32_v1 × saida_deepseek_v03... ok | 180 ops | 15.669,76
+  [153/360] entrada_grok_32_v1 × saida_deepseek_v05... ok | 207 ops | 1.102,37
+  [154/360] entrada_grok_32_v1 × saida_gemini_v01... ok | 175 ops | 15.522,13
+  [155/360] entrada_grok_32_v1 × saida_gemini_v06... ok | 198 ops | 8.523,43
+  [156/360] entrada_grok_32_v1 × saida_grok_v10... ok | 180 ops | 15.328,17
+  [157/360] entrada_grok_32_v1 × saida_grok_v6... ok | 174 ops | 15.856,70
+  [158/360] entrada_grok_32_v1 × saida_grok_v9... ok | 186 ops | 14.383,64
+  [159/360] entrada_grok_32_v1 × saida_manus_v1... ok | 174 ops | 14.806,78
+  [160/360] entrada_grok_32_v1 × saida_manus_v2... ok | 179 ops | 13.998,93
+  [161/360] entrada_grok_32_v1 × saida_manus_v3... ok | 187 ops | 8.253,01
+  [162/360] entrada_grok_32_v1 × saida_manus_v4... ok | 172 ops | 15.225,41
+  [163/360] entrada_grok_4_v1 × saida_chatgpt_v4... ok | 178 ops | 16.835,68
+  [164/360] entrada_grok_4_v1 × saida_baseline... ok | 176 ops | 16.545,54
+  [165/360] entrada_grok_4_v1 × saida_chatgpt_v2... ok | 179 ops | 16.579,12
+  [166/360] entrada_grok_4_v1 × saida_chatgpt_v3... ok | 178 ops | 16.779,56
+  [167/360] entrada_grok_4_v1 × saida_claude_v2... ok | 182 ops | 15.453,46
+  [168/360] entrada_grok_4_v1 × saida_claude_v4... ok | 197 ops | 5.856,81
+  [169/360] entrada_grok_4_v1 × saida_deepseek_mbr_v01... ok | 210 ops | 582,65
+  [170/360] entrada_grok_4_v1 × saida_deepseek_v03... ok | 183 ops | 16.132,72
+  [171/360] entrada_grok_4_v1 × saida_deepseek_v05... ok | 211 ops | 1.032,68
+  [172/360] entrada_grok_4_v1 × saida_gemini_v01... ok | 178 ops | 15.985,09
+  [173/360] entrada_grok_4_v1 × saida_gemini_v06... ok | 202 ops | 8.740,07
+  [174/360] entrada_grok_4_v1 × saida_grok_v10... ok | 183 ops | 15.791,13
+  [175/360] entrada_grok_4_v1 × saida_grok_v6... ok | 177 ops | 16.296,55
+  [176/360] entrada_grok_4_v1 × saida_grok_v9... ok | 189 ops | 14.846,59
+  [177/360] entrada_grok_4_v1 × saida_manus_v1... ok | 177 ops | 15.269,74
+  [178/360] entrada_grok_4_v1 × saida_manus_v2... ok | 183 ops | 14.298,72
+  [179/360] entrada_grok_4_v1 × saida_manus_v3... ok | 189 ops | 8.623,65
+  [180/360] entrada_grok_4_v1 × saida_manus_v4... ok | 175 ops | 15.688,37
+  [181/360] entrada_grok_5_v1 × saida_chatgpt_v4... ok | 155 ops | 15.377,51
+  [182/360] entrada_grok_5_v1 × saida_baseline... ok | 153 ops | 15.088,21
+  [183/360] entrada_grok_5_v1 × saida_chatgpt_v2... ok | 156 ops | 15.121,79
+  [184/360] entrada_grok_5_v1 × saida_chatgpt_v3... ok | 155 ops | 15.322,23
+  [185/360] entrada_grok_5_v1 × saida_claude_v2... ok | 158 ops | 14.009,89
+  [186/360] entrada_grok_5_v1 × saida_claude_v4... ok | 172 ops | 5.331,31
+  [187/360] entrada_grok_5_v1 × saida_deepseek_mbr_v01... ok | 179 ops | 537,91
+  [188/360] entrada_grok_5_v1 × saida_deepseek_v03... ok | 160 ops | 14.674,55
+  [189/360] entrada_grok_5_v1 × saida_deepseek_v05... ok | 179 ops | 866,75
+  [190/360] entrada_grok_5_v1 × saida_gemini_v01... ok | 155 ops | 14.527,76
+  [191/360] entrada_grok_5_v1 × saida_gemini_v06... ok | 174 ops | 7.988,38
+  [192/360] entrada_grok_5_v1 × saida_grok_v10... ok | 157 ops | 14.449,67
+  [193/360] entrada_grok_5_v1 × saida_grok_v6... ok | 153 ops | 14.832,15
+  [194/360] entrada_grok_5_v1 × saida_grok_v9... ok | 163 ops | 13.427,83
+  [195/360] entrada_grok_5_v1 × saida_manus_v1... ok | 154 ops | 14.287,49
+  [196/360] entrada_grok_5_v1 × saida_manus_v2... ok | 160 ops | 12.887,10
+  [197/360] entrada_grok_5_v1 × saida_manus_v3... ok | 159 ops | 7.765,86
+  [198/360] entrada_grok_5_v1 × saida_manus_v4... ok | 152 ops | 14.921,72
+  [199/360] entrada_grok_v6 × saida_chatgpt_v4... ok | 165 ops | 16.254,58
+  [200/360] entrada_grok_v6 × saida_baseline... ok | 165 ops | 15.964,50
+  [201/360] entrada_grok_v6 × saida_chatgpt_v2... ok | 166 ops | 15.931,37
+  [202/360] entrada_grok_v6 × saida_chatgpt_v3... ok | 165 ops | 16.198,47
+  [203/360] entrada_grok_v6 × saida_claude_v2... ok | 170 ops | 14.903,53
+  [204/360] entrada_grok_v6 × saida_claude_v4... ok | 183 ops | 5.657,74
+  [205/360] entrada_grok_v6 × saida_deepseek_mbr_v01... ok | 194 ops | 652,95
+  [206/360] entrada_grok_v6 × saida_deepseek_v03... ok | 169 ops | 15.685,53
+  [207/360] entrada_grok_v6 × saida_deepseek_v05... ok | 194 ops | 1.162,45
+  [208/360] entrada_grok_v6 × saida_gemini_v01... ok | 167 ops | 15.404,05
+  [209/360] entrada_grok_v6 × saida_gemini_v06... ok | 187 ops | 9.017,46
+  [210/360] entrada_grok_v6 × saida_grok_v10... ok | 169 ops | 15.367,47
+  [211/360] entrada_grok_v6 × saida_grok_v6... ok | 166 ops | 15.778,60
+  [212/360] entrada_grok_v6 × saida_grok_v9... ok | 173 ops | 14.376,19
+  [213/360] entrada_grok_v6 × saida_manus_v1... ok | 165 ops | 14.711,39
+  [214/360] entrada_grok_v6 × saida_manus_v2... ok | 171 ops | 13.573,49
+  [215/360] entrada_grok_v6 × saida_manus_v3... ok | 177 ops | 8.205,20
+  [216/360] entrada_grok_v6 × saida_manus_v4... ok | 163 ops | 15.161,50
+  [217/360] entrada_macd_estocastico_grok_v1 × saida_chatgpt_v4... ok | 56 ops | 6.150,31
+  [218/360] entrada_macd_estocastico_grok_v1 × saida_baseline... ok | 56 ops | 5.889,38
+  [219/360] entrada_macd_estocastico_grok_v1 × saida_chatgpt_v2... ok | 57 ops | 5.838,61
+  [220/360] entrada_macd_estocastico_grok_v1 × saida_chatgpt_v3... ok | 56 ops | 6.125,37
+  [221/360] entrada_macd_estocastico_grok_v1 × saida_claude_v2... ok | 60 ops | 5.173,38
+  [222/360] entrada_macd_estocastico_grok_v1 × saida_claude_v4... ok | 66 ops | 1.787,85
+  [223/360] entrada_macd_estocastico_grok_v1 × saida_deepseek_mbr_v01... ok | 69 ops | 656,31
+  [224/360] entrada_macd_estocastico_grok_v1 × saida_deepseek_v03... ok | 59 ops | 5.954,58
+  [225/360] entrada_macd_estocastico_grok_v1 × saida_deepseek_v05... ok | 69 ops | 793,80
+  [226/360] entrada_macd_estocastico_grok_v1 × saida_gemini_v01... ok | 58 ops | 5.328,93
+  [227/360] entrada_macd_estocastico_grok_v1 × saida_gemini_v06... ok | 67 ops | 2.628,00
+  [228/360] entrada_macd_estocastico_grok_v1 × saida_grok_v10... ok | 57 ops | 5.699,91
+  [229/360] entrada_macd_estocastico_grok_v1 × saida_grok_v6... ok | 56 ops | 5.379,03
+  [230/360] entrada_macd_estocastico_grok_v1 × saida_grok_v9... ok | 60 ops | 5.936,64
+  [231/360] entrada_macd_estocastico_grok_v1 × saida_manus_v1... ok | 57 ops | 5.624,11
+  [232/360] entrada_macd_estocastico_grok_v1 × saida_manus_v2... ok | 60 ops | 4.769,14
+  [233/360] entrada_macd_estocastico_grok_v1 × saida_manus_v3... ok | 65 ops | 3.672,63
+  [234/360] entrada_macd_estocastico_grok_v1 × saida_manus_v4... ok | 56 ops | 6.188,57
+  [235/360] entrada_manus_v1 × saida_chatgpt_v4... ok | 180 ops | 16.485,67
+  [236/360] entrada_manus_v1 × saida_baseline... ok | 178 ops | 16.195,54
+  [237/360] entrada_manus_v1 × saida_chatgpt_v2... ok | 181 ops | 16.229,11
+  [238/360] entrada_manus_v1 × saida_chatgpt_v3... ok | 180 ops | 16.429,56
+  [239/360] entrada_manus_v1 × saida_claude_v2... ok | 184 ops | 15.103,45
+  [240/360] entrada_manus_v1 × saida_claude_v4... ok | 199 ops | 5.166,76
+  [241/360] entrada_manus_v1 × saida_deepseek_mbr_v01... ok | 212 ops | 671,45
+  [242/360] entrada_manus_v1 × saida_deepseek_v03... ok | 185 ops | 15.841,71
+  [243/360] entrada_manus_v1 × saida_deepseek_v05... ok | 213 ops | 605,59
+  [244/360] entrada_manus_v1 × saida_gemini_v01... ok | 180 ops | 15.635,08
+  [245/360] entrada_manus_v1 × saida_gemini_v06... ok | 204 ops | 8.459,58
+  [246/360] entrada_manus_v1 × saida_grok_v10... ok | 185 ops | 15.721,43
+  [247/360] entrada_manus_v1 × saida_grok_v6... ok | 179 ops | 15.930,12
+  [248/360] entrada_manus_v1 × saida_grok_v9... ok | 191 ops | 14.496,59
+  [249/360] entrada_manus_v1 × saida_manus_v1... ok | 179 ops | 14.898,22
+  [250/360] entrada_manus_v1 × saida_manus_v2... ok | 185 ops | 14.039,61
+  [251/360] entrada_manus_v1 × saida_manus_v3... ok | 191 ops | 8.465,84
+  [252/360] entrada_manus_v1 × saida_manus_v4... ok | 177 ops | 15.338,36
+  [253/360] entrada_manus_v2 × saida_chatgpt_v4... ok | 167 ops | 16.125,12
+  [254/360] entrada_manus_v2 × saida_baseline... ok | 165 ops | 15.790,97
+  [255/360] entrada_manus_v2 × saida_chatgpt_v2... ok | 168 ops | 15.824,55
+  [256/360] entrada_manus_v2 × saida_chatgpt_v3... ok | 167 ops | 16.024,99
+  [257/360] entrada_manus_v2 × saida_claude_v2... ok | 170 ops | 14.982,55
+  [258/360] entrada_manus_v2 × saida_claude_v4... ok | 183 ops | 6.021,86
+  [259/360] entrada_manus_v2 × saida_deepseek_mbr_v01... ok | 193 ops | 1.056,36
+  [260/360] entrada_manus_v2 × saida_deepseek_v03... ok | 171 ops | 15.161,73
+  [261/360] entrada_manus_v2 × saida_deepseek_v05... ok | 194 ops | 1.480,82
+  [262/360] entrada_manus_v2 × saida_gemini_v01... ok | 167 ops | 15.230,52
+  [263/360] entrada_manus_v2 × saida_gemini_v06... ok | 187 ops | 8.371,15
+  [264/360] entrada_manus_v2 × saida_grok_v10... ok | 170 ops | 15.117,92
+  [265/360] entrada_manus_v2 × saida_grok_v6... ok | 165 ops | 15.593,81
+  [266/360] entrada_manus_v2 × saida_grok_v9... ok | 176 ops | 14.176,65
+  [267/360] entrada_manus_v2 × saida_manus_v1... ok | 166 ops | 15.012,38
+  [268/360] entrada_manus_v2 × saida_manus_v2... ok | 171 ops | 13.795,08
+  [269/360] entrada_manus_v2 × saida_manus_v3... ok | 174 ops | 8.107,60
+  [270/360] entrada_manus_v2 × saida_manus_v4... ok | 164 ops | 15.428,05
+  [271/360] entrada_manus_v3 × saida_chatgpt_v4... ok | 153 ops | 13.939,77
+  [272/360] entrada_manus_v3 × saida_baseline... ok | 151 ops | 13.508,49
+  [273/360] entrada_manus_v3 × saida_chatgpt_v2... ok | 155 ops | 13.698,92
+  [274/360] entrada_manus_v3 × saida_chatgpt_v3... ok | 153 ops | 13.876,51
+  [275/360] entrada_manus_v3 × saida_claude_v2... ok | 156 ops | 12.447,52
+  [276/360] entrada_manus_v3 × saida_claude_v4... ok | 170 ops | 4.243,08
+  [277/360] entrada_manus_v3 × saida_deepseek_mbr_v01... ok | 180 ops | 500,83
+  [278/360] entrada_manus_v3 × saida_deepseek_v03... ok | 158 ops | 13.622,48
+  [279/360] entrada_manus_v3 × saida_deepseek_v05... ok | 183 ops | 878,83
+  [280/360] entrada_manus_v3 × saida_gemini_v01... ok | 153 ops | 12.948,04
+  [281/360] entrada_manus_v3 × saida_gemini_v06... ok | 173 ops | 6.971,06
+  [282/360] entrada_manus_v3 × saida_grok_v10... ok | 159 ops | 12.892,93
+  [283/360] entrada_manus_v3 × saida_grok_v6... ok | 151 ops | 12.919,00
+  [284/360] entrada_manus_v3 × saida_grok_v9... ok | 162 ops | 12.367,06
+  [285/360] entrada_manus_v3 × saida_manus_v1... ok | 153 ops | 12.776,93
+  [286/360] entrada_manus_v3 × saida_manus_v2... ok | 158 ops | 11.323,58
+  [287/360] entrada_manus_v3 × saida_manus_v3... ok | 164 ops | 6.998,05
+  [288/360] entrada_manus_v3 × saida_manus_v4... ok | 153 ops | 13.445,84
+  [289/360] entrada_manus_v5 × saida_chatgpt_v4... ok | 164 ops | 14.092,56
+  [290/360] entrada_manus_v5 × saida_baseline... ok | 162 ops | 13.789,51
+  [291/360] entrada_manus_v5 × saida_chatgpt_v2... ok | 167 ops | 13.836,98
+  [292/360] entrada_manus_v5 × saida_chatgpt_v3... ok | 164 ops | 14.036,45
+  [293/360] entrada_manus_v5 × saida_claude_v2... ok | 167 ops | 12.946,39
+  [294/360] entrada_manus_v5 × saida_claude_v4... ok | 178 ops | 4.986,54
+  [295/360] entrada_manus_v5 × saida_deepseek_mbr_v01... ok | 191 ops | 608,93
+  [296/360] entrada_manus_v5 × saida_deepseek_v03... ok | 171 ops | 13.240,09
+  [297/360] entrada_manus_v5 × saida_deepseek_v05... ok | 192 ops | 1.269,59
+  [298/360] entrada_manus_v5 × saida_gemini_v01... ok | 164 ops | 13.365,31
+  [299/360] entrada_manus_v5 × saida_gemini_v06... ok | 184 ops | 7.590,73
+  [300/360] entrada_manus_v5 × saida_grok_v10... ok | 171 ops | 13.057,35
+  [301/360] entrada_manus_v5 × saida_grok_v6... ok | 163 ops | 13.528,22
+  [302/360] entrada_manus_v5 × saida_grok_v9... ok | 175 ops | 12.198,99
+  [303/360] entrada_manus_v5 × saida_manus_v1... ok | 163 ops | 12.459,38
+  [304/360] entrada_manus_v5 × saida_manus_v2... ok | 169 ops | 11.672,50
+  [305/360] entrada_manus_v5 × saida_manus_v3... ok | 173 ops | 6.858,42
+  [306/360] entrada_manus_v5 × saida_manus_v4... ok | 161 ops | 12.805,52
+  [307/360] entrada_orquestrador_dinamico_v1 × saida_chatgpt_v4... ok | 201 ops | 15.365,17
+  [308/360] entrada_orquestrador_dinamico_v1 × saida_baseline... ok | 200 ops | 14.840,30
+  [309/360] entrada_orquestrador_dinamico_v1 × saida_chatgpt_v2... ok | 202 ops | 15.108,76
+  [310/360] entrada_orquestrador_dinamico_v1 × saida_chatgpt_v3... ok | 201 ops | 15.305,44
+  [311/360] entrada_orquestrador_dinamico_v1 × saida_claude_v2... ok | 207 ops | 13.849,76
+  [312/360] entrada_orquestrador_dinamico_v1 × saida_claude_v4... ok | 221 ops | 4.846,34
+  [313/360] entrada_orquestrador_dinamico_v1 × saida_deepseek_mbr_v01... ok | 232 ops | 202,07
+  [314/360] entrada_orquestrador_dinamico_v1 × saida_deepseek_v03... ok | 206 ops | 14.553,17
+  [315/360] entrada_orquestrador_dinamico_v1 × saida_deepseek_v05... ok | 232 ops | 522,23
+  [316/360] entrada_orquestrador_dinamico_v1 × saida_gemini_v01... ok | 202 ops | 14.279,85
+  [317/360] entrada_orquestrador_dinamico_v1 × saida_gemini_v06... ok | 227 ops | 8.462,79
+  [318/360] entrada_orquestrador_dinamico_v1 × saida_grok_v10... ok | 205 ops | 14.381,56
+  [319/360] entrada_orquestrador_dinamico_v1 × saida_grok_v6... ok | 203 ops | 14.676,46
+  [320/360] entrada_orquestrador_dinamico_v1 × saida_grok_v9... ok | 212 ops | 13.517,36
+  [321/360] entrada_orquestrador_dinamico_v1 × saida_manus_v1... ok | 200 ops | 14.181,86
+  [322/360] entrada_orquestrador_dinamico_v1 × saida_manus_v2... ok | 206 ops | 12.586,19
+  [323/360] entrada_orquestrador_dinamico_v1 × saida_manus_v3... ok | 210 ops | 6.959,50
+  [324/360] entrada_orquestrador_dinamico_v1 × saida_manus_v4... ok | 197 ops | 14.581,79
+  [325/360] entrada_retomada_ma21_grok_v1 × saida_chatgpt_v4... ok | 85 ops | 4.692,99
+  [326/360] entrada_retomada_ma21_grok_v1 × saida_baseline... ok | 84 ops | 4.705,08
+  [327/360] entrada_retomada_ma21_grok_v1 × saida_chatgpt_v2... ok | 86 ops | 4.598,17
+  [328/360] entrada_retomada_ma21_grok_v1 × saida_chatgpt_v3... ok | 85 ops | 4.661,99
+  [329/360] entrada_retomada_ma21_grok_v1 × saida_claude_v2... ok | 85 ops | 4.483,99
+  [330/360] entrada_retomada_ma21_grok_v1 × saida_claude_v4... ok | 89 ops | 513,12
+  [331/360] entrada_retomada_ma21_grok_v1 × saida_deepseek_mbr_v01... ok | 94 ops | -512,04
+  [332/360] entrada_retomada_ma21_grok_v1 × saida_deepseek_v03... ok | 87 ops | 4.442,13
+  [333/360] entrada_retomada_ma21_grok_v1 × saida_deepseek_v05... ok | 95 ops | -228,34
+  [334/360] entrada_retomada_ma21_grok_v1 × saida_gemini_v01... ok | 84 ops | 4.705,08
+  [335/360] entrada_retomada_ma21_grok_v1 × saida_gemini_v06... ok | 91 ops | 2.820,73
+  [336/360] entrada_retomada_ma21_grok_v1 × saida_grok_v10... ok | 89 ops | 4.517,08
+  [337/360] entrada_retomada_ma21_grok_v1 × saida_grok_v6... ok | 84 ops | 4.583,70
+  [338/360] entrada_retomada_ma21_grok_v1 × saida_grok_v9... ok | 88 ops | 3.516,67
+  [339/360] entrada_retomada_ma21_grok_v1 × saida_manus_v1... ok | 85 ops | 4.189,45
+  [340/360] entrada_retomada_ma21_grok_v1 × saida_manus_v2... ok | 85 ops | 3.797,51
+  [341/360] entrada_retomada_ma21_grok_v1 × saida_manus_v3... ok | 87 ops | 2.140,26
+  [342/360] entrada_retomada_ma21_grok_v1 × saida_manus_v4... ok | 85 ops | 4.148,09
+  [343/360] entrada_saida_extremo_grok_v1 × saida_chatgpt_v4... ok | 88 ops | 4.569,39
+  [344/360] entrada_saida_extremo_grok_v1 × saida_baseline... ok | 87 ops | 4.452,52
+  [345/360] entrada_saida_extremo_grok_v1 × saida_chatgpt_v2... ok | 88 ops | 4.602,71
+  [346/360] entrada_saida_extremo_grok_v1 × saida_chatgpt_v3... ok | 88 ops | 4.546,38
+  [347/360] entrada_saida_extremo_grok_v1 × saida_claude_v2... ok | 87 ops | 4.373,87
+  [348/360] entrada_saida_extremo_grok_v1 × saida_claude_v4... ok | 89 ops | 2.109,32
+  [349/360] entrada_saida_extremo_grok_v1 × saida_deepseek_mbr_v01... ok | 92 ops | 234,45
+  [350/360] entrada_saida_extremo_grok_v1 × saida_deepseek_v03... ok | 89 ops | 4.163,98
+  [351/360] entrada_saida_extremo_grok_v1 × saida_deepseek_v05... ok | 93 ops | 113,39
+  [352/360] entrada_saida_extremo_grok_v1 × saida_gemini_v01... ok | 87 ops | 4.452,52
+  [353/360] entrada_saida_extremo_grok_v1 × saida_gemini_v06... ok | 91 ops | 2.985,02
+  [354/360] entrada_saida_extremo_grok_v1 × saida_grok_v10... ok | 88 ops | 4.213,58
+  [355/360] entrada_saida_extremo_grok_v1 × saida_grok_v6... ok | 87 ops | 4.742,23
+  [356/360] entrada_saida_extremo_grok_v1 × saida_grok_v9... ok | 91 ops | 4.189,43
+  [357/360] entrada_saida_extremo_grok_v1 × saida_manus_v1... ok | 88 ops | 4.307,37
+  [358/360] entrada_saida_extremo_grok_v1 × saida_manus_v2... ok | 88 ops | 4.483,16
+  [359/360] entrada_saida_extremo_grok_v1 × saida_manus_v3... ok | 86 ops | 1.840,67
+  [360/360] entrada_saida_extremo_grok_v1 × saida_manus_v4... ok | 87 ops | 4.101,54
+
+========== RANKING PRINCIPAL C001 (ENTRADA × SAÍDA | MOTOR V456) ==========
+Total de pregões avaliados: 185
+pos emp                  entrada              saída  resultado  diária dias   drawdown   cap_min  acumulado
+-----------------------------------------------------------------------------------------------------------
+  1  1º        entrada_grok_3_v1   saida_chatgpt_v4  17.061,07   92,22  138    -319,82    475,82  16.741,26
+  2   =      entrada_chatgpt_v21   saida_chatgpt_v4  17.032,73   92,07  137    -319,82    475,82  16.712,92
+  3   =        entrada_grok_3_v1   saida_chatgpt_v3  17.004,96   91,92  138    -319,82    475,82  16.685,14
+  4   =      entrada_chatgpt_v19   saida_chatgpt_v4  17.000,36   91,89  139    -319,82    475,82  16.680,55
+  5   =      entrada_chatgpt_v21   saida_chatgpt_v3  16.976,62   91,77  137    -319,82    475,82  16.656,80
+  6   =      entrada_chatgpt_v19   saida_chatgpt_v3  16.944,25   91,59  139    -319,82    475,82  16.624,43
+  7   =        entrada_grok_3_v1   saida_chatgpt_v2  16.836,51   91,01  138    -309,19    465,19  16.527,33
+  8   =        entrada_grok_4_v1   saida_chatgpt_v4  16.835,68   91,00  137    -319,82    475,82  16.515,86
+  9   =       entrada_gemini_V20   saida_chatgpt_v4  16.815,96   90,90  137    -319,82    475,82  16.496,15
+ 10   =      entrada_chatgpt_v21   saida_chatgpt_v2  16.776,18   90,68  137    -309,19    465,19  16.466,99
+ 11   =      entrada_chatgpt_v19   saida_chatgpt_v2  16.775,80   90,68  139    -309,19    465,19  16.466,62
+ 12   =        entrada_grok_4_v1   saida_chatgpt_v3  16.779,56   90,70  137    -319,82    475,82  16.459,75
+ 13   =        entrada_claude_v1   saida_chatgpt_v4  16.774,97   90,68  138    -319,82    475,82  16.455,15
+ 14   =       entrada_gemini_V20   saida_chatgpt_v3  16.759,85   90,59  137    -319,82    475,82  16.440,03
+ 15   =      entrada_chatgpt_v21     saida_baseline  16.742,60   90,50  137    -309,19    465,19  16.433,41
+ 16   =        entrada_grok_3_v1     saida_baseline  16.723,94   90,40  138    -309,19    465,19  16.414,75
+ 17   =        entrada_claude_v1   saida_chatgpt_v3  16.718,85   90,37  138    -319,82    475,82  16.399,04
+ 18   =      entrada_chatgpt_v19     saida_baseline  16.663,23   90,07  139    -309,19    465,19  16.354,04
+ 19   =      entrada_deepseek_v5   saida_chatgpt_v4  16.560,94   89,52  135    -218,50    374,50  16.342,44
+ 20   =      entrada_deepseek_v5   saida_chatgpt_v3  16.504,83   89,22  135    -218,50    374,50  16.286,33
+ 21   =        entrada_grok_4_v1   saida_chatgpt_v2  16.579,12   89,62  137    -309,19    465,19  16.269,93
+ 22   =       entrada_gemini_V20   saida_chatgpt_v2  16.559,40   89,51  137    -309,19    465,19  16.250,22
+ 23   =        entrada_grok_4_v1     saida_baseline  16.545,54   89,44  137    -309,19    465,19  16.236,36
+ 24   =       entrada_gemini_V20     saida_baseline  16.525,83   89,33  137    -309,19    465,19  16.216,64
+ 25   =        entrada_claude_v1   saida_chatgpt_v2  16.518,41   89,29  138    -309,19    465,19  16.209,22
+ 26   =      entrada_deepseek_v5   saida_chatgpt_v2  16.480,26   89,08  135    -291,18    447,18  16.189,08
+ 27   =        entrada_claude_v1     saida_baseline  16.484,83   89,11  138    -309,19    465,19  16.175,65
+ 28   =         entrada_manus_v1   saida_chatgpt_v4  16.485,67   89,11  139    -319,82    475,82  16.165,86
+ 29   =        entrada_grok_3_v1      saida_grok_v6  16.461,68   88,98  138    -309,19    465,19  16.152,49
+ 30   =         entrada_manus_v1   saida_chatgpt_v3  16.429,56   88,81  139    -319,82    475,82  16.109,74
+ 31   =      entrada_chatgpt_v21      saida_grok_v6  16.409,61   88,70  137    -309,19    465,19  16.100,42
+ 32   =        entrada_grok_3_v1 saida_deepseek_v03  16.390,11   88,60  138    -294,88    450,88  16.095,23
+ 33   =      entrada_chatgpt_v19      saida_grok_v6  16.400,97   88,65  139    -309,19    465,19  16.091,78
+ 34   =       entrada_grok_32_v1   saida_chatgpt_v4  16.372,72   88,50  137    -319,82    475,82  16.052,90
+ 35   =      entrada_deepseek_v5     saida_baseline  16.270,81   87,95  135    -226,01    382,01  16.044,80
+ 36   =      entrada_chatgpt_v21 saida_deepseek_v03  16.329,77   88,27  137    -286,93    442,93  16.042,85
+ 37   =      entrada_chatgpt_v19 saida_deepseek_v03  16.329,40   88,27  139    -294,88    450,88  16.034,52
+ 38   =       entrada_grok_32_v1   saida_chatgpt_v3  16.316,60   88,20  137    -319,82    475,82  15.996,79
+ 39   =        entrada_grok_4_v1      saida_grok_v6  16.296,55   88,09  137    -309,19    465,19  15.987,37
+ 40   =       entrada_gemini_V20      saida_grok_v6  16.250,04   87,84  137    -309,19    465,19  15.940,85
+ 41   =          entrada_grok_v6   saida_chatgpt_v4  16.254,58   87,86  130    -319,82    475,82  15.934,77
+ 42   =        entrada_claude_v1      saida_grok_v6  16.235,84   87,76  138    -309,19    465,19  15.926,66
+ 43   =         entrada_manus_v1     saida_baseline  16.195,54   87,54  139    -309,19    465,19  15.886,35
+ 44   =          entrada_grok_v6   saida_chatgpt_v3  16.198,47   87,56  130    -319,82    475,82  15.878,65
+ 45   =      entrada_chatgpt_v21   saida_gemini_v01  16.182,15   87,47  137    -309,19    465,19  15.872,96
+ 46   =        entrada_grok_3_v1   saida_gemini_v01  16.163,48   87,37  138    -309,19    465,19  15.854,30
+ 47   =         entrada_manus_v2   saida_chatgpt_v4  16.125,12   87,16  132    -278,00    434,00  15.847,12
+ 48   =        entrada_grok_4_v1 saida_deepseek_v03  16.132,72   87,20  137    -286,93    442,93  15.845,79
+ 49   =       entrada_gemini_V20 saida_deepseek_v03  16.113,00   87,10  137    -294,88    450,88  15.818,12
+ 50   =      entrada_deepseek_v5 saida_deepseek_v03  16.033,86   86,67  135    -218,50    374,50  15.815,36
+ 51   =       entrada_grok_32_v1   saida_chatgpt_v2  16.116,16   87,11  137    -309,19    465,19  15.806,98
+ 52   =      entrada_deepseek_v5      saida_grok_v6  16.021,82   86,60  135    -226,01    382,01  15.795,81
+ 53   =      entrada_chatgpt_v19   saida_gemini_v01  16.102,77   87,04  139    -309,19    465,19  15.793,59
+ 54   =        entrada_claude_v1 saida_deepseek_v03  16.072,01   86,88  138    -286,93    442,93  15.785,08
+ 55   =       entrada_grok_32_v1     saida_baseline  16.082,58   86,93  137    -309,19    465,19  15.773,40
+ 56   =        entrada_grok_3_v1     saida_grok_v10  16.048,52   86,75  138    -291,18    447,18  15.757,34
+ 57   =         entrada_manus_v2   saida_chatgpt_v3  16.024,99   86,62  132    -278,00    434,00  15.746,99
+ 58   =         entrada_manus_v1   saida_chatgpt_v2  16.229,11   87,72  139    -489,39    645,39  15.739,73
+ 59   =      entrada_chatgpt_v21     saida_grok_v10  15.988,19   86,42  137    -291,18    447,18  15.697,00
+ 60   =      entrada_chatgpt_v19     saida_grok_v10  15.987,81   86,42  139    -291,18    447,18  15.696,63
+ 61   =        entrada_grok_4_v1   saida_gemini_v01  15.985,09   86,41  137    -309,19    465,19  15.675,90
+ 62   =       entrada_gemini_V20   saida_gemini_v01  15.965,37   86,30  137    -309,19    465,19  15.656,19
+ 63   =          entrada_grok_v6     saida_baseline  15.964,50   86,29  130    -309,19    465,19  15.655,31
+ 64   =        entrada_grok_3_v1     saida_manus_v4  15.946,85   86,20  138    -319,82    475,82  15.627,03
+ 65   =          entrada_grok_v6   saida_chatgpt_v2  15.931,37   86,12  130    -309,19    465,19  15.622,18
+ 66   =         entrada_manus_v1      saida_grok_v6  15.930,12   86,11  139    -309,19    465,19  15.620,94
+ 67   =        entrada_claude_v1   saida_gemini_v01  15.924,38   86,08  138    -309,19    465,19  15.615,19
+ 68   =      entrada_chatgpt_v21     saida_manus_v4  15.900,77   85,95  137    -319,82    475,82  15.580,95
+ 69   =      entrada_chatgpt_v19     saida_manus_v4  15.886,14   85,87  139    -319,82    475,82  15.566,32
+ 70   =       entrada_grok_32_v1      saida_grok_v6  15.856,70   85,71  137    -309,19    465,19  15.547,51
+ 71   =         entrada_manus_v2   saida_chatgpt_v2  15.824,55   85,54  132    -291,18    447,18  15.533,37
+ 72   =         entrada_manus_v2     saida_baseline  15.790,97   85,36  132    -275,00    431,00  15.515,97
+ 73   =        entrada_grok_4_v1     saida_grok_v10  15.791,13   85,36  137    -291,18    447,18  15.499,95
+ 74   =      entrada_deepseek_v5   saida_gemini_v01  15.710,35   84,92  135    -226,01    382,01  15.484,34
+ 75   =       entrada_gemini_V20     saida_grok_v10  15.767,25   85,23  137    -291,18    447,18  15.476,07
+ 76   =          entrada_grok_v6      saida_grok_v6  15.778,60   85,29  130    -309,19    465,19  15.469,41
+ 77   =        entrada_claude_v1     saida_grok_v10  15.730,42   85,03  138    -291,18    447,18  15.439,24
+ 78   =      entrada_deepseek_v5     saida_grok_v10  15.692,27   84,82  135    -291,18    447,18  15.401,09
+ 79   =          entrada_grok_v6 saida_deepseek_v03  15.685,53   84,79  130    -286,93    442,93  15.398,60
+ 80   =       entrada_grok_32_v1 saida_deepseek_v03  15.669,76   84,70  137    -286,93    442,93  15.382,83
+ 81   =        entrada_grok_4_v1     saida_manus_v4  15.688,37   84,80  137    -319,82    475,82  15.368,55
+ 82   =         entrada_manus_v2      saida_grok_v6  15.593,81   84,29  132    -226,01    382,01  15.367,80
+ 83   =       entrada_gemini_V20     saida_manus_v4  15.677,24   84,74  137    -319,82    475,82  15.357,42
+ 84   =        entrada_grok_3_v1    saida_claude_v2  15.662,97   84,66  138    -309,19    465,19  15.353,78
+ 85   =         entrada_manus_v1 saida_deepseek_v03  15.841,71   85,63  139    -489,39    645,39  15.352,33
+ 86   =      entrada_chatgpt_v21    saida_claude_v2  15.650,51   84,60  137    -309,19    465,19  15.341,33
+ 87   =         entrada_manus_v1   saida_gemini_v01  15.635,08   84,51  139    -309,19    465,19  15.325,90
+ 88   =        entrada_claude_v1     saida_manus_v4  15.627,66   84,47  138    -319,82    475,82  15.307,84
+ 89   =      entrada_chatgpt_v19    saida_claude_v2  15.602,26   84,34  139    -309,19    465,19  15.293,07
+ 90   =         entrada_manus_v1     saida_grok_v10  15.721,43   84,98  139    -489,39    645,39  15.232,04
+ 91   =         entrada_manus_v2     saida_manus_v4  15.428,05   83,39  132    -210,68    366,68  15.217,37
+ 92   =       entrada_grok_32_v1   saida_gemini_v01  15.522,13   83,90  137    -309,19    465,19  15.212,95
+ 93   =        entrada_grok_3_v1     saida_manus_v1  15.514,98   83,86  138    -319,82    475,82  15.195,17
+ 94   =      entrada_chatgpt_v21     saida_manus_v1  15.478,60   83,67  137    -319,82    475,82  15.158,78
+ 95   =       entrada_gemini_V20    saida_claude_v2  15.464,86   83,59  137    -309,19    465,19  15.155,67
+ 96   =      entrada_deepseek_v5     saida_manus_v4  15.376,47   83,12  135    -230,00    386,00  15.146,47
+ 97   =        entrada_grok_4_v1    saida_claude_v2  15.453,46   83,53  137    -309,19    465,19  15.144,27
+ 98   =      entrada_chatgpt_v19     saida_manus_v1  15.454,27   83,54  139    -319,82    475,82  15.134,46
+ 99   =          entrada_grok_v6   saida_gemini_v01  15.404,05   83,27  130    -309,19    465,19  15.094,86
+100   =        entrada_claude_v1    saida_claude_v2  15.392,75   83,20  138    -309,19    465,19  15.083,56
+101   =          entrada_grok_v6     saida_grok_v10  15.367,47   83,07  130    -291,18    447,18  15.076,29
+102   =        entrada_grok_5_v1   saida_chatgpt_v4  15.377,51   83,12  120    -318,25    474,25  15.059,25
+103   =       entrada_grok_32_v1     saida_grok_v10  15.328,17   82,85  137    -291,18    447,18  15.036,99
+104   =         entrada_manus_v1     saida_manus_v4  15.338,36   82,91  139    -319,82    475,82  15.018,54
+105   =        entrada_grok_5_v1   saida_chatgpt_v3  15.322,23   82,82  120    -318,25    474,25  15.003,97
+106   =         entrada_manus_v2   saida_gemini_v01  15.230,52   82,33  132    -275,00    431,00  14.955,52
+107   =      entrada_deepseek_v5    saida_claude_v2  15.178,72   82,05  135    -226,01    382,01  14.952,71
+108   =        entrada_grok_4_v1     saida_manus_v1  15.269,74   82,54  137    -344,50    500,50  14.925,24
+109   =       entrada_gemini_V20     saida_manus_v1  15.255,17   82,46  137    -344,50    500,50  14.910,67
+110   =       entrada_grok_32_v1     saida_manus_v4  15.225,41   82,30  137    -319,82    475,82  14.905,59
+111   =         entrada_manus_v2 saida_deepseek_v03  15.161,73   81,96  132    -286,93    442,93  14.874,80
+112   =        entrada_claude_v1     saida_manus_v1  15.209,03   82,21  138    -344,50    500,50  14.864,53
+113   =          entrada_grok_v6     saida_manus_v4  15.161,50   81,95  130    -319,82    475,82  14.841,68
+114   =         entrada_manus_v2     saida_grok_v10  15.117,92   81,72  132    -291,18    447,18  14.826,74
+115   =        entrada_grok_5_v1   saida_chatgpt_v2  15.121,79   81,74  120    -307,62    463,62  14.814,16
+116   =        entrada_grok_3_v1      saida_grok_v9  15.104,76   81,65  138    -300,18    456,18  14.804,58
+117   = entrada_orquestrador_d..   saida_chatgpt_v4  15.365,17   83,05  147    -564,29    720,29  14.800,88
+118   =         entrada_manus_v1    saida_claude_v2  15.103,45   81,64  139    -309,19    465,19  14.794,27
+119   =       entrada_grok_32_v1    saida_claude_v2  15.095,28   81,60  137    -309,19    465,19  14.786,09
+120   =        entrada_grok_5_v1     saida_baseline  15.088,21   81,56  120    -307,62    463,62  14.780,58
+121   =      entrada_chatgpt_v19      saida_grok_v9  15.044,05   81,32  139    -300,18    456,18  14.743,87
+122   =      entrada_chatgpt_v21      saida_grok_v9  15.043,65   81,32  137    -300,18    456,18  14.743,47
+123   = entrada_orquestrador_d..   saida_chatgpt_v3  15.305,44   82,73  147    -564,29    720,29  14.741,14
+124   =         entrada_manus_v2    saida_claude_v2  14.982,55   80,99  132    -275,00    431,00  14.707,55
+125   =         entrada_manus_v2     saida_manus_v1  15.012,38   81,15  132    -318,41    474,41  14.693,96
+126   =       entrada_gemini_V20      saida_grok_v9  14.936,49   80,74  137    -300,18    456,18  14.636,30
+127   =        entrada_grok_5_v1     saida_manus_v4  14.921,72   80,66  120    -318,25    474,25  14.603,46
+128   =      entrada_deepseek_v5     saida_manus_v1  14.947,45   80,80  135    -344,50    500,50  14.602,95
+129   =          entrada_grok_v6    saida_claude_v2  14.903,53   80,56  130    -309,19    465,19  14.594,34
+130   =         entrada_manus_v1     saida_manus_v1  14.898,22   80,53  139    -344,50    500,50  14.553,72
+131            entrada_grok_4_v1      saida_grok_v9  14.846,59   80,25  137    -300,18    456,18  14.546,41
+132            entrada_grok_5_v1      saida_grok_v6  14.832,15   80,17  120    -307,62    463,62  14.524,52
+133            entrada_claude_v1      saida_grok_v9  14.785,88   79,92  138    -300,18    456,18  14.485,70
+134   = entrada_orquestrador_d..   saida_chatgpt_v2  15.108,76   81,67  147    -646,14    802,14  14.462,62
+135           entrada_grok_32_v1     saida_manus_v1  14.806,78   80,04  137    -344,50    500,50  14.462,28
+136          entrada_deepseek_v5      saida_grok_v9  14.692,58   79,42  135    -300,18    456,18  14.392,40
+137              entrada_grok_v6     saida_manus_v1  14.711,39   79,52  130    -319,82    475,82  14.391,58
+138            entrada_grok_5_v1 saida_deepseek_v03  14.674,55   79,32  120    -286,93    442,93  14.387,62
+139   = entrada_orquestrador_d..     saida_baseline  14.840,30   80,22  147    -569,61    725,61  14.270,69
+140            entrada_grok_5_v1   saida_gemini_v01  14.527,76   78,53  120    -307,62    463,62  14.220,13
+141          entrada_chatgpt_v21     saida_manus_v2  14.495,77   78,36  137    -319,82    475,82  14.175,95
+142            entrada_grok_5_v1     saida_grok_v10  14.449,67   78,11  120    -291,18    447,18  14.158,48
+143             entrada_manus_v1      saida_grok_v9  14.496,59   78,36  139    -355,46    511,46  14.141,13
+144     entrada_orquestrador_d..      saida_grok_v6  14.676,46   79,33  147    -569,61    725,61  14.106,85
+145     entrada_orquestrador_d.. saida_deepseek_v03  14.553,17   78,67  147    -469,19    625,19  14.083,98
+146           entrada_grok_32_v1      saida_grok_v9  14.383,64   77,75  137    -300,18    456,18  14.083,45
+147              entrada_grok_v6      saida_grok_v9  14.376,19   77,71  130    -300,18    456,18  14.076,01
+148            entrada_grok_3_v1     saida_manus_v2  14.388,80   77,78  138    -319,82    475,82  14.068,99
+149     entrada_orquestrador_d..     saida_manus_v4  14.581,79   78,82  147    -564,29    720,29  14.017,49
+150          entrada_chatgpt_v19     saida_manus_v2  14.328,09   77,45  139    -319,82    475,82  14.008,28
+151            entrada_grok_4_v1     saida_manus_v2  14.298,72   77,29  137    -319,82    475,82  13.978,90
+152            entrada_grok_5_v1     saida_manus_v1  14.287,49   77,23  120    -318,41    474,41  13.969,08
+153            entrada_claude_v1     saida_manus_v2  14.238,01   76,96  138    -319,82    475,82  13.918,19
+154             entrada_manus_v2      saida_grok_v9  14.176,65   76,63  132    -259,79    415,79  13.916,85
+155           entrada_gemini_V20     saida_manus_v2  14.143,69   76,45  137    -319,82    475,82  13.823,88
+156             entrada_manus_v5   saida_chatgpt_v4  14.092,56   76,18  127    -319,82    475,82  13.772,75
+157     entrada_orquestrador_d..     saida_grok_v10  14.381,56   77,74  147    -646,14    802,14  13.735,42
+158          entrada_deepseek_v5     saida_manus_v2  14.042,90   75,91  135    -318,41    474,41  13.724,49
+159             entrada_manus_v1     saida_manus_v2  14.039,61   75,89  139    -319,82    475,82  13.719,79
+160             entrada_manus_v5   saida_chatgpt_v3  14.036,45   75,87  127    -319,82    475,82  13.716,63
+161     entrada_orquestrador_d..   saida_gemini_v01  14.279,85   77,19  147    -569,61    725,61  13.710,24
+162            entrada_grok_5_v1    saida_claude_v2  14.009,89   75,73  120    -307,62    463,62  13.702,27
+163           entrada_grok_32_v1     saida_manus_v2  13.998,93   75,67  137    -319,82    475,82  13.679,11
+164     entrada_orquestrador_d..     saida_manus_v1  14.181,86   76,66  147    -564,29    720,29  13.617,57
+165             entrada_manus_v3   saida_chatgpt_v4  13.939,77   75,35  122    -334,13    490,13  13.605,64
+166             entrada_manus_v3   saida_chatgpt_v3  13.876,51   75,01  122    -334,13    490,13  13.542,38
+167             entrada_manus_v5   saida_chatgpt_v2  13.836,98   74,79  127    -355,46    511,46  13.481,53
+168             entrada_manus_v5     saida_baseline  13.789,51   74,54  127    -309,19    465,19  13.480,32
+169             entrada_manus_v2     saida_manus_v2  13.795,08   74,57  132    -318,41    474,41  13.476,67
+170             entrada_manus_v3   saida_chatgpt_v2  13.698,92   74,05  122    -323,50    479,50  13.375,41
+171             entrada_manus_v3 saida_deepseek_v03  13.622,48   73,64  122    -286,93    442,93  13.335,55
+172     entrada_orquestrador_d..    saida_claude_v2  13.849,76   74,86  147    -569,61    725,61  13.280,15
+173              entrada_grok_v6     saida_manus_v2  13.573,49   73,37  130    -319,82    475,82  13.253,68
+174             entrada_manus_v5      saida_grok_v6  13.528,22   73,13  127    -309,19    465,19  13.219,04
+175             entrada_manus_v3     saida_baseline  13.508,49   73,02  122    -323,50    479,50  13.184,99
+176            entrada_grok_5_v1      saida_grok_v9  13.427,83   72,58  120    -300,18    456,18  13.127,65
+177             entrada_manus_v3     saida_manus_v4  13.445,84   72,68  122    -334,13    490,13  13.111,71
+178             entrada_manus_v5   saida_gemini_v01  13.365,31   72,24  127    -309,19    465,19  13.056,13
+179             entrada_manus_v5 saida_deepseek_v03  13.240,09   71,57  127    -286,93    442,93  12.953,16
+180     entrada_orquestrador_d..      saida_grok_v9  13.517,36   73,07  147    -749,74    905,74  12.767,62
+181             entrada_manus_v5     saida_grok_v10  13.057,35   70,58  127    -339,51    495,51  12.717,83
+182             entrada_manus_v5    saida_claude_v2  12.946,39   69,98  127    -309,19    465,19  12.637,20
+183             entrada_manus_v3   saida_gemini_v01  12.948,04   69,99  122    -323,50    479,50  12.624,53
+184             entrada_manus_v3     saida_grok_v10  12.892,93   69,69  122    -286,93    442,93  12.606,00
+185             entrada_manus_v3      saida_grok_v6  12.919,00   69,83  122    -323,50    479,50  12.595,50
+186            entrada_grok_5_v1     saida_manus_v2  12.887,10   69,66  120    -318,41    474,41  12.568,69
+187             entrada_manus_v5     saida_manus_v4  12.805,52   69,22  127    -319,82    475,82  12.485,71
+188             entrada_manus_v3     saida_manus_v1  12.776,93   69,06  122    -362,82    518,82  12.414,11
+189             entrada_manus_v5     saida_manus_v1  12.459,38   67,35  127    -319,82    475,82  12.139,56
+190             entrada_manus_v3      saida_grok_v9  12.367,06   66,85  122    -236,41    392,41  12.130,65
+191             entrada_manus_v3    saida_claude_v2  12.447,52   67,28  122    -323,50    479,50  12.124,02
+192     entrada_orquestrador_d..     saida_manus_v2  12.586,19   68,03  147    -703,54    859,54  11.882,66
+193             entrada_manus_v5      saida_grok_v9  12.198,99   65,94  127    -375,09    531,09  11.823,90
+194             entrada_manus_v5     saida_manus_v2  11.672,50   63,09  127    -319,82    475,82  11.352,68
+195             entrada_manus_v3     saida_manus_v2  11.323,58   61,21  122    -362,82    518,82  10.960,76
+196            entrada_grok_3_v1   saida_gemini_v06   9.404,42   50,83  138    -263,42    419,42   9.141,00
+197          entrada_chatgpt_v19   saida_gemini_v06   9.343,71   50,51  139    -263,42    419,42   9.080,29
+198           entrada_gemini_V20   saida_gemini_v06   9.111,71   49,25  137    -263,42    419,42   8.848,29
+199              entrada_grok_v6   saida_gemini_v06   9.017,46   48,74  130    -263,42    419,42   8.754,04
+200          entrada_chatgpt_v21   saida_gemini_v06   8.882,13   48,01  137    -263,42    419,42   8.618,71
+201            entrada_grok_3_v1     saida_manus_v3   8.900,85   48,11  138    -317,75    473,75   8.583,10
+202          entrada_chatgpt_v19     saida_manus_v3   8.840,14   47,78  139    -317,75    473,75   8.522,39
+203            entrada_grok_4_v1   saida_gemini_v06   8.740,07   47,24  137    -263,42    419,42   8.476,65
+204          entrada_chatgpt_v21     saida_manus_v3   8.746,80   47,28  137    -317,75    473,75   8.429,05
+205            entrada_claude_v1   saida_gemini_v06   8.679,36   46,92  138    -263,42    419,42   8.415,94
+206           entrada_gemini_V20     saida_manus_v3   8.656,34   46,79  137    -317,75    473,75   8.338,59
+207            entrada_grok_4_v1     saida_manus_v3   8.623,65   46,61  137    -317,75    473,75   8.305,89
+208           entrada_grok_32_v1   saida_gemini_v06   8.523,43   46,07  137    -263,42    419,42   8.260,01
+209            entrada_claude_v1     saida_manus_v3   8.562,94   46,29  138    -317,75    473,75   8.245,18
+210             entrada_manus_v1   saida_gemini_v06   8.459,58   45,73  139    -297,50    453,50   8.162,08
+211          entrada_deepseek_v5   saida_gemini_v06   8.406,74   45,44  135    -263,42    419,42   8.143,32
+212             entrada_manus_v2   saida_gemini_v06   8.371,15   45,25  132    -273,55    429,55   8.097,60
+213     entrada_orquestrador_d..   saida_gemini_v06   8.462,79   45,74  147    -426,41    582,41   8.036,38
+214             entrada_manus_v1     saida_manus_v3   8.465,84   45,76  139    -520,21    676,21   7.945,63
+215           entrada_grok_32_v1     saida_manus_v3   8.253,01   44,61  137    -317,75    473,75   7.935,26
+216              entrada_grok_v6     saida_manus_v3   8.205,20   44,35  130    -317,75    473,75   7.887,45
+217          entrada_deepseek_v5     saida_manus_v3   8.080,81   43,68  135    -259,61    415,61   7.821,19
+218             entrada_manus_v2     saida_manus_v3   8.107,60   43,82  132    -317,75    473,75   7.789,85
+219            entrada_grok_5_v1   saida_gemini_v06   7.988,38   43,18  120    -273,55    429,55   7.714,83
+220            entrada_grok_5_v1     saida_manus_v3   7.765,86   41,98  120    -317,75    473,75   7.448,11
+221             entrada_manus_v5   saida_gemini_v06   7.590,73   41,03  127    -292,56    448,56   7.298,17
+222             entrada_manus_v3   saida_gemini_v06   6.971,06   37,68  122    -271,00    427,00   6.700,06
+223             entrada_manus_v3     saida_manus_v3   6.998,05   37,83  122    -321,50    477,50   6.676,55
+224             entrada_manus_v5     saida_manus_v3   6.858,42   37,07  127    -317,75    473,75   6.540,67
+225     entrada_orquestrador_d..     saida_manus_v3   6.959,50   37,62  147    -748,68    904,68   6.210,82
+226     entrada_macd_estocasti..     saida_manus_v4   6.188,57   33,45   53    -425,11    581,11   5.763,46
+227     entrada_macd_estocasti..   saida_chatgpt_v4   6.150,31   33,24   53    -425,11    581,11   5.725,20
+228     entrada_macd_estocasti..   saida_chatgpt_v3   6.125,37   33,11   53    -425,11    581,11   5.700,26
+229     entrada_macd_estocasti..      saida_grok_v9   5.936,64   32,09   53    -260,70    416,70   5.675,93
+230          entrada_chatgpt_v21    saida_claude_v4   5.984,52   32,35  137    -352,50    508,50   5.632,02
+231            entrada_grok_3_v1    saida_claude_v4   5.958,89   32,21  138    -352,50    508,50   5.606,40
+232          entrada_deepseek_v5    saida_claude_v4   5.899,00   31,89  135    -352,50    508,50   5.546,51
+233          entrada_chatgpt_v19    saida_claude_v4   5.898,18   31,88  139    -352,50    508,50   5.545,69
+234             entrada_manus_v2    saida_claude_v4   6.021,86   32,55  132    -476,36    632,36   5.545,50
+235     entrada_macd_estocasti.. saida_deepseek_v03   5.954,58   32,19   53    -429,73    585,73   5.524,84
+236            entrada_grok_4_v1    saida_claude_v4   5.856,81   31,66  137    -352,50    508,50   5.504,31
+237     entrada_macd_estocasti..     saida_baseline   5.889,38   31,83   53    -425,11    581,11   5.464,27
+238            entrada_claude_v1    saida_claude_v4   5.796,10   31,33  138    -352,50    508,50   5.443,60
+239           entrada_grok_32_v1    saida_claude_v4   5.764,10   31,16  137    -352,50    508,50   5.411,60
+240           entrada_gemini_V20    saida_claude_v4   5.758,18   31,13  137    -352,50    508,50   5.405,69
+241              entrada_grok_v6    saida_claude_v4   5.657,74   30,58  130    -352,00    508,00   5.305,74
+242     entrada_macd_estocasti..   saida_chatgpt_v2   5.838,61   31,56   53    -611,50    767,50   5.227,11
+243     entrada_macd_estocasti..     saida_manus_v1   5.624,11   30,40   53    -425,11    581,11   5.199,00
+244     entrada_macd_estocasti..     saida_grok_v10   5.699,91   30,81   53    -611,50    767,50   5.088,41
+245     entrada_macd_estocasti..      saida_grok_v6   5.379,03   29,08   53    -425,11    581,11   4.953,92
+246            entrada_grok_5_v1    saida_claude_v4   5.331,31   28,82  120    -377,51    533,51   4.953,80
+247     entrada_macd_estocasti..   saida_gemini_v01   5.328,93   28,81   53    -425,11    581,11   4.903,82
+248             entrada_manus_v1    saida_claude_v4   5.166,76   27,93  139    -352,50    508,50   4.814,27
+249     entrada_macd_estocasti..    saida_claude_v2   5.173,38   27,96   53    -511,64    667,64   4.661,74
+250             entrada_manus_v5    saida_claude_v4   4.986,54   26,95  127    -398,00    554,00   4.588,54
+251     entrada_retomada_ma21_..     saida_baseline   4.705,08   25,43   77    -200,50    356,50   4.504,58
+252     entrada_retomada_ma21_..   saida_gemini_v01   4.705,08   25,43   77    -200,50    356,50   4.504,58
+253     entrada_retomada_ma21_..   saida_chatgpt_v4   4.692,99   25,37   77    -223,65    379,65   4.469,34
+254     entrada_saida_extremo_..      saida_grok_v6   4.742,23   25,63   74    -290,30    446,30   4.451,94
+255     entrada_retomada_ma21_..   saida_chatgpt_v3   4.661,99   25,20   77    -223,65    379,65   4.438,34
+256     entrada_retomada_ma21_..   saida_chatgpt_v2   4.598,17   24,85   77    -213,02    369,02   4.385,15
+257     entrada_retomada_ma21_..      saida_grok_v6   4.583,70   24,78   77    -200,50    356,50   4.383,20
+258     entrada_macd_estocasti..     saida_manus_v2   4.769,14   25,78   53    -425,11    581,11   4.344,03
+259     entrada_retomada_ma21_..     saida_grok_v10   4.517,08   24,42   77    -200,50    356,50   4.316,59
+260     entrada_saida_extremo_..   saida_chatgpt_v2   4.602,71   24,88   74    -296,48    452,48   4.306,24
+261     entrada_retomada_ma21_..    saida_claude_v2   4.483,99   24,24   77    -200,50    356,50   4.283,50
+262     entrada_saida_extremo_..   saida_chatgpt_v4   4.569,39   24,70   74    -296,48    452,48   4.272,92
+263     entrada_saida_extremo_..   saida_chatgpt_v3   4.546,38   24,58   74    -296,48    452,48   4.249,90
+264     entrada_retomada_ma21_.. saida_deepseek_v03   4.442,13   24,01   77    -213,02    369,02   4.229,10
+265     entrada_saida_extremo_..     saida_manus_v2   4.483,16   24,23   74    -296,48    452,48   4.186,68
+266     entrada_saida_extremo_..     saida_baseline   4.452,52   24,07   74    -296,48    452,48   4.156,05
+267     entrada_saida_extremo_..   saida_gemini_v01   4.452,52   24,07   74    -296,48    452,48   4.156,05
+268     entrada_orquestrador_d..    saida_claude_v4   4.846,34   26,20  147    -696,82    852,82   4.149,52
+269     entrada_saida_extremo_..    saida_claude_v2   4.373,87   23,64   74    -296,48    452,48   4.077,39
+270     entrada_saida_extremo_..     saida_manus_v1   4.307,37   23,28   74    -296,48    452,48   4.010,89
+271     entrada_retomada_ma21_..     saida_manus_v1   4.189,45   22,65   77    -223,65    379,65   3.965,79
+272     entrada_saida_extremo_..     saida_grok_v10   4.213,58   22,78   74    -280,33    436,33   3.933,26
+273             entrada_manus_v3    saida_claude_v4   4.243,08   22,94  122    -315,17    471,17   3.927,91
+274     entrada_retomada_ma21_..     saida_manus_v4   4.148,09   22,42   77    -226,75    382,75   3.921,34
+275     entrada_saida_extremo_.. saida_deepseek_v03   4.163,98   22,51   74    -333,40    489,40   3.830,58
+276     entrada_saida_extremo_..     saida_manus_v4   4.101,54   22,17   74    -296,48    452,48   3.805,06
+277     entrada_saida_extremo_..      saida_grok_v9   4.189,43   22,65   74    -422,00    578,00   3.767,43
+278     entrada_retomada_ma21_..     saida_manus_v2   3.797,51   20,53   77    -223,65    379,65   3.573,86
+279     entrada_macd_estocasti..     saida_manus_v3   3.672,63   19,85   53    -317,75    473,75   3.354,88
+280     entrada_retomada_ma21_..      saida_grok_v9   3.516,67   19,01   77    -258,88    414,88   3.257,79
+281     entrada_saida_extremo_..   saida_gemini_v06   2.985,02   16,14   74    -284,37    440,37   2.700,64
+282     entrada_retomada_ma21_..   saida_gemini_v06   2.820,73   15,25   77    -276,70    432,70   2.544,03
+283     entrada_macd_estocasti..   saida_gemini_v06   2.628,00   14,21   53    -330,50    486,50   2.297,50
+284     entrada_retomada_ma21_..     saida_manus_v3   2.140,26   11,57   77    -242,41    398,41   1.897,85
+285     entrada_saida_extremo_..    saida_claude_v4   2.109,32   11,40   74    -391,72    547,72   1.717,60
+286     entrada_saida_extremo_..     saida_manus_v3   1.840,67    9,95   74    -344,52    500,52   1.496,15
+287     entrada_macd_estocasti..    saida_claude_v4   1.787,85    9,66   53    -296,41    452,41   1.491,44
+288             entrada_manus_v2 saida_deepseek_v05   1.480,82    8,00  132    -378,77    534,77   1.102,05
+289             entrada_manus_v5 saida_deepseek_v05   1.269,59    6,86  127    -478,02    634,02     791,57
+290          entrada_chatgpt_v21 saida_deepseek_v05   1.210,46    6,54  137    -427,85    583,85     782,61
+291            entrada_grok_3_v1 saida_deepseek_v05   1.311,92    7,09  138    -563,37    719,37     748,55
+292           entrada_grok_32_v1 saida_deepseek_v05   1.102,37    5,96  137    -372,47    528,47     729,90
+293          entrada_deepseek_v5 saida_deepseek_v05   1.212,15    6,55  135    -498,87    654,87     713,29
+294          entrada_chatgpt_v19 saida_deepseek_v05   1.251,21    6,76  139    -563,37    719,37     687,84
+295             entrada_manus_v2 saida_deepseek_m..   1.056,36    5,71  132    -422,98    578,98     633,38
+296           entrada_gemini_V20 saida_deepseek_v05   1.132,83    6,12  137    -563,37    719,37     569,46
+297              entrada_grok_v6 saida_deepseek_v05   1.162,45    6,28  130    -598,45    754,45     563,99
+298            entrada_grok_4_v1 saida_deepseek_v05   1.032,68    5,58  137    -498,87    654,87     533,81
+299     entrada_macd_estocasti.. saida_deepseek_v05     793,80    4,29   53    -296,59    452,59     497,21
+300             entrada_manus_v3 saida_deepseek_v05     878,83    4,75  122    -397,43    553,43     481,40
+301            entrada_claude_v1 saida_deepseek_v05     971,97    5,25  138    -498,87    654,87     473,10
+302     entrada_macd_estocasti.. saida_deepseek_m..     656,31    3,55   53    -203,00    359,00     453,31
+303            entrada_grok_5_v1 saida_deepseek_v05     866,75    4,69  120    -450,54    606,54     416,21
+304     entrada_deepseek_mbr_v01   saida_gemini_v06     961,97    5,20   54    -578,93    734,93     383,04
+305     entrada_deepseek_mbr_v01      saida_grok_v9   1.415,26    7,65   54  -1.211,14  1.367,14     204,12
+306          entrada_deepseek_v5 saida_deepseek_m..     767,99    4,15  135    -593,55    749,55     174,44
+307             entrada_manus_v1 saida_deepseek_m..     671,45    3,63  139    -504,75    660,75     166,70
+308            entrada_grok_3_v1 saida_deepseek_m..     796,26    4,30  138    -644,55    800,55     151,71
+309          entrada_chatgpt_v21 saida_deepseek_m..     702,71    3,80  137    -566,75    722,75     135,97
+310             entrada_manus_v3 saida_deepseek_m..     500,83    2,71  122    -371,36    527,36     129,47
+311          entrada_chatgpt_v19 saida_deepseek_m..     745,76    4,03  139    -644,55    800,55     101,21
+312     entrada_deepseek_mbr_v01     saida_grok_v10   1.349,08    7,29   54  -1.270,51  1.426,51      78,56
+313             entrada_manus_v5 saida_deepseek_m..     608,93    3,29  127    -539,39    695,39      69,53
+314         entrada_deepseek_v05      saida_grok_v9     473,24    2,56   19    -404,92    560,92      68,33
+315           entrada_grok_32_v1 saida_deepseek_m..     612,93    3,31  137    -561,35    717,35      51,58
+316           entrada_gemini_V20 saida_deepseek_m..     691,65    3,74  137    -648,72    804,72      42,94
+317     entrada_deepseek_mbr_v01   saida_chatgpt_v2   1.321,58    7,14   54  -1.298,01  1.454,01      23,58
+318     entrada_deepseek_mbr_v01 saida_deepseek_v03   1.359,88    7,35   54  -1.338,59  1.494,59      21,28
+319         entrada_deepseek_v05     saida_manus_v1     386,14    2,09   19    -404,92    560,92     -18,78
+320             entrada_manus_v1 saida_deepseek_v05     605,59    3,27  139    -627,14    783,14     -21,55
+321         entrada_deepseek_v05   saida_chatgpt_v2     368,74    1,99   19    -404,92    560,92     -36,18
+322     entrada_deepseek_mbr_v01   saida_chatgpt_v4   1.337,78    7,23   54  -1.397,19  1.553,19     -59,40
+323            entrada_grok_4_v1 saida_deepseek_m..     582,65    3,15  137    -644,05    800,05     -61,41
+324              entrada_grok_v6 saida_deepseek_m..     652,95    3,53  130    -714,95    870,95     -62,00
+325         entrada_deepseek_v05     saida_grok_v10     343,15    1,85   19    -408,22    564,22     -65,06
+326     entrada_retomada_ma21_..    saida_claude_v4     513,12    2,77   77    -590,21    746,21     -77,09
+327         entrada_deepseek_v05 saida_deepseek_v03     328,15    1,77   19    -412,38    568,38     -84,23
+328     entrada_deepseek_mbr_v01   saida_chatgpt_v3   1.301,90    7,04   54  -1.397,19  1.553,19     -95,28
+329     entrada_orquestrador_d.. saida_deepseek_v05     522,23    2,82  147    -618,42    774,42     -96,19
+330         entrada_deepseek_v05   saida_chatgpt_v4     307,02    1,66   19    -404,92    560,92     -97,90
+331         entrada_deepseek_v05   saida_chatgpt_v3     307,02    1,66   19    -404,92    560,92     -97,90
+332         entrada_deepseek_v05   saida_gemini_v06     190,29    1,03   19    -298,65    454,65    -108,36
+333            entrada_claude_v1 saida_deepseek_m..     532,15    2,88  138    -644,05    800,05    -111,91
+334            entrada_grok_5_v1 saida_deepseek_m..     537,91    2,91  120    -691,56    847,56    -153,64
+335         entrada_deepseek_v05     saida_manus_v2     198,25    1,07   19    -404,92    560,92    -206,67
+336     entrada_deepseek_mbr_v01     saida_manus_v1   1.084,06    5,86   54  -1.304,44  1.460,44    -220,39
+337         entrada_deepseek_v05     saida_baseline     179,09    0,97   19    -404,92    560,92    -225,83
+338         entrada_deepseek_v05   saida_gemini_v01     179,09    0,97   19    -404,92    560,92    -225,83
+339         entrada_deepseek_v05     saida_manus_v4     159,96    0,86   19    -404,92    560,92    -244,95
+340         entrada_deepseek_v05    saida_claude_v2     191,88    1,04   19    -447,26    603,26    -255,38
+341     entrada_deepseek_mbr_v01     saida_manus_v4   1.096,49    5,93   54  -1.359,86  1.515,86    -263,37
+342         entrada_deepseek_v05      saida_grok_v6     141,55    0,77   19    -415,37    571,37    -273,82
+343     entrada_deepseek_mbr_v01     saida_manus_v2   1.012,31    5,47   54  -1.454,87  1.610,87    -442,56
+344     entrada_saida_extremo_.. saida_deepseek_m..     234,45    1,27   74    -692,82    848,82    -458,37
+345     entrada_deepseek_mbr_v01     saida_baseline   1.092,20    5,90   54  -1.584,44  1.740,44    -492,24
+346     entrada_deepseek_mbr_v01   saida_gemini_v01   1.092,20    5,90   54  -1.584,44  1.740,44    -492,24
+347     entrada_deepseek_mbr_v01      saida_grok_v6   1.090,10    5,89   54  -1.628,02  1.784,02    -537,92
+348     entrada_saida_extremo_.. saida_deepseek_v05     113,39    0,61   74    -655,47    811,47    -542,08
+349     entrada_deepseek_mbr_v01    saida_claude_v2     967,23    5,23   54  -1.659,91  1.815,91    -692,68
+350     entrada_retomada_ma21_.. saida_deepseek_v05    -228,34   -1,23   77    -544,26    700,26    -772,60
+351     entrada_orquestrador_d.. saida_deepseek_m..     202,07    1,09  147  -1.016,65  1.172,65    -814,58
+352         entrada_deepseek_v05 saida_deepseek_v05    -410,81   -2,22   19    -410,81    566,81    -821,63
+353         entrada_deepseek_v05 saida_deepseek_m..    -444,91   -2,40   19    -444,91    600,91    -889,83
+354         entrada_deepseek_v05     saida_manus_v3    -404,06   -2,18   19    -613,18    769,18  -1.017,24
+355     entrada_retomada_ma21_.. saida_deepseek_m..    -512,04   -2,77   77    -632,62    788,62  -1.144,66
+356         entrada_deepseek_v05    saida_claude_v4    -637,81   -3,45   19    -707,66    863,66  -1.345,47
+357     entrada_deepseek_mbr_v01    saida_claude_v4      74,28    0,40   54  -1.585,07  1.741,07  -1.510,78
+358     entrada_deepseek_mbr_v01     saida_manus_v3    -125,52   -0,68   54  -1.868,20  2.024,20  -1.993,72
+359     entrada_deepseek_mbr_v01 saida_deepseek_m..  -1.074,05   -5,81   54  -1.100,05  1.256,05  -2.174,09
+360     entrada_deepseek_mbr_v01 saida_deepseek_v05  -1.146,23   -6,20   54  -1.146,23  1.302,23  -2.292,46
+Acumulado = resultado - abs(drawdown). Maior acumulado vence.
+Portão estatístico (Regra 14): desvio-padrão por operação 160,73 | faixa de ruído do período (erro padrão do total) 2.168,42 = 12.7% do resultado do 1º lugar.
+ATENÇÃO: 131 posição(ões) marcada(s) com '=' estão ESTATISTICAMENTE EMPATADAS com o 1º lugar — a diferença é menor que o ruído da própria amostra. Escolher entre elas por este ranking é sorteio, não decisão. Uma promoção só se justifica com vantagem acima de 2.168,42.
+
+Relatórios:
+  D:\DAYTRADE\ROBONILDO\logs\classificacao_cruzada_c001_motor_v456.csv
+Limitação: OHLC 15min não revela ordem intrabar nem preço exato das 18:20.
+
+D:\DAYTRADE\ROBONILDO>
