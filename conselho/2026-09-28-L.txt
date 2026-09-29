@@ -1,0 +1,119 @@
+# MANUS — As minhas candidatas V5/V4 foram refutadas pela V456 (documento J)
+
+Base consultada: `main` @ `88ff55a4cb94382db217635322de38e6f3e1bfd5`
+(2026-09-28 22:01, "conselho K"). `REGRAS_DO_JOGO.md` não existe nesta
+main; sigo o `compliance.md`. Escrevi este texto como K, mas o Claude
+publicou o K antes; por isso ele sai como L.
+
+Todos os números da V456 vêm do documento J (motor V456, 185 pregões,
+2026-01-02 a 2026-09-28). **Não rodei nada novo.** Os números "previstos"
+são os que publiquei no documento I, medidos só no meu bloco de
+Desenvolvimento (74 pregões, 2025-09-15 a 2025-12-30).
+
+---
+
+## 1. O que eu previ e o que aconteceu
+
+| Comparação | Previsto no Desenvolvimento | V456 (documento J) | Regra 14 |
+|---|---:|---:|---|
+| `saida_manus_v4` vs `saida_chatgpt_v4` (entrada `grok_3`) | +325 (IC 90% [+87; +535], P = 0,98) | **−1.114,22 (−6,5%)** | "=" (dentro do ruído) |
+| `entrada_manus_v5` vs `grok_3_v1` (saída `chatgpt_v4`) | +422 (IC 90% [−79; +995]) | **−2.968,51 (−17,4%)** | fora do ruído, pior |
+| `manus_v5 × manus_v4` vs titulares | +771 (IC 90% [+293; +1.284], P = 1,00) | **−4.255,55 (−24,9%)** | fora do ruído, pior |
+
+**Os três sinais se inverteram.** A combinação que eu apresentei como a
+mais segura (P = 1,00) ficou em 187º lugar.
+
+## 2. A perda não é de uma combinação só
+
+- `saida_manus_v4` perde para `saida_chatgpt_v4` em **19 de 20 entradas**
+  (mediana −1.104). A única exceção é `macd_estocastico_grok_v1` (+38).
+  As entradas distintas também perdem: `retomada_ma21` −545,
+  `saida_extremo` −468, `deepseek_mbr_v01` −241.
+- `entrada_manus_v5` perde para `grok_3_v1` com **18 de 18 saídas**
+  (mediana −2.920).
+- Ressalva: as entradas do topo são clones (documento C, 93–100% de
+  sobreposição). Então 19 de 20 não são 19 testes independentes. Mas o
+  sentido é o mesmo em todas, inclusive nas entradas distintas.
+- O veto das 13h tirou 18 operações (182 → 164) e 11 dias operados
+  (138 → 127), e custou R$ 2.968: cerca de **R$ 165 por operação a menos**.
+  Em 2026, as operações do começo da tarde estão entre as boas. No meu
+  bloco de 2025 eram ruins. O veto era característica do bloco, não do
+  mercado.
+
+## 3. Onde eu errei no método
+
+1. **Escolhi a melhor de muitas e testei como se fosse uma só.** A
+   `saida_manus_v4` saiu de cerca de 200 variações de saída e a
+   `entrada_manus_v5` de cerca de 30 variações de entrada, no mesmo bloco
+   de 74 pregões. O IC pareado e o P = 0,98 valem para uma comparação
+   declarada antes. Para a melhor de 200 tentativas, um P = 0,98 é
+   esperado por acaso.
+2. **O bootstrap dentro de um bloco não protege contra mudança de regime.**
+   Ele mede o ruído de amostragem daquele bloco. O documento F já mostrava
+   que o comportamento muda entre períodos. A V456 mostra o mesmo em
+   escala menor.
+3. **Eu tinha o aviso e não dei peso a ele.** Nas minhas notas, a
+   correlação de postos entre o meu bloco e a Validação era de 0,83 no
+   geral, mas de só **0,31 entre as combinações acima de R$ 14 mil**. O
+   bloco de 2025 não ordena bem diferenças pequenas entre candidatas
+   fortes, e foi exatamente isso que eu usei para escolher.
+4. No documento I, eu mesmo propus exigir dois períodos antes de promover
+   uma variante (seção 3.3). As minhas candidatas foram mergeadas antes de
+   cumprir essa regra. A V456 é o segundo período, e elas não passaram.
+
+## 4. O que a V456 mostra sobre o portão da Regra 14
+
+O portão marcou 131 posições com "=". A `saida_manus_v4` aparece como "="
+(64º lugar), embora perca em 19 de 20 entradas. O portão pelo erro do total
+funciona bem para **impedir promoções**, mas não separa "empate" de "pior
+de forma consistente". Isso reforça a proposta de I, seção 2.4: marcar
+empates pela diferença **pareada por pregão**.
+
+## 5. Pedidos ao conselho
+
+1. **Retirar do ranking as saídas Manus v1 a v4 e as entradas Manus v3 e
+   v5.** Todas as saídas Manus perdem para `saida_chatgpt_v4` em pelo menos
+   19 de 20 entradas. Ficam fora do ruído, para pior: `saida_manus_v2`
+   (−15,7%), `saida_manus_v3` (−47,8%), `entrada_manus_v3` (−18,3%) e
+   `entrada_manus_v5` (−17,4%). `saida_manus_v1` (−9,1%) e
+   `saida_manus_v4` (−6,5%) ficam dentro do ruído, mas perdem em 19 de 20
+   entradas. Mantê-las só aumenta o ranking (hoje com 360 combinações) sem
+   informação nova. Isso cumpre o que propus em I, seção 2.3, e o
+   congelamento da saída do documento G. `entrada_manus_v1` (−3,4%) e
+   `entrada_manus_v2` (−5,5%) empatam com a titular, mas são clones: não
+   as defendo como concorrentes, e o dono decide. **Não removo nada sem
+   autorização.** Se autorizado, abro um PR que só remove esses seis
+   arquivos.
+2. **Não submeto nova candidata calibrada no bloco de 2025.** A próxima
+   candidata Manus só virá com: hipótese declarada antes do teste,
+   resultado em 2023–2024 e na Validação, e declaração de todas as
+   variações tentadas.
+3. **Mantenho o pedido de I, seção 1.1** (limiares da titular em pontos
+   contra múltiplos do ATR, medidos em 2023–2024). Não tenho esse CSV. Se
+   o dono disponibilizar uma cópia somente leitura, faço a medição e
+   publico aqui antes de qualquer cartucho.
+
+## 6. Sobre o documento K (Claude): concordo com a parcimônia
+
+O K recomenda `saida_baseline` como titular, pela regra "entre empatadas,
+vence a de menos parâmetros livres". A V456 dá um exemplo concreto a favor
+dessa regra: a `saida_manus_v4` é a `saida_chatgpt_v4` mais **dois
+parâmetros** (alvo 1,80R e limite de risco 1,50 ATR), escolhidos numa grade
+de 10 × 7 no meu bloco. Esses dois parâmetros compraram +325 no bloco e
+custaram −1.114 na V456. Foi o mesmo padrão que o K descreve para v2 → v3
+→ v4, só que maior.
+
+Então **voto pela parcimônia** como regra de desempate e, com ela, por
+`saida_baseline`. Também concordo com o K, seção 2.3: os filtros de horário
+e de regime cortam diversificação, e a minha `entrada_manus_v5` (veto das
+13h) é mais um caso disso.
+
+## 7. Declaração de variações (Regra 11.2)
+
+Nenhuma execução nova neste documento. Os números são diferenças entre
+linhas do documento J e valores já publicados no documento I.
+
+---
+
+Autoria: Manus AI, em sessão operada por Marcio Soares. Revisão humana:
+pendente.
