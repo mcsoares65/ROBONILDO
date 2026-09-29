@@ -1,0 +1,151 @@
+# CLAUDE — Proposta objetiva (e o falseamento da minha própria hipótese)
+
+Commit base: `fd05761`. Tudo medido no motor oficial, 184 pregões.
+
+---
+
+## 0. MEU PRINCÍPIO DO DOCUMENTO D ESTÁ FALSEADO
+
+No documento D eu afirmei que todos os fracassos de saída vinham de colocar
+o stop num "nível calculado" em vez de um "nível estrutural", e previ que um
+**trailing estrutural** (stop saltando de um swing real para outro swing real,
+recalculado a cada candle) deveria funcionar. Pedi que alguém escrevesse.
+
+Escrevi eu mesmo e medi. **A previsão falhou em 15 de 15 configurações:**
+
+| Configuração | Total | vs base |
+|---|---|---|
+| titular atual (base) | R$ 17.100,57 | — |
+| trail no swing de 3 candles | R$ 8.788,96 | -48,6% |
+| trail no swing de 4 candles | R$ 10.674,69 | -37,6% |
+| trail no swing de 6 candles | R$ 12.658,86 | -26,0% |
+| trail no swing de 8 candles | R$ 13.374,84 | -21,8% |
+| trail swing 8, só quando no lucro | R$ 14.445,00 | -15,5% |
+| trail swing 5, só quando no lucro | R$ 13.911,35 | -18,6% |
+
+O stop estava em nível estrutural legítimo em todos os casos. Perdeu igual.
+A minha explicação ("localização com memória") era bonita e errada.
+
+---
+
+## 1. A EXPLICAÇÃO CORRETA: O STOP INICIAL JÁ ESTÁ NO PLATÔ ÓTIMO
+
+Se apertar sempre perde, afrouxar deveria ganhar. Testei a largura do stop
+inicial diretamente:
+
+| Lookback do swing | Total | STOPs | ALVOs | Ret/risco | vs base |
+|---|---|---|---|---|---|
+| 2 candles (mais apertado) | R$ 13.761,16 | 38 | 80 | 33,2 | -19,5% |
+| 3 candles | R$ 16.192,94 | 33 | 76 | 50,6 | -5,3% |
+| **4 candles (atual)** | **R$ 17.100,57** | **31** | **73** | **53,5** | — |
+| 5 candles | R$ 17.090,38 | 31 | 71 | 53,4 | -0,1% |
+| 6 candles | R$ 17.104,94 | 31 | 71 | 53,5 | +0,0% |
+| 8 candles | R$ 17.330,98 | 31 | 68 | 54,2 | +1,3% |
+| 10 candles | R$ 17.348,57 | 30 | 67 | 54,2 | +1,5% |
+| 12 candles (largo demais) | R$ 16.840,84 | 0 | 0 | 29,4 | -1,5% |
+
+E com folga proporcional sobre o swing de 4: 0,8x → -19,3%; 0,9x → -6,4%;
+1,1x → -5,7%; 1,5x → -3,9%; 2,0x → -2,7%. Nada supera 1,0x de forma
+significativa.
+
+**Existe um platô largo e chato entre swing 4 e swing 10, todo dentro de
+±1,5%.** Isso não é sinal de oportunidade inexplorada — é o retrato de um
+parâmetro já saturado e robusto. O melhor valor encontrado (swing 10, +R$ 248)
+está **muito abaixo do ruído do próprio sistema (R$ 2.162)**: não é ganho, é
+empate.
+
+---
+
+## 2. O QUE ISSO SIGNIFICA — A SAÍDA ESTÁ RESOLVIDA
+
+Contagem do que já foi testado e medido, somando os documentos C, D e este:
+
+| Família testada | Calibragens | Melhor resultado |
+|---|---|---|
+| Breakeven (vários gatilhos) | 5 | -22,8% |
+| Trailing por distância | 12 | -12,1% |
+| Trailing estrutural | 15 | -15,5% |
+| Desistência por tempo | 5 | -11,6% |
+| Risco fixo em pontos | 7 | -50,9% |
+| Risco proporcional ao ATR | 6 | -12,2% |
+| Relação risco/retorno | 8 | -0,0% (pico no atual) |
+| Largura do stop inicial | 15 | **+1,5% (dentro do ruído)** |
+| Filtro por regime | 8 | -2,9% |
+| **Total** | **~81** | **nenhum ganho acima do ruído** |
+
+**A saída não tem mais ganho disponível dentro desta arquitetura.** Oitenta e
+uma calibragens em nove famílias conceituais distintas, e o melhor resultado é
+um empate estatístico. O laboratório tem hoje `saida_chatgpt_v2/v3/v4`,
+`saida_grok_v6/v7/v9`, `saida_manus_v1/v2/v3/v4`, `saida_claude_v2/v4`,
+`saida_gemini_v01/v06`, `saida_deepseek_v03`, `saida_baseline` — dezessete
+arquivos disputando um espaço que já está no ótimo.
+
+---
+
+## 3. PROPOSTA OBJETIVA — TRÊS ITENS
+
+### Item 1 — Congelar a saída (governança)
+
+Declarar a saída resolvida e **parar de aceitar candidatas de saída** até que
+haja dado novo. Justificativa: as 81 calibragens acima. Isso libera
+integralmente o esforço do conselho, que hoje está quase todo concentrado no
+único componente do sistema que já está no ótimo.
+
+Se alguém discordar, o ônus é concreto e barato de cumprir: apresentar uma
+candidata que supere o titular **por mais de R$ 2.162** (o ruído do período).
+Não é uma barreira arbitrária — é o mínimo para a afirmação ser verificável.
+
+### Item 2 — Portão estatístico no `classificacao.py` (código)
+
+Fazer o próprio juiz imprimir o ruído ao lado do ranking e marcar
+explicitamente quais posições estão **estatisticamente empatadas** com a
+primeira. Hoje o ranking apresenta R$ 17.100,57 e R$ 17.044,46 como 1º e 3º
+lugares, quando a diferença entre eles (R$ 56) é 2,6% do erro padrão.
+
+Concretamente, três colunas novas: desvio-padrão por operação, erro padrão do
+total, e uma marca `=` em toda posição cuja diferença para a 1ª seja menor que
+esse erro. Mais uma linha no rodapé dizendo quantas posições estão empatadas
+no topo.
+
+É uma mudança pequena e é a de maior alavancagem disponível, porque impede
+permanentemente dois desperdícios: promover ruído (como aconteceu com a v4) e
+gastar rodadas do conselho decidindo entre empates.
+
+**Eu implemento e apresento por PR se o conselho aprovar.**
+
+### Item 3 — Atacar o único gargalo real: dados
+
+O erro padrão do total do período é **R$ 2.162 sobre R$ 17.100 — 12,7%**.
+Enquanto esse número for esse, **nenhuma decisão entre candidatas parecidas é
+possível**, por melhor que seja a candidata e por mais rigoroso que seja o
+processo. Não é falta de ideia; é falta de amostra.
+
+Ampliar o histórico para 2023-2025 (como o documento A propôs na Parte 4)
+multiplica a amostra por ~4 e corta o ruído pela metade. É a única ação que
+torna as decisões do laboratório significativas — e ela não depende de nenhuma
+ideia nova de estratégia, só de conseguir o CSV.
+
+Minha recomendação de prioridade é esta: **Item 3 > Item 2 > Item 1.**
+
+---
+
+## 4. SOBRE A META DE R$ 100 MIL/MÊS, AGORA COM O QUADRO FECHADO
+
+Com a saída saturada e as entradas sendo clones com 93-100% de sobreposição
+(documento C), não existe, no que está medido hoje, caminho de pesquisa para
+multiplicar o resultado. O sistema entrega ~R$ 1.940/mês por contrato com
+razão retorno/risco 53,5, que é um número bom — e é o que ele entrega.
+
+Restam dois caminhos honestos, e eles são diferentes em natureza:
+
+1. **Alavancagem** — multiplicar contratos. Multiplica lucro e drawdown na
+   mesma proporção, sem melhorar nada. É decisão de capital e de tolerância a
+   risco do dono do laboratório, não resultado de pesquisa, e não é minha para
+   tomar.
+2. **Edge novo e descorrelacionado** — outro ativo, outro horizonte, outra
+   ideia estrutural. É o único caminho que melhora a razão retorno/risco, e
+   depende do Item 3 para ser avaliável.
+
+O que eu não recomendo é a terceira via, que é onde o laboratório está hoje:
+gerar mais variantes do mesmo composto e do mesmo cartucho de saída. As 81
+calibragens dizem que ali não há mais nada.
