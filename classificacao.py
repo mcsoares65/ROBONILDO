@@ -532,6 +532,29 @@ def _profit_factor(trades: Iterable[dict]) -> float:
     return ganhos / perdas
 
 
+def _erro_padrao_total(trades: list[dict]) -> float:
+    """Erro padrão do RESULTADO TOTAL do período — a "faixa de ruído".
+
+    Por que isto existe (Regra 14, portão estatístico): duas estratégias cujo
+    resultado difere por menos que este valor são indistinguíveis com a
+    amostra disponível. Ordená-las no ranking é ordenar ruído, e promover a
+    primeira é sortear.
+
+    Cálculo: o resultado total é a soma de n operações independentes. O erro
+    padrão da soma é sd * sqrt(n), onde sd é o desvio-padrão do resultado por
+    operação. Com n=181 e sd=R$160,71 (titular de 28/09/2026), isso dá
+    ~R$2.162 sobre um resultado de R$17.100 — 12,7%.
+
+    Devolve nan com menos de 2 operações (sem desvio-padrão definido).
+    """
+    if len(trades) < 2:
+        return float("nan")
+    valores = [t["resultado_reais"] for t in trades]
+    media = sum(valores) / len(valores)
+    variancia = sum((v - media) ** 2 for v in valores) / (len(valores) - 1)
+    return (variancia ** 0.5) * (len(valores) ** 0.5)
+
+
 def _resumo(trades: list[dict], dias_periodo: int) -> dict:
     resultado = sum(t["resultado_reais"] for t in trades)
     dias_operados = len({t["horario_rotulo"].date() for t in trades})
@@ -540,6 +563,12 @@ def _resumo(trades: list[dict], dias_periodo: int) -> dict:
         acumulado += trade["resultado_reais"]
         pico = max(pico, acumulado)
         drawdown = min(drawdown, acumulado - pico)
+    valores = [t["resultado_reais"] for t in trades]
+    if len(valores) >= 2:
+        media_op = sum(valores) / len(valores)
+        sd_op = (sum((v - media_op) ** 2 for v in valores) / (len(valores) - 1)) ** 0.5
+    else:
+        sd_op = float("nan")
     return {
         "resultado": resultado,
         "diaria": resultado / dias_periodo if dias_periodo else 0.0,
@@ -550,6 +579,9 @@ def _resumo(trades: list[dict], dias_periodo: int) -> dict:
         "pf": _profit_factor(trades),
         "operacoes": len(trades),
         "ambiguidades": sum(1 for t in trades if t["intrabar_ambiguo"]),
+        # Portão estatístico (Regra 14)
+        "sd_operacao": sd_op,
+        "erro_padrao_total": _erro_padrao_total(trades),
     }
 
 
@@ -727,8 +759,10 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
     if not resultados:
         print(f"\n{titulo}: nenhuma combinação produziu resultado.")
         return
+    ruido = _marcar_empates_estatisticos(resultados, chave="resultado")
     colunas = (
         ("pos", "pos", False, 3),
+        ("emp", "emp", False, 3),
         (chave_nome, "estratégia", False, 34),
         ("resultado", "resultado", True, 10),
         ("diaria", "diária", True, 7),
@@ -765,9 +799,74 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
         print(f"{cor}{texto}{RESET}")
     print(
         f"{VERDE}Verde{RESET}=1º | {VERMELHO}Vermelho{RESET}=último | "
-        f"{AZUL_CELESTE}Azul{RESET}=titular do slot"
+        f"{AZUL_CELESTE}Azul{RESET}=titular do slot | "
+        f"coluna 'emp': '=' empata estatisticamente com o 1º"
     )
     print("Acumulado = resultado - abs(drawdown). Maior acumulado vence.")
+    _rodape_portao_estatistico(resultados, ruido, chave="resultado")
+
+
+def _marcar_empates_estatisticos(resultados: list[dict], chave: str = "resultado") -> float:
+    """Portão estatístico (Regra 14) — marca quem empata com o 1º lugar.
+
+    Escreve o campo "emp" em cada linha: "=" quando a diferença de `chave`
+    para o 1º colocado é MENOR que a faixa de ruído, "" caso contrário.
+    O 1º colocado recebe "1º".
+
+    A faixa de ruído usada é o maior erro padrão entre o do 1º colocado e o da
+    linha comparada — a leitura conservadora: só declara vantagem quem a
+    sustenta contra a incerteza dos DOIS lados.
+
+    Devolve a faixa de ruído do 1º colocado (para o rodapé).
+    """
+    if not resultados:
+        return float("nan")
+    lider = resultados[0]
+    ruido_lider = lider.get("erro_padrao_total", float("nan"))
+    for indice, linha in enumerate(resultados):
+        if indice == 0:
+            linha["emp"] = "1º"
+            continue
+        ruido_linha = linha.get("erro_padrao_total", float("nan"))
+        candidatos = [r for r in (ruido_lider, ruido_linha) if not math.isnan(r)]
+        if not candidatos:
+            linha["emp"] = "?"
+            continue
+        faixa = max(candidatos)
+        diferenca = abs(lider.get(chave, 0.0) - linha.get(chave, 0.0))
+        linha["emp"] = "=" if diferenca < faixa else ""
+    return ruido_lider
+
+
+def _rodape_portao_estatistico(resultados: list[dict], ruido: float, chave: str = "resultado") -> None:
+    """Imprime a explicação da coluna `emp` e quantos empataram no topo."""
+    if math.isnan(ruido):
+        print("Portão estatístico: amostra insuficiente para estimar a faixa de ruído.")
+        return
+    empatados = sum(1 for linha in resultados[1:] if linha.get("emp") == "=")
+    lider = resultados[0]
+    sd = lider.get("sd_operacao", float("nan"))
+    total = lider.get(chave, 0.0)
+    pct = (100 * ruido / abs(total)) if total else float("nan")
+    print(
+        f"Portão estatístico (Regra 14): desvio-padrão por operação "
+        f"{_moeda(sd)} | faixa de ruído do período (erro padrão do total) "
+        f"{_moeda(ruido)}"
+        + (f" = {pct:.1f}% do resultado do 1º lugar." if not math.isnan(pct) else ".")
+    )
+    if empatados:
+        print(
+            f"ATENÇÃO: {empatados} posição(ões) marcada(s) com '=' estão "
+            f"ESTATISTICAMENTE EMPATADAS com o 1º lugar — a diferença é menor "
+            f"que o ruído da própria amostra. Escolher entre elas por este "
+            f"ranking é sorteio, não decisão. Uma promoção só se justifica com "
+            f"vantagem acima de {_moeda(ruido)}."
+        )
+    else:
+        print(
+            f"Nenhuma posição empata com o 1º lugar: a vantagem dele excede a "
+            f"faixa de ruído de {_moeda(ruido)}."
+        )
 
 
 def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) -> None:
@@ -775,8 +874,10 @@ def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) ->
         print("\n========== RANKING PRINCIPAL (ENTRADA × SAÍDA) ==========")
         print("Nenhuma combinação produziu resultado.")
         return
+    ruido = _marcar_empates_estatisticos(resultados, chave="resultado")
     colunas = (
         ("pos", "pos", False, 3),
+        ("emp", "emp", False, 3),
         ("entrada", "entrada", False, 24),
         ("saida", "saída", False, 18),
         ("resultado", "resultado", True, 10),
@@ -812,6 +913,7 @@ def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) ->
         )
         print(f"{cor}{texto}{RESET}")
     print("Acumulado = resultado - abs(drawdown). Maior acumulado vence.")
+    _rodape_portao_estatistico(resultados, ruido, chave="resultado")
 
 
 def _montar_resultado_par(
