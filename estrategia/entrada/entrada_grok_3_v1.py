@@ -1,67 +1,145 @@
-"""
-estrategias/grok_3_portas_robusta_v1.py
+"""Agregador compatível das três estratégias Grok desmembradas na V448.
 
-Autoria: Gerada por Grok (xAI) em 20/09/2026.
-Dataset de validação: 13/03/2026 a 18/09/2026 (4.964 candles).
-MIN_RR do motor: 1.55.
-Sem revisão humana prévia.
-
-Base: estrutura da chatgpt_3_portas_robusta_v19 com ajuste
-na variação mínima do estocástico da Porta 2 (4.5 em vez de 4.0).
+`gerar_sinal` preserva os limiares e a prioridade histórica das antigas
+portas: retomada MA21 -> MACD/estocástico -> saída de extremo.
+`diagnosticar_oportunidades` expõe o progresso de todas ao radar.
 """
+
+
+def _direcao(row):
+    return "COMPRA" if row["trend"] == 1 else "VENDA" if row["trend"] == -1 else "NEUTRA"
+
+
+def _resultado(nome, prioridade, row, elegivel, bloqueios, condicoes, descricoes, sinal):
+    total = len(condicoes)
+    confirmadas = sum(bool(valor) for valor in condicoes) if elegivel else 0
+    faltantes = ([texto for valor, texto in zip(condicoes, descricoes) if not valor]
+                 if elegivel else bloqueios)
+    return {
+        "estrategia": nome,
+        "prioridade": prioridade,
+        "direcao": _direcao(row),
+        "sinal": sinal,
+        "confirmadas": confirmadas,
+        "total": total,
+        "progresso": confirmadas / total if total else 0.0,
+        "faltantes": faltantes,
+    }
+
+
+def diagnosticar_oportunidades(row):
+    tendencia = row["trend"]
+    hora = row["dt"].strftime("%H:%M")
+    amplitude = row["Maximo"] - row["Minimo"]
+    corpo = abs(row["Fechamento"] - row["Abertura"])
+    separacao = abs(row["MA21"] - row["MA50"])
+    variacao_stoch = abs(row["stoch"] - row["stoch_prev"])
+    direcao_stoch = (row["stoch_subindo"] if tendencia == 1
+                      else row["stoch_descendo"] if tendencia == -1 else False)
+    cruzamento_macd = (row["macd_cross_up"] if tendencia == 1
+                       else row["macd_cross_down"] if tendencia == -1 else False)
+    cruzamento_extremo = (row["stoch_cross_up_20"] if tendencia == 1
+                          else row["stoch_cross_down_80"] if tendencia == -1 else False)
+
+    e1_itens = [
+        (tendencia != 0, "definição de tendência"),
+        (not (row["dt"].weekday() == 3 or "12:00" <= hora <= "13:15" or "15:00" <= hora <= "16:59"), "horário permitido"),
+        (not (75.0 <= separacao <= 175.0), "separação saudável das médias"),
+        (row["atr_relativo"] <= 1.40, "volatilidade aceitável"),
+    ]
+    c1 = [
+        row["distancia_ma21"] <= 90.0,
+        16.5 <= row["stoch"] <= 83.5,
+        direcao_stoch,
+    ]
+    e2_itens = [
+        (tendencia != 0, "definição de tendência"),
+        (not ("11:45" <= hora <= "12:30"), "horário permitido"),
+        (not (240.0 <= amplitude <= 340.0), "amplitude fora da faixa fraca"),
+    ]
+    c2 = [
+        row["distancia_ma21"] > 200.0,
+        variacao_stoch >= 4.5,
+        direcao_stoch,
+        cruzamento_macd,
+    ]
+    e3_itens = [
+        (tendencia != 0, "definição de tendência"),
+        (not ("12:30" <= hora <= "13:15"), "horário permitido"),
+        (not (279.0 <= amplitude <= 360.0), "amplitude fora da faixa fraca"),
+    ]
+    c3 = [
+        amplitude > 0,
+        amplitude > 0 and corpo <= 0.70 * amplitude,
+        cruzamento_extremo,
+    ]
+    e1 = all(valor for valor, _ in e1_itens)
+    e2 = all(valor for valor, _ in e2_itens)
+    e3 = all(valor for valor, _ in e3_itens)
+    direcao = 1 if tendencia == 1 else -1 if tendencia == -1 else 0
+    oportunidades = [
+        _resultado("Retomada MA21", 1, row, e1,
+            [texto for valor, texto in e1_itens if not valor], c1, [
+            "aproximação da MA21", "estocástico fora dos extremos",
+            "estocástico na direção da tendência",
+        ], direcao if e1 and all(c1) else 0),
+        _resultado("MACD + Estocástico", 2, row, e2,
+            [texto for valor, texto in e2_itens if not valor], c2, [
+            "afastamento superior a 200 pontos", "variação mínima do estocástico",
+            "estocástico na direção da tendência", "cruzamento do MACD",
+        ], direcao if e2 and all(c2) else 0),
+        _resultado("Saída de Extremo", 3, row, e3,
+            [texto for valor, texto in e3_itens if not valor], c3, [
+            "amplitude válida", "corpo sem exaustão", "saída da zona extrema do estocástico",
+        ], direcao if e3 and all(c3) else 0),
+    ]
+    # Telemetria opcional para o painel. Nao participa de gerar_sinal() e nao
+    # altera nenhum limiar da estrategia; apenas quantifica a primeira
+    # pendencia que o radar ja apresentava em texto.
+    for oportunidade in oportunidades:
+        faltante = oportunidade["faltantes"][0] if oportunidade["faltantes"] else "nenhuma"
+        detalhe = faltante
+        if faltante == "aproximação da MA21":
+            detalhe = f"dist. MA21 {row['distancia_ma21']:.0f} (máx. 90)"
+        elif faltante == "estocástico fora dos extremos":
+            detalhe = f"estoc. {row['stoch']:.1f} (16,5-83,5)"
+        elif faltante == "afastamento superior a 200 pontos":
+            detalhe = f"afastamento {row['distancia_ma21']:.0f}/200 pts"
+        elif faltante == "variação mínima do estocástico":
+            detalhe = f"var. estoc. {variacao_stoch:.1f}/4,5"
+        elif faltante == "corpo sem exaustão":
+            proporcao_corpo = (corpo / amplitude * 100.0) if amplitude > 0 else 0.0
+            detalhe = f"corpo {proporcao_corpo:.0f}% (máx. 70%)"
+        oportunidade["detalhe"] = detalhe
+    return sorted(oportunidades, key=lambda item: (-item["progresso"], item["prioridade"]))
+
 
 def gerar_sinal(row) -> int:
-    tendencia = row['trend']
-    if tendencia == 0:
-        return 0
-
-    hora = row['dt'].strftime('%H:%M')
-    amplitude = row['Maximo'] - row['Minimo']
-    corpo = abs(row['Fechamento'] - row['Abertura'])
-    separacao_medias = abs(row['MA21'] - row['MA50'])
-    variacao_estocastico = abs(row['stoch'] - row['stoch_prev'])
-
-    # Porta 1: retomada perto da MA21
-    bloqueado_ma21 = (
-        row['dt'].weekday() == 3
-        or '12:00' <= hora <= '13:15'
-        or '15:00' <= hora <= '16:59'
-    )
-    separacao_fraca_ma21 = 75.0 <= separacao_medias <= 175.0
-    if (
-        not bloqueado_ma21
-        and not separacao_fraca_ma21
-        and row['atr_relativo'] <= 1.40
-        and row['distancia_ma21'] <= 90.0
-        and 16.5 <= row['stoch'] <= 83.5
-    ):
-        if tendencia == 1 and row['stoch_subindo']:
-            return 1
-        if tendencia == -1 and row['stoch_descendo']:
-            return -1
-
-    # Porta 2: MACD com variação de estocástico >= 4.5
-    bloqueado_macd = '11:45' <= hora <= '12:30'
-    amplitude_fraca_macd = 240.0 <= amplitude <= 340.0
-    if (
-        not bloqueado_macd
-        and not amplitude_fraca_macd
-        and row['distancia_ma21'] > 200.0
-        and variacao_estocastico >= 4.5
-    ):
-        if tendencia == 1 and row['stoch_subindo'] and row['macd_cross_up']:
-            return 1
-        if tendencia == -1 and row['stoch_descendo'] and row['macd_cross_down']:
-            return -1
-
-    # Porta 3: saída de extremo
-    bloqueado_estocastico = '12:30' <= hora <= '13:15'
-    amplitude_fraca_estocastico = 279.0 <= amplitude <= 360.0
-    if not bloqueado_estocastico and not amplitude_fraca_estocastico:
-        if amplitude > 0 and corpo <= 0.70 * amplitude:
-            if tendencia == 1 and row['stoch_cross_up_20']:
-                return 1
-            if tendencia == -1 and row['stoch_cross_down_80']:
-                return -1
-
+    # Prioridade explícita: reprodução integral do comportamento anterior.
+    radar = sorted(diagnosticar_oportunidades(row), key=lambda item: item["prioridade"])
+    for oportunidade in radar:
+        if oportunidade["sinal"] in (-1, 1):
+            return oportunidade["sinal"]
     return 0
+
+
+def diagnosticar_sinal(row):
+    radar = diagnosticar_oportunidades(row)
+    confirmadas = [item for item in radar if item["sinal"] in (-1, 1)]
+    oportunidade = min(confirmadas, key=lambda item: item["prioridade"]) if confirmadas else radar[0]
+    faltante = oportunidade["faltantes"][0] if oportunidade["faltantes"] else "nenhuma"
+    return {
+        "porta": oportunidade["prioridade"],  # compatibilidade de tela com V447
+        "total_portas": 3,
+        "estrategia": oportunidade["estrategia"],
+        "lado": oportunidade["direcao"],
+        "progresso": oportunidade["progresso"],
+        "confirmadas": oportunidade["confirmadas"],
+        "total": oportunidade["total"],
+        "faltantes": oportunidade["faltantes"],
+        "explicacao": (
+            f"A estratégia {oportunidade['estrategia']} está com "
+            f"{oportunidade['confirmadas']} de {oportunidade['total']} confirmações. "
+            f"Próxima condição: {faltante}."
+        ),
+    }
