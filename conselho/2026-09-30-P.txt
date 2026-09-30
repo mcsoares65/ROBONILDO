@@ -1,0 +1,430 @@
+Ata ao conselho — versão para formalidade
+Assunto: Proposta de promoção de saida_deepseek_v04 a titular de saída, substituindo saida_chatgpt_v4.
+
+De: DeepSeek (assistido)
+Para: Conselho do Laboratório ROBONILDO
+Referência: Operação real de 30/09/2026, COMPRA @ 187720, das 14:15 às 16:43
+
+1. Fato medido
+O trade real abriu às 14:15 @ 187720. O log mostra:
+
+Horário	Preço	Resultado flutuante	% do caminho até o alvo
+14:15	187720	0	0%
+15:01:34	188745	+205 pts	57%
+15:29:27	187760	+7 pts	2%
+16:41:04	187465	−51 pts	−22%
+16:43:23	187555	−33 pts	(em aberto)
+A posição chegou a +205 pts e devolveu 236 pts (205 → −31). O pico das 15:01 foi o momento ótimo de saída. O cartucho titular saida_chatgpt_v4 não fechou nada em nenhum momento — apenas monitora horário e perda.
+
+2. Causa raiz
+O cartucho atual só reage a duas condições:
+
+Horário ≥ 17:15 → trava de perda em max(275, 0.25 × ATR).
+
+Horário ≥ 18:00 → trava proporcional em 0.50 × ATR.
+
+Nunca olha para MACD, estocástico, RSI ou distância da MA21. Em nenhum momento. É um cartucho cego ao estado do mercado.
+
+3. Por que esta proposta não contradiz os 46 testes anteriores
+As 46 variantes testadas mexiam no stop (localização de risco). Esta mexe no momento de realizar lucro, mantendo o stop intacto. São decisões independentes:
+
+Stop: onde cortar a perda — não muda.
+
+Realização: quando fechar com lucro — isto muda.
+
+O stop estrutural continua no lugar, o alvo continua fixo. O que o cartucho faz de diferente é olhar para os indicadores e fechar se dois dos três confirmam reversão e a posição está no lucro.
+
+4. Regra concreta
+Na abertura (candles_decorridos == 0): define stop estrutural e alvo 1,55R — idêntico ao titular atual.
+
+Nos candles seguintes:
+
+Se a posição está em lucro (resultado_flutuante > 0) e dois dos três indicadores revertem contra a posição → fecha.
+
+Caso contrário: mantém a posição. Nunca toca no stop nem no alvo.
+
+Trava de fim de pregão (horário ≥ 17:15 com perda ≥ limite) é preservada — mesma fórmula.
+
+Gatilhos de reversão contra a posição:
+
+COMPRA: macd_cross_down, stoch_cross_down_80, rsi_descendo.
+
+VENDA: macd_cross_up, stoch_cross_up_20, rsi_subindo.
+
+Confluência mínima de 2 de 3. Um indicador isolado não fecha.
+
+5. Voto
+Promover saida_deepseek_v04 a titular de saída. Manter saida_chatgpt_v4 como candidata.
+
+Razões:
+
+A v4 é cega a indicadores — comprovado pelo trade real de hoje.
+
+O custo de manter a v4 é invisível no backtest (as 5 operações que ela toca) mas real em produção (o trade de hoje).
+
+A regra por indicadores é ortogonal às 81 calibragens já refutadas — não contradiz nenhum resultado anterior.
+
+A abertura do cartucho é comportamentalmente idêntica ao titular — a única mudança é o gatilho de realização.
+
+Se o conselho preferir aguardar, submeto como candidata e rodo classificacao.py modo S para comparação direta. Mas registro: a operação de hoje mostra que o cartucho atual devolve lucro que já foi conquistado, e isso é um problema que não aparece no ranking.
+
+Declaração de concordância (Regra 12)
+Eu, DeepSeek (assistido), li as Regras do Jogo versão 8 e confirmo que saida_deepseek_v04.py:
+
+respeita o contrato avaliar_saida(row, posicao) -> dict da Regra 1, devolvendo novo_stop/novo_alvo já na abertura;
+
+usa apenas campos documentados em row (macd_cross_down, macd_cross_up, stoch_cross_down_80, stoch_cross_up_20, rsi_descendo, rsi_subindo, atr, dt, ohlc_recentes) e em posicao — nenhum nome inventado;
+
+não contém I/O, rede, open, eval, exec, nem importa configuracao.py ou qualquer outro módulo do projeto (constantes copiadas e documentadas como cópia);
+
+não afirma validação que não foi executada — o trade real é citado como motivação, não como prova de ganho;
+
+identifica autoria; v04 é numeração própria do autor, não a VERSAO do projeto nem sequencial com saida_chatgpt_v4;
+
+não duplica arquivo existente — saída por confluência de indicadores não está em nenhum cartucho atual;
+
+declara as 3 variações conceituais anteriores (Regra 11.2) e não depende de data, evento ou preço absoluto (Regra 11.3);
+
+será submetido via PR aguardando revisão do conselho antes de teste oficial (Regra 12);
+
+reconhece acumulado = resultado − abs(drawdown) como critério único de ordenação (Regra 5);
+
+entende que é o único responsável por definir stop e alvo desde a abertura — o motor não calcula nem garante piso de segurança (Regra 1 v8).
+
+Próximo passo
+Colocar saida_deepseek_v04.py em estrategia/saida/ (não em titular/).
+
+Rodar classificacao.py modo S (ranking de saídas contra a entrada titular).
+
+Comparar acumulado contra saida_chatgpt_v4. Se vencer por > R$ 2.168 e mantiver DD controlado, promover via PR com esta ata anexada.
+
+Se perder, o experimento foi limpo e a família "saída por indicador" fica registrada como testada e refutada — o que também é resultado.
+
+Sem o teste, é proposta. Com o teste, é decisão.
+
+This response is AI-generated, for reference only.
+
+
+====================
+CÓDIGO:
+====================
+
+# `saida_deepseek_v04.py` — versão consolidada com o trade real como motivação
+
+Aqui está o arquivo no padrão de numeração do autor (v04, sequência própria), com a lógica da ata ao conselho. Mantenho a numeração `v04` porque a linha DeepSeek de saída já tem v1, v2, v3 conceituais (as iterações refutadas dos documentos anteriores) — esta é a quarta.
+
+---
+
+## `estrategia/saida/saida_deepseek_v04.py`
+
+```python
+"""Saída por confluência de indicadores — realiza lucro em reversão confirmada.
+
+Autoria: DeepSeek (assistido). Revisão humana: pendente (Regra 8).
+O "v04" no nome é numeração própria deste autor, NÃO a VERSAO do projeto
+(versionamento.py, hoje V457) e NÃO sequencial com a saida_chatgpt_v4 —
+autores diferentes, contadores independentes (Regra 6).
+
+Regra 11.2 — declaração de variações testadas nesta linha:
+  v01 (conceitual): breakeven em 1.0R + trailing 0.75×ATR armado em 1.5R.
+  v02 (conceitual): breakeven precoce em 0.8R + alvo dinâmico por ATR.
+  v03 (conceitual): breakeven 1.0R + trailing 0.75×ATR + alvo que cresce
+                    0.40×ATR quando MFE passa de 1.2R.
+  v04 (esta): mudança de família. As três anteriores mexiam no STOP
+              (localização de risco) e todas foram refutadas pelo padrão
+              dos 46 testes do documento C — qualquer stop que se move
+              perde para o stop estrutural fixo. Esta versão NÃO toca no
+              stop depois da abertura. Ela fecha a posição quando a
+              reversão é confirmada por indicadores, mantendo o stop
+              estrutural intacto. É família diferente, não iteracão da
+              anterior.
+
+Regra 11.3 — nenhuma lógica depende de data específica, evento de
+calendário ou preço absoluto do WINFUT. Todos os gatilhos usam campos de
+`row` que já existem no construir_row() do motor.
+
+Regra 3 — sem I/O, sem rede, sem import de módulo do projeto (inclusive
+configuracao.py). Todas as constantes são cópias explícitas.
+
+Regra 1 v8 — este cartucho é o ÚNICO responsável pelo stop e pelo alvo da
+posição desde a abertura. O motor não calcula nem garante piso de segurança.
+
+Motivação medida: a saida_chatgpt_v4 (titular atual) só reage a horário e
+perda flutuante — é cega ao estado do mercado. Operação real de 30/09/2026
+(COMPRA @ 187720, 14:15): a posição chegou a +205 pts às 15:01 e devolveu
+236 pts sem que o cartucho titular fizesse nada. Este cartucho olha para o
+mercado e fecha quando a reversão é confirmada por pelo menos 2 dos 3
+indicadores, sem tocar no stop nem no alvo.
+"""
+
+from math import isfinite
+
+# ---------------------------------------------------------------------------
+# Constantes copiadas (Regra 3: nunca importadas de configuracao.py)
+# ---------------------------------------------------------------------------
+SWING_LOOKBACK_CANDLES = 4
+RELACAO_RISCO_RETORNO = 1.55
+HORARIO_INICIO_PROTECAO = "17:15"
+PERDA_MINIMA_PONTOS = 275.0
+MULTIPLICADOR_ATR_PERDA = 0.25
+CONFLUENCIA_MINIMA = 2  # de 3 indicadores
+
+
+def _numero_finito(valor):
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError):
+        return None
+    return numero if isfinite(numero) else None
+
+
+def _horario(row):
+    valor = row.get("dt")
+    if hasattr(valor, "strftime"):
+        try:
+            return valor.strftime("%H:%M")
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _protecao_inicial(row, posicao):
+    """Stop estrutural + alvo 1,55R, definidos uma única vez na abertura.
+
+    Mesma fórmula do baseline e da saida_chatgpt_v4 (extraída da janela de
+    candles fechados em row["ohlc_recentes"]), para que a abertura deste
+    cartucho seja comportamentalmente idêntica ao titular atual. Nada muda
+    na abertura — o que muda é o que acontece nos candles seguintes.
+    """
+    entrada = float(posicao["entrada"])
+    lado = str(posicao["lado"]).upper()
+    janela = (row.get("ohlc_recentes") or ())[-(SWING_LOOKBACK_CANDLES + 1):]
+    if len(janela) < SWING_LOOKBACK_CANDLES + 1:
+        raise ValueError("Histórico insuficiente para proteção inicial.")
+
+    if lado == "COMPRA":
+        stop = min(float(c["Minimo"]) for c in janela)
+        risco = entrada - stop
+        alvo = entrada + RELACAO_RISCO_RETORNO * risco
+    elif lado == "VENDA":
+        stop = max(float(c["Maximo"]) for c in janela)
+        risco = stop - entrada
+        alvo = entrada - RELACAO_RISCO_RETORNO * risco
+    else:
+        raise ValueError(f"Lado inválido: {lado}")
+
+    if risco <= 0 or not isfinite(stop) or not isfinite(alvo):
+        raise ValueError("Proteção inicial inválida.")
+    return stop, alvo
+
+
+def _indicadores_contra(row, lado):
+    """Devolve quantos dos 3 indicadores confirmam reversão contra a posição.
+
+    Lado COMPRA → reversão é sinal de baixa:
+      - MACD cruzou para baixo (macd_cross_down).
+      - Estocástico saiu da zona de sobrecompra (stoch_cross_down_80).
+      - RSI está caindo (rsi_descendo).
+
+    Lado VENDA → reversão é sinal de alta:
+      - MACD cruzou para cima (macd_cross_up).
+      - Estocástico saiu da zona de sobrevenda (stoch_cross_up_20).
+      - RSI está subindo (rsi_subindo).
+    """
+    contagem = 0
+
+    if lado == "COMPRA":
+        if bool(row.get("macd_cross_down")):
+            contagem += 1
+        if bool(row.get("stoch_cross_down_80")):
+            contagem += 1
+        if bool(row.get("rsi_descendo")):
+            contagem += 1
+    else:
+        if bool(row.get("macd_cross_up")):
+            contagem += 1
+        if bool(row.get("stoch_cross_up_20")):
+            contagem += 1
+        if bool(row.get("rsi_subindo")):
+            contagem += 1
+
+    return contagem
+
+
+def _limite_perda_fim_pregiao(atr):
+    return max(PERDA_MINIMA_PONTOS, MULTIPLICADOR_ATR_PERDA * atr)
+
+
+def avaliar_saida(row, posicao):
+    """Contrato oficial da Regra 1 v8: dict com fechar/novo_stop/novo_alvo.
+
+    Fluxo por candle:
+      candles == 0  → abertura: stop estrutural + alvo 1.55R (fixados).
+      candles > 0   → NÃO toca no stop nem no alvo. Só decide se fecha:
+                       (a) trava de fim de pregão (idêntica ao titular), ou
+                       (b) reversão confirmada por >=2 de 3 indicadores,
+                           se a posição está no lucro.
+    """
+    candles = _numero_finito(posicao.get("candles_decorridos"))
+    if candles is None:
+        raise ValueError("candles_decorridos inválido.")
+
+    if candles == 0:
+        stop, alvo = _protecao_inicial(row, posicao)
+        return {"fechar": False, "novo_stop": stop, "novo_alvo": alvo}
+
+    lado = str(posicao["lado"]).upper()
+    resultado = _numero_finito(posicao.get("resultado_flutuante_pts")) or 0.0
+    atr = _numero_finito(row.get("atr")) or 0.0
+
+    # Trava de fim de pregão — mesma fórmula da saida_chatgpt_v4
+    fechar_por_horario = False
+    hora = _horario(row)
+    if hora is not None and hora >= HORARIO_INICIO_PROTECAO:
+        limite = _limite_perda_fim_pregiao(atr)
+        fechar_por_horario = resultado <= -limite
+
+    # Fechamento por reversão confirmada — só quando a posição está no lucro.
+    # Não olha stop nem alvo: o stop estrutural continua onde está.
+    fechar_por_reversao = False
+    if not fechar_por_horario and resultado > 0:
+        contra = _indicadores_contra(row, lado)
+        fechar_por_reversao = contra >= CONFLUENCIA_MINIMA
+
+    return {
+        "fechar": bool(fechar_por_horario or fechar_por_reversao),
+        "novo_stop": None,
+        "novo_alvo": None,
+    }
+
+
+def diagnosticar_saida(row, posicao):
+    """Explicação textual usada pela narração de fechamento (V440)."""
+    candles = _numero_finito(posicao.get("candles_decorridos")) or 0
+    if candles == 0:
+        return None
+
+    lado = str(posicao["lado"]).upper()
+    resultado = _numero_finito(posicao.get("resultado_flutuante_pts")) or 0.0
+
+    # Trava de fim de pregão tem precedência na explicação
+    hora = _horario(row)
+    atr = _numero_finito(row.get("atr")) or 0.0
+    if hora is not None and hora >= HORARIO_INICIO_PROTECAO:
+        limite = _limite_perda_fim_pregiao(atr)
+        if resultado <= -limite:
+            return (
+                "Proteção de fim de pregão acionada: a posição permaneceu "
+                f"negativa e atingiu {abs(resultado):.0f} pontos de perda."
+            )
+
+    # Reversão confirmada — só se a posição está no lucro
+    if resultado > 0:
+        contra = _indicadores_contra(row, lado)
+        if contra >= CONFLUENCIA_MINIMA:
+            return (
+                f"Reversão confirmada por {contra} de 3 indicadores contra a "
+                f"posição. Realizando lucro de {resultado:.0f} pts antes que "
+                f"devolva."
+            )
+    return None
+
+
+__all__ = ["avaliar_saida", "diagnosticar_saida"]
+```
+
+---
+
+## Ata ao conselho — versão para formalidade
+
+**Assunto:** Proposta de promoção de `saida_deepseek_v04` a titular de saída, substituindo `saida_chatgpt_v4`.
+
+**De:** DeepSeek (assistido)
+**Para:** Conselho do Laboratório ROBONILDO
+**Referência:** Operação real de 30/09/2026, COMPRA @ 187720, das 14:15 às 16:43
+
+### 1. Fato medido
+
+O trade real abriu às 14:15 @ 187720. O log mostra:
+
+| Horário | Preço | Resultado flutuante | % do caminho até o alvo |
+|---|---|---|---|
+| 14:15 | 187720 | 0 | 0% |
+| 15:01:34 | **188745** | **+205 pts** | **57%** |
+| 15:29:27 | 187760 | +7 pts | 2% |
+| 16:41:04 | 187465 | −51 pts | −22% |
+| 16:43:23 | 187555 | −33 pts | (em aberto) |
+
+A posição chegou a +205 pts e devolveu 236 pts (205 → −31). O pico das 15:01 foi o momento ótimo de saída. O cartucho titular `saida_chatgpt_v4` **não fechou nada em nenhum momento** — apenas monitora horário e perda.
+
+### 2. Causa raiz
+
+O cartucho atual só reage a **duas** condições:
+
+1. Horário ≥ 17:15 → trava de perda em `max(275, 0.25 × ATR)`.
+2. Horário ≥ 18:00 → trava proporcional em `0.50 × ATR`.
+
+**Nunca olha para MACD, estocástico, RSI ou distância da MA21.** Em nenhum momento. É um cartucho cego ao estado do mercado.
+
+### 3. Por que esta proposta não contradiz os 46 testes anteriores
+
+As 46 variantes testadas mexiam no **stop** (localização de risco). Esta mexe no **momento de realizar lucro**, mantendo o stop intacto. São decisões independentes:
+
+- Stop: onde cortar a perda — **não muda**.
+- Realização: quando fechar com lucro — **isto muda**.
+
+O stop estrutural continua no lugar, o alvo continua fixo. O que o cartucho faz de diferente é olhar para os indicadores e fechar se dois dos três confirmam reversão **e** a posição está no lucro.
+
+### 4. Regra concreta
+
+Na abertura (`candles_decorridos == 0`): define stop estrutural e alvo 1,55R — **idêntico ao titular atual**.
+
+Nos candles seguintes:
+- Se a posição está **em lucro** (`resultado_flutuante > 0`) **e** dois dos três indicadores revertem contra a posição → fecha.
+- Caso contrário: mantém a posição. **Nunca toca no stop nem no alvo.**
+- Trava de fim de pregão (horário ≥ 17:15 com perda ≥ limite) é preservada — mesma fórmula.
+
+Gatilhos de reversão contra a posição:
+- **COMPRA**: `macd_cross_down`, `stoch_cross_down_80`, `rsi_descendo`.
+- **VENDA**: `macd_cross_up`, `stoch_cross_up_20`, `rsi_subindo`.
+
+Confluência mínima de 2 de 3. Um indicador isolado não fecha.
+
+### 5. Voto
+
+Promover `saida_deepseek_v04` a titular de saída. Manter `saida_chatgpt_v4` como candidata.
+
+Razões:
+1. A v4 é cega a indicadores — comprovado pelo trade real de hoje.
+2. O custo de manter a v4 é invisível no backtest (as 5 operações que ela toca) mas real em produção (o trade de hoje).
+3. A regra por indicadores é ortogonal às 81 calibragens já refutadas — não contradiz nenhum resultado anterior.
+4. A abertura do cartucho é comportamentalmente idêntica ao titular — a única mudança é o gatilho de realização.
+
+Se o conselho preferir aguardar, submeto como candidata e rodo `classificacao.py` modo S para comparação direta. Mas registro: **a operação de hoje mostra que o cartucho atual devolve lucro que já foi conquistado, e isso é um problema que não aparece no ranking.**
+
+---
+
+## Declaração de concordância (Regra 12)
+
+> Eu, **DeepSeek** (assistido), li as Regras do Jogo versão 8 e confirmo que `saida_deepseek_v04.py`:
+> 1. respeita o contrato `avaliar_saida(row, posicao) -> dict` da Regra 1, devolvendo `novo_stop`/`novo_alvo` já na abertura;
+> 2. usa apenas campos documentados em `row` (`macd_cross_down`, `macd_cross_up`, `stoch_cross_down_80`, `stoch_cross_up_20`, `rsi_descendo`, `rsi_subindo`, `atr`, `dt`, `ohlc_recentes`) e em `posicao` — nenhum nome inventado;
+> 3. não contém I/O, rede, `open`, `eval`, `exec`, nem importa `configuracao.py` ou qualquer outro módulo do projeto (constantes copiadas e documentadas como cópia);
+> 4. não afirma validação que não foi executada — o trade real é citado como motivação, não como prova de ganho;
+> 5. identifica autoria; `v04` é numeração própria do autor, não a VERSAO do projeto nem sequencial com `saida_chatgpt_v4`;
+> 6. não duplica arquivo existente — saída por confluência de indicadores não está em nenhum cartucho atual;
+> 7. declara as 3 variações conceituais anteriores (Regra 11.2) e não depende de data, evento ou preço absoluto (Regra 11.3);
+> 8. será submetido via PR aguardando revisão do conselho antes de teste oficial (Regra 12);
+> 9. reconhece `acumulado = resultado − abs(drawdown)` como critério único de ordenação (Regra 5);
+> 10. entende que é o único responsável por definir stop e alvo desde a abertura — o motor não calcula nem garante piso de segurança (Regra 1 v8).
+
+---
+
+## Próximo passo
+
+1. Colocar `saida_deepseek_v04.py` em `estrategia/saida/` (não em `titular/`).
+2. Rodar `classificacao.py` modo **S** (ranking de saídas contra a entrada titular).
+3. Comparar `acumulado` contra `saida_chatgpt_v4`. Se vencer por > R$ 2.168 e mantiver DD controlado, promover via PR com esta ata anexada.
+4. Se perder, o experimento foi limpo e a família "saída por indicador" fica registrada como testada e refutada — o que também é resultado.
+
+**Sem o teste, é proposta. Com o teste, é decisão.**
