@@ -4,6 +4,32 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V457 — a narração de expectativa passa a dizer a que horas a ordem sai
+
+No pregão de 29/09 o log imprimiu, em sequência, "Nenhum sinal de entrada foi
+confirmado" e logo abaixo "Se confirmado no fechamento, a ordem será
+disparada". A leitura natural é que a ordem deveria ter saído naquele
+fechamento — mas a frase se referia ao fechamento **seguinte**.
+
+Não havia bug. O candle que fecha às 13:30 é o candle **rotulado 13:15**, e a
+Porta 1 do titular bloqueia até "13:15" — aquele era o último candle do
+bloqueio. A expectativa apontava para o fechamento das 13:45.
+
+Agora a frase nomeia o horário: *"Se confirmado no fechamento das 13:45, a
+ordem será disparada."* Nenhuma regra operacional mudou — é só texto.
+
+Fica registrada, **sem alteração**, uma ambiguidade real na Porta 1: o
+bloqueio escrito como até "13:15" se estende até as 13:30 no relógio, porque
+o rótulo do candle é a abertura. Mexer nisso é mudança de estratégia e precisa
+passar pelo `classificacao.py` nos dois períodos disponíveis antes de qualquer
+decisão.
+
+### Arquivo alterado
+
+- `principal.py`
+
+---
+
 ## V456 — portão estatístico: o ranking passa a mostrar quem empata com o 1º
 
 O ranking apresentava como 1º, 2º e 3º lugares resultados cuja diferença era
