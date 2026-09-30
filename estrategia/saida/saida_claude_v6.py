@@ -3,7 +3,7 @@
 Candidata S001. NÃO é titular.
 
 Autoria: Claude (Anthropic), a pedido do dono do laboratório em 30/09/2026.
-Origem: ata `conselho/2026-09-30-ATA-SAIDA-POR-REVERSAO.txt`.
+Origem: ata `conselho/2026-09-30-O.txt`.
 
 ---------------------------------------------------------------------------
 O QUE ESTA SAÍDA FAZ DE DIFERENTE
