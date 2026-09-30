@@ -1,0 +1,191 @@
+# ATA — SAÍDA POR REVERSÃO DE MOVIMENTO
+# Convocada pelo dono do laboratório em 30/09/2026, após o pregão
+
+Autoria da medição: Claude (Anthropic). Todos os números saíram do motor
+oficial (`classificacao.executar_jogo`) contra os dois períodos disponíveis:
+2026 (184 pregões) e 2023-2024 (499 pregões). Par avaliado:
+`entrada_grok_3_v1` × saída variante. Nenhum número aqui é alegação.
+
+---
+
+## 1. O QUE MOTIVOU ESTA ATA
+
+Pregão de 30/09/2026. Operação de COMPRA aberta às 14:15 em 187.720 pela
+Porta 2 (MACD + Estocástico), com stop estrutural a **1.165 pontos** e alvo
+a 1.806 pontos.
+
+    15:01:34   pico   188.745   +1.025 pts   = R$ +204,50
+    15:35:40   agora  187.805      +85 pts   = R$  +16,50
+
+**Devolveu R$188,00 — 92% de todo o lucro que existiu.**
+
+O dono do laboratório registrou, corretamente, que isto já foi discutido
+inúmeras vezes no conselho e nunca foi resolvido, e apontou a direção que
+ninguém havia testado: **identificar reversão de movimento.**
+
+Ele está certo, e o registro desta ata começa por reconhecer isso.
+
+---
+
+## 2. POR QUE O CONSELHO NÃO TINHA RESOLVIDO
+
+Levantei tudo que já foi testado em matéria de proteção de lucro. São **59
+variantes**, e elas se dividem em apenas duas famílias:
+
+| Família | Variantes | O que fazem |
+|---|---|---|
+| Mexer no stop por **distância** | 32 | breakeven, trailing por distância, trailing estrutural, risco fixo, risco por ATR |
+| Mexer no stop por **tempo/tamanho** | 27 | desistência por N candles, corte por horário, trava condicionada ao risco |
+
+**As 59 são a mesma ideia**: reposicionar um nível de preço. Nenhuma delas
+pergunta se o movimento que justificou a entrada ainda existe.
+
+Isso é tanto mais grave quanto o motor **já entrega** todos os indicadores de
+reversão no `row`, e a entrada os usa: `macd_cross_up`/`macd_cross_down`,
+`stoch_cross_up_20`/`stoch_cross_down_80`, `stoch_subindo`/`stoch_descendo`,
+`rsi_subindo`/`rsi_descendo`, `toque_ma21`. **Nenhum cartucho de saída em
+produção consulta qualquer um deles.** A entrada tem detecção de reversão
+sofisticada; a saída olha só para preço, relógio e ATR.
+
+Assumo minha parte: testei 59 variantes, reportei "proteger lucro não
+funciona" com confiança, e o que meus dados realmente diziam era
+"reposicionar stop não funciona". Foi uma generalização indevida e ela
+travou o conselho numa direção errada.
+
+---
+
+## 3. O QUE FOI MEDIDO AGORA
+
+Construí saídas que fecham a posição **no lucro** quando um sinal de reversão
+aparece. Reversão em prejuízo continua sendo trabalho do stop. Os horários
+da v4 foram mantidos, com a inversão das 18h corrigida (ver seção 5).
+
+### 2026 (184 pregões, ruído R$ 2.164)
+
+| gatilho de reversão | total | acerto | drawdown | **ret/risco** |
+|---|---|---|---|---|
+| **sem reversão (v4 atual)** | **R$ 17.100** | 68,5% | −320 | **53,5** |
+| **estocástico saindo da zona extrema** | R$ 14.901 | 71,3% | **−256** | **58,3** |
+| MACD ou estocástico-extremo | R$ 14.775 | 71,3% | −256 | 57,8 |
+| cruzamento do MACD contra | R$ 15.663 | 69,7% | −320 | 49,0 |
+| preço cruzando a MA21 de volta | R$ 13.108 | 73,4% | −320 | 41,0 |
+| RSI virando de direção | R$ 10.905 | 75,5% | −298 | 36,6 |
+
+### 2023-2024 (499 pregões, ruído R$ 2.323)
+
+| gatilho de reversão | total | acerto | drawdown |
+|---|---|---|---|
+| **sem reversão (v4 atual)** | **−R$ 387** | **44,8%** | **−2.990** |
+| **RSI virando de direção** | **+R$ 546** | **61,2%** | −2.811 |
+| MACD, stoch-extremo ou MA21 | +R$ 261 | 60,4% | −2.586 |
+| estocástico virando de direção | +R$ 93 | 56,2% | −2.950 |
+| **estocástico saindo da zona extrema** | −R$ 483 | 49,6% | **−2.421** |
+
+---
+
+## 4. OS TRÊS ACHADOS
+
+### 4.1 Primeira mecânica em 59 testes que melhora o retorno ajustado ao risco
+
+`estocástico saindo da zona extrema` entrega **ret/risco 58,3 contra 53,5 da
+base** em 2026 — um ganho de 9%. É a **única** mecânica, entre todas as
+testadas nesta sessão, que supera a base nessa métrica.
+
+E o mais importante: **ela reduz o drawdown nos DOIS períodos**, que é a
+primeira vez que qualquer coisa melhora a mesma métrica em duas amostras
+independentes:
+
+    2026      : −320  →  −256   (−20%)
+    2023-2024 : −2.990 → −2.421 (−19%)
+
+### 4.2 A reversão ajuda exatamente quando o mercado não coopera
+
+Olhe a taxa de acerto nos dois períodos:
+
+| | acerto 2023-24 | acerto 2026 |
+|---|---|---|
+| base | 44,8% | 68,5% |
+| RSI virando | **61,2% (+16,4 pts)** | 75,5% (+7,0 pts) |
+| MACD/stoch/MA21 | 60,4% (+15,6 pts) | 75,0% (+6,5 pts) |
+
+Em 2023-2024 — o período em que o sistema opera **no ponto de equilíbrio**
+(44,8% contra 39,2% necessários) — a saída por reversão sobe o acerto em
+**16 pontos** e transforma o resultado de −R$387 em **+R$546**.
+
+Em 2026 ela custa dinheiro, porque ali os alvos de 1,55R são atingidos e
+sair antes é desperdício.
+
+**Conclusão operacional: a saída por reversão é um seguro.** Custa prêmio no
+regime bom e paga no regime ruim. Como 2023-2024 é a amostra maior (499
+contra 184 pregões) e provavelmente a mais representativa, isso não é
+detalhe.
+
+### 4.3 O que continua sem solução
+
+Nenhuma variante supera a base no **total somado dos dois períodos**:
+
+    base                     : 17.100 + (−387) = R$ 16.714
+    estocástico-extremo      : 14.901 + (−483) = R$ 14.418
+    RSI virando              : 10.905 + (+546) = R$ 11.451
+
+Quem quiser menos drawdown paga em resultado. **Não encontrei almoço
+grátis, e não vou fingir que encontrei.** O que mudou é que agora existe um
+trade-off medido e uma família de mecanismos que funciona — coisa que as 59
+variantes anteriores não tinham.
+
+---
+
+## 5. DEFEITO ENCONTRADO NA `saida_chatgpt_v4` (titular em produção)
+
+Fora do escopo desta ata, mas registrado porque foi encontrado no caminho.
+
+A regra das 18h tem um `return None` (linha 73) que **pula inteiramente** a
+regra das 17:15. O docstring diz que ela existe para apertar a proteção na
+reta final. Ela faz o contrário sempre que o ATR passa de 550 pontos:
+
+| ATR | limite 17:15 | limite 18:00 | efeito |
+|---|---|---|---|
+| 400 | 275 | 200 | aperta (correto) |
+| 700 | 275 | **350** | **afrouxa** |
+| 1.200 | 300 | **600** | **afrouxa 2x** |
+
+**33,1% dos candles de 2026 têm ATR acima de 550.** Em um terço do tempo, a
+"proteção final" é uma flexibilização — justamente nos dias voláteis, que
+são os que ela deveria cobrir.
+
+Correção: `min(0.50*atr, max(275, 0.25*atr))`. Já aplicada em todas as
+variantes medidas nesta ata.
+
+---
+
+## 6. PROPOSTA AO CONSELHO
+
+1. **Construir `saida_claude_v6`** com o gatilho de estocástico saindo da
+   zona extrema, fechando no lucro, mantendo stop estrutural, alvo 1,55R e
+   as regras de horário com a inversão das 18h corrigida. Submeter como
+   **candidata**, não como titular.
+
+2. **Declarar encerrada a família "reposicionar stop"**. São 59 variantes,
+   zero melhorias no retorno ajustado ao risco. Quem quiser reabrir tem o
+   ônus de superar a base em mais de R$ 2.164 (ruído de 2026).
+
+3. **Abrir formalmente a família "saída por sinal"** como linha de pesquisa.
+   Esta ata testou 8 gatilhos simples; o espaço é muito maior — combinações
+   condicionadas ao regime, ao tempo decorrido, à porta que originou a
+   entrada, e ao tamanho do risco.
+
+4. **Corrigir a inversão das 18h na `saida_chatgpt_v4`**, que é titular em
+   produção. É uma linha, e o efeito deve ficar dentro do ruído, mas hoje o
+   código faz o oposto do que a própria documentação dele afirma.
+
+---
+
+## 7. REGISTRO FINAL
+
+O conselho passou semanas produzindo variantes de uma família que não
+funciona, enquanto os indicadores necessários para a família que funciona
+estavam disponíveis no `row` o tempo todo, usados pela entrada e ignorados
+pela saída.
+
+A direção correta não veio de nenhum dos participantes. Veio do dono do
+laboratório, depois de assistir R$204,50 virarem R$16,50 na tela.
