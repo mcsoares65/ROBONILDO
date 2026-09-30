@@ -1,0 +1,113 @@
+# Correção aceita — e o que ela muda na proposta
+
+Você está certo. Eu errei em dois pontos:
+
+1. **O motor não monta candles.** Quem monta é o `construtor_candle.py`. O `motor.py` só recebe `Candle` fechados e calcula indicadores.
+2. **O DDE não entrega tick a tick.** Entrega uma amostra do último preço a cada 2 segundos (1s perto do fechamento). ~450 amostras por candle de 15min, contra milhares de negócios reais. A máxima/mínima ao vivo é **sempre mais estreita** que a verdadeira — nunca mais larga.
+
+Isso não invalida a proposta de 1M. **Muda o que a proposta pode prometer.** Vou corrigir a reivindicação ao conselho para refletir a realidade do que o DDE entrega.
+
+---
+
+## 1. O que o DDE entrega, na prática
+
+A amostragem a cada 2s significa que:
+
+| Timeframe | Amostras por candle | O que o candle representa |
+|---|---|---|
+| 15M | ~450 | 450 fotos do último preço, agregadas |
+| 1M | ~30 | 30 fotos do último preço, agregadas |
+
+**30 amostras para um candle de 1M é pouco.** Um candle de 1M no WINFUT real tem centenas de negócios. Trinta amostras dão uma aproximação grosseira — a máxima e a mínima do candle de 1M **também serão sistematicamente mais estreitas** que as verdadeiras.
+
+Isso é o mesmo problema que existe hoje no 15M, **mas proporcionalmente pior**. 450 amostras para 15M significa ~1 amostra a cada 2s — o candle agregado tem resolução de 2s. 30 amostras para 1M significa o mesmo — resolução de 2s, mas com 1/15 do tempo. O candle de 1M ao vivo é ruidoso.
+
+**A boa notícia:** o estocástico lento (%K com EMA 3) é **suavizado**. Ele não depende da máxima/mínima do candle para nada — depende do **fechamento** relativo ao range dos últimos 8 candles. Como o fechamento é uma amostra direta (o último preço lido), ele está correto. O %K não sofre o viés de estreitamento. **O %D também não** — é média do %K.
+
+**A má notícia:** o stop estrutural (`min(Minimo)` dos últimos 5 candles) sofre. Ao vivo, o `Minimo` é mais estreito que o verdadeiro. Isso **já acontece hoje no 15M** — é uma divergência entre o juiz e a execução que os autores do código sabiam que existia, e que resolveram só em replay com `_reconciliar_ohlc_replay()`.
+
+---
+
+## 2. O que a proposta de 1M ganha e o que ela perde
+
+**Ganha:**
+- Checagem de saída a cada ~30 amostras de 2s em vez de ~450. 15× mais frequente.
+- O estocástico lento (%K e %D) no 1M usa **fechamentos** — não sofre o viés de estreitamento. O gatilho de exaustão por cruzamento %K×%D é confiável em 1M.
+- Antecipa o gatilho em até 14 minutos perto do pico.
+
+**Perde:**
+- O stop estrutural ao vivo fica **mais estreito** que o medido no backtest. O risco real é menor que o testado.
+- A máxima/mínima do candle de 1M ao vivo é ruidosa — não dá para confiar em pavios no 1M.
+- A divergência entre juiz e execução **já existe** no 15M e continuaria existindo no 1M — só que com mais candles, mais vezes.
+
+**Conclusão:** o 1M é viável para o **gatilho de exaustão por estocástico**. Não é viável para nada que dependa de máxima/mínima fina do candle. A proposta precisa ser **restrita a gatilhos que usam fechamento**, não pavio.
+
+---
+
+## 3. Correção da reivindicação ao conselho
+
+Substituo a seção 3.2 e 3.3 da proposta anterior por esta versão:
+
+### 3.2 (corrigida) `principal.py` mantém dois fluxos de candles em paralelo
+
+Estado atual: `principal.py` mantém uma lista de candles de 15M (montados por `construtor_candle.py`).
+
+Proposta: manter também uma lista de candles de **1M**, montada pelo **mesmo** `construtor_candle.py` com um parâmetro adicional de timeframe. Não é um novo construtor — é o mesmo, configurado diferente.
+
+No fechamento de um candle de **1M**, chamar `avaliar_saida(row_1m, posicao)` **apenas** para gatilhos que dependem de fechamento (estocástico, MACD, RSI). **Não** para stop estrutural nem para nada que dependa de máxima/mínima.
+
+### 3.3 (corrigida) `leitor_dde.py` continua lendo uma única linha
+
+O DDE entrega uma única amostra por vez. Não há "duas linhas" — há **uma** série de amostras. O que muda é o `construtor_candle.py` que consome essa série.
+
+Proposta: `principal.py` roda **duas instâncias** do `ConstrutorCandle` em paralelo — uma com bloco de 15M, uma com bloco de 1M. Ambas recebem a mesma leitura do DDE (`preco`, `agora`). Cada uma mantém seu próprio candle em formação.
+
+Isso é mais simples do que eu tinha proposto e **não exige mudança no `leitor_dde.py`**.
+
+---
+
+## 4. O que a correção implica no teste
+
+**Etapa 2 (ainda no 15M)** continua sendo o teste crítico. Se o gatilho de exaustão %K×%D **não** bate a campeã no 15M, o 1M não salva — vai entregar o mesmo gatilho em mais candles, com o mesmo viés.
+
+**Etapa 3 (1M)** ganha uma condição nova: **só faz sentido testar se o gatilho no 15M mostrar que o mecanismo é correto**. E o teste em 1M precisa comparar três coisas:
+
+| Configuração | O que mede |
+|---|---|
+| 15M × saída atual | baseline |
+| 15M × v06 (cruzamento %K×%D + zona extrema) | o gatilho funciona em candles grandes? |
+| 1M × v06 (mesmo gatilho, mais frequente) | o gatilho funciona melhor com mais resolução? |
+
+Se o 1M ganhar do 15M **no mesmo gatilho**, então a frequência é a alavanca. Se o 1M perder, o gatilho é ruim — mais frequência só faz o erro acontecer mais rápido.
+
+---
+
+## 5. Ponto que a correção deixa explícito
+
+**O stop ao vivo já é mais estreito que o do backtest.** Isso não foi introduzido pelo DDE hoje nem seria introduzido pelo 1M — é uma divergência histórica que os autores conheciam. A `_reconciliar_ohlc_replay()` resolve no replay, não no ao vivo. **Não é problema da minha proposta, mas é problema do laboratório como um todo.**
+
+Registro isso na reivindicação como observação ao conselho, não como parte da proposta: se o laboratório quer medir o que realmente acontece em produção, precisa de um mecanismo de reconciliação ao vivo (ou aceitar que a divergência existe e documentá-la no rodapé dos relatórios).
+
+---
+
+## 6. Reivindicação corrigida — resumo
+
+**Escopo:** adicionar um segundo `ConstrutorCandle` em paralelo (1M) e expor %D no `construir_row`. O motor não muda. O DDE não muda. O `construtor_candle.py` ganha apenas um parâmetro de timeframe.
+
+**Restrição:** cartuchos que rodam no 1M só podem usar campos que dependem de **fechamento** (`stoch`, `stoch_d`, `macd`, `rsi`). Nada de `Minimo`/`Maximo` no 1M ao vivo.
+
+**Caminho de validação:** inalterado — Etapa 1 (campos novos neutros), Etapa 2 (v06 no 15M), Etapa 3 (v06 no 1M), Etapa 4 (robustez + holdout).
+
+**Risco novo declarado:** a divergência entre OHLC amostrado ao vivo e OHLC verdadeiro do backtest já existe no 15M. O 1M **aumenta a frequência** dessa divergência, mas não a introduz. O conselho pode decidir que a divergência é aceitável (é o que o laboratório já aceita hoje) ou exigir reconciliação ao vivo antes de avançar.
+
+**Voto:** aprovar as três alterações incrementais **com a restrição explícita** de que cartuchos rodando em 1M só usem campos de fechamento. Se o conselho preferir, aprovar apenas 3.1 (campos do %D no `construir_row`) nesta rodada, e adiar 3.2/3.3 para uma segunda decisão depois que a Etapa 2 (v06 no 15M) mostrar resultado.
+
+---
+
+## 7. O que eu faço agora
+
+Nada de código até o conselho decidir. A correção que você fez **reduz o escopo da proposta**, mas não a invalida — apenas a torna mais honesta sobre o que o DDE entrega.
+
+Se o conselho quiser que eu escreva o patch do `construtor_candle.py` (parâmetro de timeframe) **e** o patch do `motor.py` (`stoch_d`), eu escrevo os dois na mesma entrega — são independentes e podem ser avaliados em separado.
+
+Aguardando a decisão.
