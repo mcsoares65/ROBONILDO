@@ -1,0 +1,183 @@
+# Regra de paridade Replay/ao vivo — e os dois artifícios removidos
+
+Autoria: Claude (Anthropic), 30/09/2026.
+Regra estabelecida pelo dono do laboratório; execução e varredura por mim.
+Base: commit `a949353`. Entrega: V458.
+
+---------------------------------------------------------------------------
+1. A REGRA
+---------------------------------------------------------------------------
+
+Palavras do dono do laboratório, 30/09/2026:
+
+> "Qualquer artifício que só rode em replay e não reproduza o mesmo resultado
+> no mercado ao vivo deve ser removido do robô imediatamente. Pois não podemos
+> permitir que o robô reproduza resultados divergentes entre replay e mercado
+> ao vivo."
+
+A regra é correta e passa a valer para todo o conselho. O Replay é o ensaio
+geral da operação real. Um ensaio que usa dado que a operação real não tem
+não é ensaio: é propaganda. E o erro que ele produz é sempre na direção
+otimista, porque ninguém constrói um artifício que piore o próprio resultado.
+
+**Teste operacional da regra**, para quem for propor código daqui em diante:
+se existe um `if modo_replay:` que muda qualquer entrada da decisão de trade —
+preço, OHLC, indicador, limite de risco, horário de bloqueio, tamanho de
+posição — o artifício viola a regra. Se muda só encanamento (qual célula ler,
+qual nome de ativo procurar) ou diagnóstico (qual aviso imprimir), não viola.
+
+---------------------------------------------------------------------------
+2. VARREDURA
+---------------------------------------------------------------------------
+
+Varri as 34 ocorrências de `replay` em `principal.py`, as 7 em `leitor_dde.py`
+e as 4 em `configuracao.py`. Cinco pontos tinham comportamento condicionado ao
+modo. **Dois violam a regra; três não.**
+
+---------------------------------------------------------------------------
+3. ARTIFÍCIO 1 — RECONCILIAÇÃO DE OHLC (removido)
+---------------------------------------------------------------------------
+
+`_reconciliar_ohlc_replay()` + a chave `RECONCILIAR_OHLC_OFICIAL_NO_REPLAY`.
+
+No Replay, depois de o candle fechar, o OHLC amostrado pelo DDE era
+**substituído** pelo OHLC consolidado do arquivo exportado do Profit.
+
+Por que viola: ao vivo o robô lê somente o campo `ULT` da planilha, a cada
+2 segundos (1s perto do fechamento), e monta máxima/mínima a partir dessas
+amostras. A máxima/mínima amostrada é **sempre mais estreita** que a
+verdadeira, nunca mais larga. E isso não é cosmético:
+
+- o stop da saída titular é `min(Minimo)` dos últimos 5 candles
+- o alvo é `RR × risco`, logo herda o erro do stop
+- o `%K` usa `max(maxima)` e `min(minima)` da janela de 8 candles
+  (`motor.py:68-69`), no numerador e no denominador
+
+OHLC diferente ⇒ stop diferente, alvo diferente, `%K` diferente ⇒ **sinal
+diferente**. O Replay não estava rodando a mesma estratégia.
+
+---------------------------------------------------------------------------
+4. ARTIFÍCIO 2 — LIMITES DIÁRIOS REMOVIDOS (removido; o de maior impacto)
+---------------------------------------------------------------------------
+
+Este eu não tinha visto antes, e é maior que o primeiro.
+
+Ao responder `REPLAY` na pergunta inicial, `principal.py` fazia:
+
+```python
+cfg.MAX_OPERACOES_DIA = 999
+cfg.MAX_PERDAS_DIA = 999
+```
+
+Os valores validados são **2 e 2** (`configuracao.py:93-94`). E
+`motor.pode_abrir_posicao()` barra **toda** entrada por eles
+(`motor.py:565-568`).
+
+Ou seja: um Replay podia abrir dez operações num dia em que a operação real
+teria parado na segunda. Isso não é um detalhe de preço — muda a
+**quantidade de posições**, e com ela o resultado do dia inteiro. Um dia de
+Replay com oito trades estava mostrando algo que ao vivo **não pode
+acontecer**.
+
+**O agravante.** A `classificacao.py` não mexe nesses limites — verifiquei,
+nenhuma ocorrência. Logo o juiz roda com 2/2, os mesmos valores do ao vivo.
+O quadro real era:
+
+| ambiente | limites diários | fonte de OHLC |
+|---|---|---|
+| ao vivo | 2 / 2 | DDE amostrado |
+| classificacao.py (juiz) | 2 / 2 | CSV verdadeiro |
+| **Replay** | **999 / 999** | **CSV verdadeiro** |
+
+O Replay era o único dos três fora de padrão, e divergia ao mesmo tempo da
+operação real **e** do juiz. Era o ambiente menos confiável dos três, exibido
+como se fosse o mais parecido com a operação.
+
+A justificativa no código era "ambiente controlado, sem capital real, faz
+sentido observar o comportamento livremente". A intenção é legítima; o
+mecanismo, não. Quem quiser observar sem limites altera
+`MAX_OPERACOES_DIA`/`MAX_PERDAS_DIA` em `configuracao.py` de forma explícita
+e consciente — e sabe que está olhando outra coisa.
+
+---------------------------------------------------------------------------
+5. O QUE FOI MANTIDO, E POR QUÊ
+---------------------------------------------------------------------------
+
+Três diferenças de modo **não** são artifícios e ficam:
+
+**(a) Guarda de data velha** — `if not _MODO_REPLAY and agora.date() <
+agora_real.date()`. Existe *porque* o Replay roda legitimamente numa data
+diferente do relógio do computador. Mantê-la ativa no Replay o tornaria
+impossível: ele acharia que todo dado é de ontem. É um portão de "aguardando
+abertura", não lógica de estratégia.
+
+**(b) Checagem de deriva de relógio** — `verificar_integridade(...,
+modo_replay=...)` pula a comparação entre o relógio do DDE e o real, pela
+mesma razão. As checagens de **salto implausível** e de **preço congelado**
+continuam ativas nos dois modos. É diagnóstico, não decisão.
+
+**(c) `PREFIXO_REPLAY = "[R] "`** — qual nome de ativo procurar na coluna A
+da planilha. Encanamento puro.
+
+Registro para auditoria futura: o preenchimento automático de buracos
+(`principal.py`, detecção de gap > 1,5 candle, lê de
+`CAMINHO_HISTORICO_INICIAL`) **roda nos dois modos**, logo não cria
+divergência Replay/ao vivo e não é alcançado por esta regra. Usa dado
+passado, não futuro. Fica como está, mas vale uma decisão separada do
+conselho sobre se o robô deve ler arquivo durante operação real.
+
+---------------------------------------------------------------------------
+6. A DIVERGÊNCIA QUE SOBRA — E QUE NÃO TEM COMO REMOVER
+---------------------------------------------------------------------------
+
+Depois da V458, Replay e ao vivo usam a mesma fonte de preço e os mesmos
+limites. Mas a `classificacao.py` continua lendo OHLC **verdadeiro** do CSV,
+porque **não existe dado tick a tick no laboratório**. Não há como o juiz
+amostrar a cada 2 segundos: o insumo que temos é a barra já consolidada.
+
+Isso é honesto declarar, não esconder:
+
+- a divergência é **inevitável** com o dado disponível
+- afeta **todos** os cartuchos na mesma direção, e por isso é tolerável numa
+  comparação *relativa*, que é o trabalho do juiz
+- mas **não** é tolerável como previsão de resultado absoluto
+
+Teto do efeito, medido (amostrador de 60s, 30x mais esparso que o real do
+robô, logo **teto e não estimativa**; 4.009 candles de 15M de 2026):
+
+    estreitamento médio do candle : 118,6 pts  (26,3% da largura)
+    candles afetados              : 100,0%
+    erro no %K                    : 2,86 pts em média, 25,12 no pior caso
+    cruzamentos de zona           : +10,2%
+
+O caminho para fechar essa última divergência existe e é conhecido: coletar o
+OHLC amostrado que o próprio robô grava em `logs/historico_acumulado.csv` e
+usá-lo como fonte do juiz para o período em que houver cobertura. Não proponho
+isso agora — é decisão de conselho, muda o juiz, e a cobertura hoje é curta.
+
+---------------------------------------------------------------------------
+7. EFEITO PRÁTICO — AVISO
+---------------------------------------------------------------------------
+
+**Resultados de Replay vão piorar.** Era isso que os dois artifícios estavam
+comprando. O Replay passa a entregar algo mais parecido com o que a operação
+real entrega, e isso significa números menores.
+
+**Qualquer comparação com Replay anterior à V458 está contaminada** pelos dois
+artifícios e não deve ser usada como referência — nem por mim, nem pelas
+outras IAs do conselho. Se alguma decisão passada se apoiou em um resultado de
+Replay, ela precisa ser revisitada contra a `classificacao.py`.
+
+---------------------------------------------------------------------------
+8. O QUE NÃO FOI TESTADO
+---------------------------------------------------------------------------
+
+`py_compile` passa em `principal.py` e `configuracao.py`, e grep confirma zero
+resíduos dos três símbolos removidos. **Não executei o robô em Replay real
+contra o Profit** — isso exige a planilha DDE e a máquina de produção, e é o
+teste que falta antes de considerar a V458 validada.
+
+Sugiro ao dono do laboratório: rodar um Replay de um pregão já conhecido e
+comparar o número de operações contra o que a `classificacao.py` reporta para
+o mesmo dia. Se os dois artifícios eram os únicos, a contagem de operações
+agora bate.
