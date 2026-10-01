@@ -308,7 +308,7 @@ _nome_saida, _modulo_saida = _descobrir_cartucho("saida", "avaliar_saida")
 diagnosticar_saida = getattr(_modulo_saida, "diagnosticar_saida", None)
 print(f"Cartucho de saída: {_nome_saida}.py  [estrategia/saida/titular/]")
 
-from construtor_candle import ConstrutorCandle
+from construtor_candle import ConstrutorCandle, candles_faltando
 from registrador import Registrador
 from auditor_execucao import AuditorExecucao
 from leitor_dde import LeitorDDE
@@ -587,6 +587,9 @@ def rodar():
     # Paridade com o motor: se uma posição for encerrada durante um candle,
     # o backtest não permite reentrada usando o fechamento desse mesmo candle.
     saida_desde_ultimo_fechamento = False
+    # V461: candles que ainda precisam fechar antes de liberar NOVA entrada
+    # depois de um buraco nao preenchido no historico (posicao aberta segue gerida).
+    candles_aquecimento_restantes = 0
 
     while True:
         agora_real = datetime.now()
@@ -1109,6 +1112,19 @@ def rodar():
                         print(f"[{agora}] [AVISO] Nao foi possivel preencher o buraco (arquivo "
                               f"historico nao cobre esse trecho) - MA21/RSI/ATR podem estar "
                               f"incorretos ate a media 'esquentar' de novo com candles novos.")
+                        # V461: so e buraco de verdade se faltarem candles de PREGAO
+                        # (fim de semana/feriado/noite nao contam).
+                        faltam = candles_faltando(
+                            historico_candles[-1].horario, candle_fechado.horario,
+                            cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
+                            cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
+                        if faltam > 0:
+                            candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
+                            print(f"[{agora}] [BLOQUEIO V461] Faltam {faltam} candle(s) de pregao no "
+                                  f"historico. NOVAS ENTRADAS BLOQUEADAS por "
+                                  f"{candles_aquecimento_restantes} candles (posicao aberta segue "
+                                  f"gerida). Para liberar antes: exporte o historico atualizado do "
+                                  f"Profit para '{cfg.CAMINHO_HISTORICO_INICIAL}' e reinicie o robo.")
 
             # remove qualquer candle ja existente no mesmo horario (evita duplicar
             # quando o historico de bootstrap ja cobre parte do periodo que o
@@ -1116,6 +1132,8 @@ def rodar():
             historico_candles = [c for c in historico_candles if c.horario != candle_fechado.horario]
             historico_candles.append(candle_fechado)
             historico_candles.sort(key=lambda c: c.horario)
+            if candles_aquecimento_restantes > 0:
+                candles_aquecimento_restantes -= 1
             _salvar_historico_persistente([candle_fechado])
 
             sinal_auditoria = None
@@ -1213,6 +1231,10 @@ def rodar():
                         sinal.lado,
                     )
                     pode, motivo_bloqueio = gestor.pode_abrir_posicao(sinal.horario)
+                    if pode and candles_aquecimento_restantes > 0:
+                        pode = False
+                        motivo_bloqueio = (f"Historico com buraco nao preenchido - aquecendo "
+                                           f"({candles_aquecimento_restantes} candles restantes)")
                     if pode:
                         origem_sinal = (
                             diagnostico_fechamento.get("estrategia")

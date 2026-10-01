@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V460"
+VERSAO = "V461"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1057,4 +1057,32 @@ VERSAO = "V460"
 # (diferenca por candle, primeiro candle sem base, entrada sem extras).
 #
 # Arquivos alterados: coleta_dde.py (novo), leitor_dde.py, principal.py,
+# versionamento.py.
+
+# ---------------------------------------------------------------------------
+# V461 - Bloqueio de NOVAS entradas apos buraco nao preenchido no historico
+# ---------------------------------------------------------------------------
+# Incidente de 01/10/2026: o robo iniciou com historico que nao cobria 29/09,
+# 30/09 e a manha de 01/10, AVISOU "MA21/RSI/ATR podem estar incorretos" e
+# mesmo assim abriu COMPRA real (Porta 2, Distancia=3006pts) com stop a 3.535
+# pts. Agora, se faltarem candles de PREGAO e o arquivo nao cobrir o trecho,
+# nao abre posicao nova por CANDLES_AQUECIMENTO_APOS_BURACO (50) candles;
+# posicao ja aberta segue gerida.
+#
+#   construtor_candle.py: candles_faltando() - conta candles de pregao faltando
+#                         (fim de semana, feriado e noite nao contam).
+#   configuracao.py     : CANDLES_AQUECIMENTO_APOS_BURACO, HORARIO_PRIMEIRO_CANDLE,
+#                         HORARIO_ULTIMO_CANDLE, FERIADOS_B3 (manter atualizado).
+#   principal.py        : arma o bloqueio no ramo "nao foi possivel preencher",
+#                         decrementa a cada candle e barra a entrada.
+#
+# Motor, cartuchos e classificacao.py intactos: sem buraco de pregao o
+# comportamento e identico (paridade backtest/replay/ao vivo preservada).
+# NAO implementado: teto de risco por operacao (conflita com Regra 1 v9;
+# precisa decisao do dono e medicao previa). Ata: conselho/2026-10-01-W.txt
+#
+# Testado: py_compile; candles_faltando() com 6 casos (incidente = 80 faltando;
+# sexta->segunda = 0; feriado = 0).
+#
+# Arquivos alterados: construtor_candle.py, configuracao.py, principal.py,
 # versionamento.py.
