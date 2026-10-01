@@ -250,8 +250,8 @@ def _planilha_metodologia(wb, resultado: dict, caminho_csv: Path) -> None:
          f"{cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS:.2f} por operação (R$ "
          f"{cfg.VALOR_PONTO_REAIS:.2f} por ponto de WIN)."),
         ("Limites",
-         f"Máximo de {cfg.MAX_OPERACOES_DIA} operações e {cfg.MAX_PERDAS_DIA} perdas por dia; "
-         f"janela(s) {janelas} bloqueada(s)."),
+         f"Máximo de {cfg.MAX_PERDAS_DIA} perdas por dia (sem teto de contagem "
+         f"de operações desde a V459); janela(s) {janelas} bloqueada(s)."),
         ("Hora de entrada",
          "Momento executável: fechamento do candle de sinal, isto é, rótulo do candle "
          f"acrescido de {cfg.TIMEFRAME_MINUTOS} minutos."),

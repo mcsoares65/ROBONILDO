@@ -562,8 +562,11 @@ class MotorRobonildo:
         self._checar_novo_dia(horario)
         if self.posicao_aberta is not None:
             return False, "Já existe posição aberta"
-        if self.operacoes_hoje >= cfg.MAX_OPERACOES_DIA:
-            return False, f"Limite diário de operações atingido ({cfg.MAX_OPERACOES_DIA})"
+        # V459: o teto de CONTAGEM de operações por pregão saiu daqui. Medido
+        # nos dois períodos, mordia em 3,6% e 3,9% dos pregões operados, com
+        # efeito dentro da faixa de ruído e de sinal oposto nos dois. O contador
+        # `operacoes_hoje` continua sendo mantido, para relatório e estado, mas
+        # já não barra entrada. Quem protege capital é MAX_PERDAS_DIA, abaixo.
         if self.perdas_hoje >= cfg.MAX_PERDAS_DIA:
             return False, f"Limite diário de perdas atingido ({cfg.MAX_PERDAS_DIA})"
         if horario.strftime("%H:%M") >= cfg.HORARIO_BLOQUEIO_NOVAS_ENTRADAS:

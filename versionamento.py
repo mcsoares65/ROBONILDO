@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V458"
+VERSAO = "V459"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -953,3 +953,75 @@ VERSAO = "V458"
 # NAO testado: execucao em Replay real contra o Profit (exige a planilha DDE).
 #
 # Arquivos alterados: principal.py, configuracao.py, versionamento.py.
+
+
+# ---------------------------------------------------------------------------
+# V459 — removido MAX_OPERACOES_DIA (teto de contagem de operacoes por pregao)
+# ---------------------------------------------------------------------------
+#
+# Pedido do dono do laboratorio em 30/09/2026, com a premissa de que
+# "dificilmente vamos ter um grande numero de oportunidades diarias". Como e
+# controle de risco em producao com ENVIAR_ORDENS=True, a premissa foi MEDIDA
+# no motor oficial antes de qualquer alteracao, nos dois periodos disponiveis,
+# variando somente MAX_OPERACOES_DIA e mantendo MAX_PERDAS_DIA=2 intacto.
+#
+# OPORTUNIDADES POR PREGAO (par titular, sem teto de contagem)
+#
+#                     1 op     2 ops    3 ops    4+
+#   2026 (137 op.)    67,9%    28,5%     3,6%   nenhum
+#   2023-2024 (360)   68,1%    28,1%     3,9%   nenhum
+#
+# Distribuicao praticamente identica em dois periodos independentes, e nenhum
+# pregao chegou a 4 operacoes nem sem teto algum - a estrategia se limita em 3
+# por conta propria. A premissa esta confirmada.
+#
+# CUSTO DO TETO
+#   2026      : com teto R$17.100,57 (181 ops) | sem teto R$17.013,59 (186 ops)
+#               diferenca -R$86,98 | faixa de ruido R$2.183,60 -> RUIDO
+#   2023-2024 : com teto R$-386,92 (475 ops) | sem teto R$-292,89 (489 ops)
+#               diferenca +R$94,02 | faixa de ruido R$2.580,25 -> RUIDO
+#
+# Os dois dentro da faixa, com SINAIS OPOSTOS - assinatura de mudanca sem
+# efeito real, coerente com algo que toca ~4% dos pregoes. O teto barrava
+# entrada em 5/137 e 14/360 dos pregoes operados.
+#
+# POR QUE REMOVER NAO AFROUXA A PROTECAO DE CAPITAL
+#   MAX_PERDAS_DIA=2 continua. Para o teto de CONTAGEM morder, era preciso ja
+#   ter duas operacoes no dia com no maximo UMA perda - senao o limite de
+#   perdas teria parado antes. Logo o teto de contagem so barrava a terceira
+#   entrada de um pregao que ia BEM. Mordia no dia saudavel e ficava quieto no
+#   dia ruim; nunca foi ele que protegia a banca.
+#
+# ALTERACOES
+#   configuracao.py : a constante MAX_OPERACOES_DIA deixou de existir; no lugar
+#                     fica o registro da medicao. MAX_PERDAS_DIA intacto.
+#   motor.py        : o portao em pode_abrir_posicao() saiu. O contador
+#                     operacoes_hoje CONTINUA sendo mantido e persistido, para
+#                     relatorio e estado - so nao barra mais entrada.
+#   analise.py      : a linha "Limites" do relatorio nao anuncia mais um teto
+#                     que nao existe.
+#   principal.py    : as duas mensagens de abertura (REPLAY e NORMAL) deixaram
+#                     de citar a constante removida.
+#
+# Nenhum cartucho tocado. Nenhuma pasta titular/ tocada.
+#
+# EFEITO PRATICO: em ~4% dos pregoes operados o robo podera abrir uma terceira
+# operacao onde antes parava em duas. Nos outros 96% nada muda, porque a
+# estrategia nao encontra terceira oportunidade. Quem quiser o teto de volta
+# precisa trazer medida com efeito FORA da faixa de ruido - a intuicao de que
+# mais operacoes e mais risco nao se sustentou nestes dois periodos.
+#
+# NAO MEDIDO: o efeito sobre os cartuchos candidatos (a medicao cobre o par
+# titular). Se alguma candidata gerar muito mais oportunidades por pregao, o
+# teto importaria mais para ela - reconferir antes de promover.
+#
+# Testado: py_compile em motor.py, configuracao.py, principal.py, analise.py e
+# classificacao.py; grep confirmando zero residuos de MAX_OPERACOES_DIA fora
+# dos comentarios historicos; hasattr(cfg,'MAX_OPERACOES_DIA') == False;
+# classificacao.py reexecutada em 2026 confirmando os numeros do cenario sem
+# teto (186 operacoes, R$17.013,59).
+#
+# Ata: conselho/2026-09-30-U.txt
+#
+# Arquivos alterados: motor.py, configuracao.py, principal.py, analise.py,
+# versionamento.py.

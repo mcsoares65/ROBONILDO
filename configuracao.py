@@ -92,15 +92,30 @@ HORARIO_LIMITE_ABSOLUTO = "18:20:58"   # UNICO horario de saida forcada do proje
 
 # ---------- Gestao de risco (banca atual: R$200 - ajustar conforme o extrato real) ----------
 BANCA_ATUAL_REAIS = 200.00
-MAX_OPERACOES_DIA = 2      # padrao de seguranca - a pergunta feita no inicio do
-MAX_PERDAS_DIA = 2         # script (ambiente REAL/SIMULADO) pode ampliar isso
-                            # ATUALIZADO de 1 para 2: a CLAUDE_HIBRIDA_3_PORTAS_v2
+# V459: MAX_OPERACOES_DIA foi REMOVIDA. Era um teto de CONTAGEM de operacoes
+# (2 por pregao) que, medido no motor oficial nos dois periodos, praticamente
+# nunca mordia - a estrategia simplesmente nao gera tantas oportunidades:
+#
+#              pregoes com 1 op   com 2 ops   com 3 ops   4+
+#   2026            67,9%           28,5%        3,6%     nenhum
+#   2023-2024       68,1%           28,1%        3,9%     nenhum
+#
+# O teto barrava entrada em 3,6% (5/137) e 3,9% (14/360) dos pregoes operados,
+# e a diferenca de resultado ficou dentro da faixa de ruido da Regra 14 nos
+# dois periodos, com sinais OPOSTOS: -R$86,98 em 2026 (ruido R$2.183,60) e
+# +R$94,02 em 2023-2024 (ruido R$2.580,25). Nenhum pregao chegou a 4 operacoes
+# nem sem teto algum - a propria estrategia se limita em 3.
+#
+# MAX_PERDAS_DIA CONTINUA e e o controle que de fato protege capital: num dia
+# ruim o robo ainda para na segunda perda. O teto de contagem so mordia em
+# dias que iam BEM (duas operacoes com no maximo uma perda), ou seja, barrava
+# justamente a terceira entrada de um pregao saudavel.
+# Ver conselho/2026-09-30-U.txt.
+MAX_PERDAS_DIA = 2         # ATUALIZADO de 1 para 2: a CLAUDE_HIBRIDA_3_PORTAS_v2
                             # foi validada no laboratorio com MAX_PERDAS_DIA=2 (N=314,
                             # PF=1.89) - rodar com 1 testaria uma regra diferente da
                             # validada. Se trocar de estrategia titular no futuro,
                             # reconferir qual limite foi usado na validacao dela.
-                            # temporariamente so na sessao atual, sem alterar
-                            # este arquivo nem exigir lembrar de reverter nada
 VALOR_PONTO_REAIS = 0.20  # fixo, WIN
 
 # ---------- Custos reais (Santander Corretora, confirmado na documentacao oficial) ----------
