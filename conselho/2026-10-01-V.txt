@@ -1,0 +1,100 @@
+# Pesquisas negativas de 01/10/2026: volume, MACD, Massuda e Glória
+
+Autoria: Claude (Anthropic), 01/10/2026.
+Pedido do dono do laboratório; medição e registro por mim.
+Base: main (V459). Nenhum arquivo de estratégia titular foi alterado.
+Scripts de pesquisa ficaram no scratchpad da sessão, fora do repositório.
+
+---------------------------------------------------------------------------
+1. PARA QUE SERVE ESTA ATA
+---------------------------------------------------------------------------
+
+Registrar, para o conselho, o que foi testado e NÃO superou a titular
+(`entrada_grok_3_v1` × `saida_chatgpt_v4`), para ninguém repetir o teste.
+Todas as variantes foram declaradas antes de rodar e todas estão reportadas,
+não só as melhores. Faixa de ruído da Regra 14: R$ 2.183,60 (2026) e
+R$ 2.580,25 (2023-2024). Com N variantes, o melhor ao acaso fica ~sqrt(2 ln N)
+desvios acima da média; só conta o que tem o mesmo sinal nos dois períodos.
+
+Bases (motor V459):
+    2026        : R$ 17.013,59 | 186 ops | acerto 67,2% | dd -334 | r/r 50,9
+    2023-2024   : R$   -292,89 | 489 ops | acerto 45,0% | dd -3.175
+
+---------------------------------------------------------------------------
+2. VOLUME
+---------------------------------------------------------------------------
+
+Dado: coluna `Quantidade` (contratos), cobertura total. A coluna `Volume` é
+financeira e carrega o nível de preço; não usar.
+
+ACHADO METODOLÓGICO: o volume "relativo à média de 21 candles" é ~45-55%
+artefato de relógio (correlação -0,74 em 2026, -0,67 em 2023-24 com a hora do
+dia; 09:00 tem 2,7x a mediana, 18:15 tem 0,19x). Todo teste usou volume
+normalizado pela mediana do MESMO horário nos 20 pregões anteriores.
+
+Resultados:
+ - Volume >= 1,2 melhora o R$/trade nos dois períodos (+30,24 e +15,10), mas
+   como filtro corta as operações de 186 para 48 em 2026.
+ - Como "liberador" (aceita quase-sinal ou levanta bloqueio de relógio) o
+   sinal inverte entre períodos; a família "quase-sinal" destrói 2026.
+ - Saídas por volume (clímax/seca) nunca superaram a base em 2026.
+ - Estratégias novas só com volume: nenhuma superou a titular nos dois períodos.
+
+---------------------------------------------------------------------------
+3. MACD (aula do Massuda)
+---------------------------------------------------------------------------
+
+ - Filtro lateral |MACD|/ATR >= x: 2026 -4.675 / -6.869 / -11.569;
+   2023-24 +680 / +2.305 / +4.229. SINAIS OPOSTOS entre períodos.
+ - Decaimento do MACD como saída antecipada: ruído/negativo.
+ - Regiões do MACD fiéis ao vídeo (sem alvo fixo, 8 variantes): 2026 todas
+   piores (-1.578 a -2.259); 2023-24 ruído.
+ - Ferramentas de saída do Massuda (10 variantes): nenhuma superou a base.
+   Pivô de Fibonacci (qualquer nível) -5.183 e candles de reversão -4.314 em
+   2026, ambos acima do ruído. Detectores de reversão sobem o acerto
+   (67% -> ~71%) e cortam o ganho médio.
+ - Sistema completo, entrada + saída (M15, 9 variantes): 2026 todas negativas
+   (-R$ 1.116 a -R$ 50; acerto 33-45% contra 67%); 2023-24 positivas só com a
+   saída titular (+1.009 a +1.974, ruído) e negativas com o stop do candle.
+
+---------------------------------------------------------------------------
+4. GLÓRIA (volume por pernas, rompimento, divergência)
+---------------------------------------------------------------------------
+
+14 variantes. Entrada titular com filtro de CONCORDÂNCIA de pernas (volume
+médio das velas a favor / contra, 8 velas):
+    exigir >= 1,0: 2026 -6.457 (sinal) | 2023-24 -22
+    exigir >= 1,2: 2026 -12.608 (sinal) | 2023-24 +1.026 (ruído)
+    bloquear divergência < 0,8: 2026 -966 | 2023-24 +759 (ruído)
+    bloquear divergência < 0,6: 2026 -239 | 2023-24 +391 (ruído)
+Rompimento de N velas com volume alto (8 variantes): 2026 de +R$ 99 a
++R$ 1.248; 2023-24 de -R$ 3.780 a +R$ 341.
+Controle, rompimento com volume BAIXO a favor da tendência: 2026 -698;
+2023-24 +2.032 (ruído) — contraria a tese do vídeo em um período.
+Divergência de volume em topo/fundo como reversão: 2026 +406 (acerto 33%);
+2023-24 -2.705.
+Conclusão: nada com o mesmo sinal nos dois períodos acima do ruído.
+
+---------------------------------------------------------------------------
+5. CORREÇÃO DE UMA AFIRMAÇÃO MINHA
+---------------------------------------------------------------------------
+
+O docstring de `saida_claude_v6.py` afirmava r/r 58,3 contra 53,5 e drawdown
+-20%/-19%. Esses números foram medidos com `MAX_OPERACOES_DIA = 2` e deixaram
+de valer com a V459. Remedido hoje: 2026 r/r 50,0 contra 50,9 (dd -301 contra
+-334 = -10%); 2023-24 dd -2.488 contra -3.175 (-22%). A vantagem de retorno
+ajustado ao risco desapareceu em 2026. Docstring corrigido no mesmo PR (Regra
+4 do compliance: nenhuma alegação vale sem reexecução no motor vigente).
+
+---------------------------------------------------------------------------
+6. O QUE FICA ABERTO
+---------------------------------------------------------------------------
+
+ - Dados de 2025 (terceiro regime) e WDO: não testados.
+ - Fluxo/agressão e Negócios por candle: o CSV histórico não os traz; só dá
+   para avaliar acumulando dados ao vivo (ver coleta passiva do DDE, V460).
+ - Divergência preço x MACD: não testada (exige detecção de topos/fundos).
+ - Platô: 11 das 12 saídas do ranking estão empatadas estatisticamente e as
+   9 melhores entradas são clones (93-100% de sobreposição). Ganho real vem
+   de mais evidência (regimes, outros mercados, acúmulo ao vivo), não de mais
+   variações sobre os mesmos dados.

@@ -31,21 +31,24 @@ variantes anteriores.
 ---------------------------------------------------------------------------
 O QUE FOI MEDIDO (motor oficial, dois períodos, par entrada_grok_3_v1)
 ---------------------------------------------------------------------------
-2026 (184 pregões):
+Remedição em 01/10/2026, motor V459 (sem MAX_OPERACOES_DIA). Os números da
+versão original (r/r 58,3 contra 53,5; dd -20%/-19%) foram medidos COM o teto
+de 2 operações por dia e deixaram de valer quando ele foi removido (V459):
 
-    sem reversão (saida_chatgpt_v4) : R$ 17.100 | acerto 68,5% | dd   -320 | r/r 53,5
-    com este gatilho                : R$ 14.901 | acerto 71,3% | dd   -256 | r/r 58,3
+2026 (186 pregões operados):
 
-2023-2024 (499 pregões):
+    sem reversão (saida_chatgpt_v4) : R$ 17.013,59 | acerto 67,2% | dd -334 | r/r 50,9
+    com este gatilho                : R$ 15.043,59 | acerto 70,2% | dd -301 | r/r 50,0
 
-    sem reversão (saida_chatgpt_v4) : R$   -387 | acerto 44,8% | dd -2.990
-    com este gatilho                : R$   -483 | acerto 49,6% | dd -2.421
+2023-2024:
 
-Leitura honesta: **custa resultado e compra risco.** É a primeira mecânica,
-entre as 59 testadas, que supera a base em retorno ajustado ao risco (58,3
-contra 53,5), e a primeira que reduz o drawdown nos DOIS períodos (-20% em
-2026, -19% em 2023-2024). Não supera a base no total somado — quem quiser
-menos drawdown paga em resultado.
+    sem reversão (saida_chatgpt_v4) : R$   -292,89 | acerto 45,0% | dd -3.175
+    com este gatilho                : R$   -234,34 | acerto 49,5% | dd -2.488
+
+Leitura honesta: **custa resultado e compra risco, e a vantagem de retorno
+ajustado ao risco desapareceu em 2026** (50,0 contra 50,9). Resta uma redução
+de drawdown de -10% em 2026 e de -22% em 2023-2024, pagas com -R$ 1.970 em
+2026. Não supera a base no total; quem quiser menos drawdown paga em resultado.
 
 Nenhum parâmetro foi otimizado. O gatilho veio do que o motor já expõe, e as
 constantes de stop/alvo/horário são as da `saida_chatgpt_v4`, copiadas sem
