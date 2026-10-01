@@ -1,0 +1,166 @@
+Lista de campos exportados no DDE do Profit Ultra
+
+Atributos ##############################
+3M - 3 meses
+6M - 6 meses
+12M - 12 meses
+ABE - Abertura
+ACP - Agente de Compra
+AVD - Agente de Venda
+AJU - Ajuste
+AJA - Aj. Anterior
+ANO - Ano
+CAB - Cont. Abertos
+DAT - Data
+EST - Estado Atual
+FEC - Fechamento Anterior
+HOR - Hora
+LMAX - Limite Max
+LMIN - Limite Min
+MAX - Máximo
+MED - Média
+MES - Mês
+MIN - Mínimo
+NEG - Negócios
+OCP - Of. Compra
+OVD - Of. Venda
+PRT - Preço Teórico
+PEX - Strike
+QTT - Quantidade
+QTE - Qtd. Teórica
+QUL - QUL
+SEM - Semana
+SEMES - Semestre
+TRIM - Trimestre
+ULT - Último
+VAL - Validade
+VAR - Variação
+VARPTS - Variação(pts)
+VEN - Vencimento
+VOC - VOC
+VOL - Volume
+VPJ - Volume Projetado
+VOV - VOV
+ 
+Atributos de Opções #################
+
+BLACK - Black Scholes
+DELTA - Delta
+DOBRAR - Dobrar %
+GAMA - Gama
+IMPVT - Volt. Implícita
+RHO - Rho
+THETA - Theta
+VEXT - Valor Extrínseco
+VINT - Valor Intrínseco
+VEGA - Vega
+VIA - VI Ask
+VIB - VI Bid
+VIVH - VI / VH
+
+Sufixos ##################################
+F_0 - Ativos BMF
+B_0 - Ativos Bovespa
+X_0 - Ativos Dow Jones
+Y_0 - Ativos NYSE
+N_0 - Ativos NASDAQ
+ 
+
+Indicadores ##############################
+22 - ADX
+8 - Acumulação / Distribuição
+88 - Acumulação / Distribuição de Williams
+124 - Adaptive Moving Average (AMA)
+126 - Afastamento Médio
+16 - Arms Ease of Movement
+51 - Aroon Linha    
+49 - Aroon Oscilador    
+27 - Balança de Poder    
+12 - Bandas de Bollinger    
+32 - Bear Power    
+41 - Bollinger b%    
+42 - Bollinger Band Width    
+31 - Bull Power    
+73 - Canal Donchian    
+82 - Candle Code    
+5 - CCI Linha    
+10 - Chaikin Money Flow    
+11 - Desvio Padrão   
+18 - DI+/DI-    
+38 - DI+/DI-/ADX    
+40 - Didi Index    
+204 - Dividend Yield    
+125 - DT Oscillator    
+189 - EduÍndex - Frequência de Volume    
+161 - EduÍndex - MACD Intraday    
+150 - EduÍndex - MACD Tendências    
+20 - Envelope    
+14 - Estocástico Lento    
+15 - Estocástico Pleno    
+13 - Estocástico Rápido
+29 - Force Index    
+78 - Frasson ATR    
+79 - Frasson VH    
+63 - Fura-Chão    
+62 - Fura-Teto    
+80 - Highest    
+14 - HiLo Activator    
+15 - Hull Moving Average (HMA)    
+13 - IFH (HSI)    
+1 - IFR (RSI)    
+63 - IFR Estocástico    
+62 - Keltner Channels    
+80 - KVO Histograma    
+48 - KVO Linha    
+118 - KVO Linha & Histograma        
+75 - Lowest    
+6 - MACD Histograma    
+7 - MACD Linha    
+74 - MACD Linha & Histograma    
+50 - Market Facilitation Index    
+76 - Momento Estocástico    
+33 - Momentum    
+19 - Money Flow    
+90 - Money Flow Index    
+3 - Média Móvel    
+84 - Nelogica - Bottom Finder    
+85 - Nelogica - Pullback Finder    
+185 - Nelogica - Weis Wave    
+4 - OBV   
+121 - OBV Ponderado    
+64 - On-Balance True Range    
+9 - Oscilador Chaikin    
+37 - Oscilador de Preços    
+166 - PhiCube - MIMA    
+168 - PhiCube - MIMA ROC    
+86 - Prior Cote    
+190 - Prior Cote Ajuste    
+102 - Rafi    
+53 - Ravi    
+123 - RenkoV2    
+23 - ROC Linha    
+21 - SAR Parabólico    
+66 - Stop ATR    
+57 - Stop SafeZone Downtrend
+56 - Stop SafeZone Uptrend    
+103 - TR - Acúmulo de Agressão - Saldo    
+184 - TR - Histograma de Agressão    
+98 - TR - Volume de Agressão - Compra    
+97 - TR - Volume de Agressão - Saldo    
+89 - TR - Volume de Agressão - Venda    
+30 - TRIX
+34 - TRIXM    
+267 - TWAP    
+97 - Tendência Preço/Volume    
+89 - Tillson´s T3 Moving Average   
+17 - True Range    
+55 - VSS    
+67 - VWAP    
+262 - VWAP Data    
+131 - VWAP Mensal    
+130 - VWAP Semanal    
+122 - VWMA   
+45 - Volatilidade Histórica    
+120 - Volatilidade Histórica Média   
+81 - Volatilidade Implícita    
+24 - Williams %R   
