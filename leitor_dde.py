@@ -48,6 +48,12 @@ LINHA_MAXIMA_BUSCA = 200   # ate onde procurar na coluna A - ajustar se a planil
 PREFIXO_REPLAY = "[R] "    # como o Profit rotula o ativo em modo Replay na coluna A -
                             # ajustar aqui se o Profit usar outro prefixo/formato
 
+# V460 - COLETA PASSIVA (ver coleta_dde.py). Mapeia nome -> coluna da planilha
+# DDE para campos extras do Profit. VAZIO = desligado. Nomes aceitos:
+# "quantidade", "negocios", "volume" (acumulados no dia) e "estoc_profit".
+# So e gravado em log; nenhuma decisao do robo le isso.
+COLUNAS_EXTRAS_DDE = {}   # ex.: {"quantidade": "K", "negocios": "J", "volume": "L", "estoc_profit": "Q"}
+
 CELULA_CONTRATOS_ABERTOS = None   # DESATIVADO: o campo "Cont. Abertos" (CAB) do DDE mostrou
                                    # valores na casa de 1+ milhao em teste real - isso e
                                    # interesse em aberto do MERCADO inteiro, nao a posicao
@@ -290,6 +296,21 @@ class LeitorDDE:
 
     def marcar_checkpoint_feito(self):
         self._ultimo_checkpoint = datetime.now()
+
+    def ler_extras(self) -> dict:
+        """V460: le os campos extras configurados em COLUNAS_EXTRAS_DDE, uma
+        leitura por coluna, sem nova tentativa. Best-effort: devolve {} se nada
+        configurado e None no campo que falhar. Nunca lanca excecao."""
+        saida = {}
+        if not COLUNAS_EXTRAS_DDE or self._planilha is None or self._linha_ativo is None:
+            return saida
+        for nome, coluna in COLUNAS_EXTRAS_DDE.items():
+            try:
+                v = self._planilha.Sheets(NOME_ABA_DDE).Range(f"{coluna}{self._linha_ativo}").Value
+                saida[nome] = None if v is None else float(v)
+            except Exception:
+                saida[nome] = None
+        return saida
 
     def ler_contratos_abertos(self) -> Optional[int]:
         """Le o campo CAB (Contratos Abertos) para checagem cruzada de posicao real,

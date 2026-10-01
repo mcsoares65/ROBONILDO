@@ -503,6 +503,17 @@ def rodar():
 
     leitor = LeitorDDE()
     leitor.conectar()
+    # V460: coleta passiva de campos extras do DDE (so grava log; desligada se
+    # leitor_dde.COLUNAS_EXTRAS_DDE estiver vazio)
+    coleta = None
+    try:
+        from leitor_dde import COLUNAS_EXTRAS_DDE
+        if COLUNAS_EXTRAS_DDE:
+            from coleta_dde import ColetaDDE
+            coleta = ColetaDDE(cfg.PASTA_LOGS_AUDITORIA, list(COLUNAS_EXTRAS_DDE))
+            print(f"[COLETA_DDE] Coleta passiva ligada: {list(COLUNAS_EXTRAS_DDE)}")
+    except Exception as e:
+        print(f"[COLETA_DDE] indisponivel, seguindo sem coleta: {e}")
     leitor.localizar_ativo(_NOME_ATIVO_DDE)
 
     # pega uma primeira leitura do horario do MERCADO antes de criar o gestor de
@@ -981,6 +992,8 @@ def rodar():
                 # a situacao agindo automaticamente sobre uma divergencia nao explicada
 
         candle_fechado = construtor.nova_leitura(preco, agora)
+        if coleta is not None:
+            coleta.processar(agora, leitor.ler_extras(), candle_fechado)
 
         # ---------- Gestao de posicao aberta (monitoramento continuo) ----------
         if gestor.posicao_aberta:
