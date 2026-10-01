@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V459"
+VERSAO = "V460"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1024,4 +1024,37 @@ VERSAO = "V459"
 # Ata: conselho/2026-09-30-U.txt
 #
 # Arquivos alterados: motor.py, configuracao.py, principal.py, analise.py,
+# versionamento.py.
+
+# ---------------------------------------------------------------------------
+# V460 - COLETA PASSIVA de campos extras do DDE (so grava; nao decide nada)
+# ---------------------------------------------------------------------------
+# Origem: proposta do DeepSeek (volume/negocios/estocastico do Profit ja
+# estariam na planilha DDE) + pedido do dono do laboratorio de implementar.
+# NADA do que ele previu foi aceito como ganho: os testes de volume (ata V) nao
+# sustentam as previsoes. O que se aproveita e a oportunidade de MEDIR.
+#
+#   coleta_dde.py   : NOVO. Grava logs/coleta_dde_AAAA-MM-DD.csv por candle, com
+#                     quantidade/negocios/volume (acumulados no dia, mais a
+#                     diferenca por candle) e o estocastico do Profit.
+#   leitor_dde.py   : COLUNAS_EXTRAS_DDE (vazio = desligado) e ler_extras(),
+#                     uma leitura por coluna, best-effort, sem excecao.
+#   principal.py    : cria a coleta e chama coleta.processar() apos
+#                     construtor.nova_leitura().
+#
+# DESLIGADO POR PADRAO: com COLUNAS_EXTRAS_DDE = {} o comportamento e identico
+# ao da V459. Para ligar, mapear nome -> coluna da planilha (conferir na
+# planilha DDE; as colunas citadas pelo DeepSeek NAO foram verificadas).
+# Motor, estrategias, gestor de risco e executor nao importam a coleta.
+#
+# Para que serve: validar Quantidade do DDE contra o CSV exportado, comparar o
+# %K do Profit com o do motor, e acumular Negocios (inexistente no CSV). So
+# depois disso discutir uso na decisao (Regra 4: backtest antes de qualquer
+# alegacao). Paridade replay/ao vivo: conferir que o acumulado do DDE se
+# comporta igual nos dois modos antes de qualquer uso.
+#
+# Testado: py_compile; teste unitario da coleta com amostras sinteticas
+# (diferenca por candle, primeiro candle sem base, entrada sem extras).
+#
+# Arquivos alterados: coleta_dde.py (novo), leitor_dde.py, principal.py,
 # versionamento.py.
