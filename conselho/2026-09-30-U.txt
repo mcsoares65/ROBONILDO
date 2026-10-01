@@ -1,0 +1,119 @@
+# Remoção do MAX_OPERACOES_DIA — medido antes de remover
+
+Autoria: Claude (Anthropic), 30/09/2026.
+Pedido do dono do laboratório; medição e execução por mim.
+Base: branch `fix/v458-paridade-replay-ao-vivo` (V458). Entrega: V459.
+
+---------------------------------------------------------------------------
+1. O PEDIDO E A PREMISSA
+---------------------------------------------------------------------------
+
+> "Remova MAX_OPERACOES_DIA pois dificilmente vamos ter um grande número de
+> oportunidades diárias."
+
+A premissa é testável, e por ser controle de risco em produção com
+`ENVIAR_ORDENS = True`, testei antes de mexer. Rodei o motor oficial nos dois
+períodos disponíveis, variando **somente** `MAX_OPERACOES_DIA` e mantendo
+`MAX_PERDAS_DIA = 2` intacto nos dois cenários.
+
+---------------------------------------------------------------------------
+2. QUANTAS OPORTUNIDADES O PREGÃO REALMENTE OFERECE
+---------------------------------------------------------------------------
+
+Par `entrada_grok_3_v1` × `saida_chatgpt_v4`, sem teto de contagem:
+
+                    pregões com   1 op      2 ops     3 ops     4+
+    2026  (137 pregões operados)   67,9%     28,5%     3,6%    nenhum
+    2023-2024 (360 pregões)        68,1%     28,1%     3,9%    nenhum
+
+A distribuição é praticamente **idêntica em dois períodos independentes** —
+68 / 28 / 4. Isso não é coincidência de amostra; é característica estrutural
+da estratégia. E o detalhe que fecha a questão: **nenhum pregão chegou a 4
+operações mesmo sem teto algum.** A própria estratégia se limita em 3.
+
+A premissa do dono do laboratório está confirmada.
+
+---------------------------------------------------------------------------
+3. O QUANTO O TETO CUSTAVA
+---------------------------------------------------------------------------
+
+2026 (184 pregões, 137 operados):
+
+    MAX_OPERACOES_DIA = 2  : R$ 17.100,57 | 181 ops | 68,5% | dd   -320 | r/r 53,5
+    sem teto               : R$ 17.013,59 | 186 ops | 67,2% | dd   -334 | r/r 50,9
+    diferença              : R$    -86,98 |  +5 ops
+
+2023-2024 (499 pregões, 360 operados):
+
+    MAX_OPERACOES_DIA = 2  : R$   -386,92 | 475 ops | 44,8% | dd -2.990
+    sem teto               : R$   -292,89 | 489 ops | 45,0% | dd -3.175
+    diferença              : R$   +94,02  | +14 ops
+
+Portão estatístico (Regra 14):
+
+    2026      : faixa de ruído R$ 2.183,60 | diferença R$ -86,98 -> RUÍDO
+    2023-2024 : faixa de ruído R$ 2.580,25 | diferença R$ +94,02 -> RUÍDO
+
+Os dois ficam dentro da faixa, e com **sinais opostos** — custa R$87 em 2026,
+rende R$94 em 2023-2024. Essa é a assinatura de uma mudança sem efeito real,
+exatamente o que se espera de algo que toca 4% dos pregões.
+
+O teto barrava entrada em 5 de 137 pregões (3,6%) e 14 de 360 (3,9%).
+
+---------------------------------------------------------------------------
+4. O ARGUMENTO QUE EU NÃO TINHA ANTES DE MEDIR
+---------------------------------------------------------------------------
+
+`MAX_PERDAS_DIA = 2` continua, e é ele que protege capital: num dia ruim o
+robô ainda para na segunda perda.
+
+Isso revela o que o teto de contagem de fato fazia. Para ele morder, era
+preciso já ter duas operações no dia **com no máximo uma perda** — senão o
+limite de perdas teria parado antes. Ou seja: o teto de contagem só barrava a
+terceira entrada de um pregão que estava indo **bem**.
+
+Era o controle de risco mordendo no dia saudável e ficando quieto no dia
+ruim. Removê-lo não afrouxa a proteção de capital, porque nunca era ele que
+a fazia.
+
+---------------------------------------------------------------------------
+5. O QUE MUDOU NO CÓDIGO
+---------------------------------------------------------------------------
+
+- `configuracao.py` — a constante `MAX_OPERACOES_DIA` deixou de existir. No
+  lugar, o registro da medição que justificou a remoção.
+- `motor.py` — o portão em `pode_abrir_posicao()` saiu. O contador
+  `operacoes_hoje` **continua** sendo mantido e persistido, para relatório e
+  estado; ele apenas já não barra entrada.
+- `analise.py` — a linha "Limites" do relatório não anuncia mais um teto que
+  não existe.
+- `principal.py` — as duas mensagens de abertura (REPLAY e NORMAL) deixaram de
+  citar a constante removida.
+
+`MAX_PERDAS_DIA = 2` não foi tocado. Nenhum cartucho foi tocado. Nenhuma
+pasta `titular/` foi tocada.
+
+---------------------------------------------------------------------------
+6. O QUE ESPERAR NA PRÁTICA
+---------------------------------------------------------------------------
+
+Em cerca de **4% dos pregões operados** o robô poderá abrir uma terceira
+operação onde antes paravam duas. Nos outros 96%, nada muda — não porque o
+teto fosse generoso, mas porque a estratégia não encontra uma terceira
+oportunidade.
+
+Efeito esperado no resultado: **dentro do ruído**, pelos dois períodos.
+Quem quiser um teto de contagem de volta no futuro precisa trazer medida que
+mostre efeito **fora** da faixa de ruído — não basta a intuição de que mais
+operações é mais risco, porque nestes dois períodos não foi.
+
+---------------------------------------------------------------------------
+7. O QUE NÃO FOI TESTADO
+---------------------------------------------------------------------------
+
+- A medição cobre o par titular (`entrada_grok_3_v1` × `saida_chatgpt_v4`).
+  Não medi o efeito sobre os outros cartuchos candidatos; se algum deles gerar
+  muito mais oportunidades por pregão, o teto importaria mais para ele. Vale
+  reconferir se alguma candidata for promovida.
+- Não há dado de 2025 na série, como já registrado em atas anteriores.
+- Não executei o robô em Replay real contra o Profit (exige a planilha DDE).

@@ -1355,24 +1355,24 @@ if __name__ == "__main__":
         print(f"[MODO REPLAY] Buscando ativo '{_NOME_ATIVO_DDE}' na coluna A da aba DDE.")
 
         # V458: a REMOCAO dos limites diarios no Replay foi revogada. Ela
-        # elevava MAX_OPERACOES_DIA e MAX_PERDAS_DIA para 999, de modo que um
-        # Replay podia abrir dez operacoes num dia em que a operacao real teria
-        # parado na segunda. Era o artificio de maior impacto do robo: mudava a
-        # QUANTIDADE de posicoes, nao um detalhe de preco. Replay agora respeita
-        # os mesmos limites da operacao real. Para observar o comportamento sem
-        # limites, altere MAX_OPERACOES_DIA/MAX_PERDAS_DIA em configuracao.py de
-        # forma explicita e consciente. Ver conselho/2026-09-30-T.txt.
-        print(f"[AMBIENTE CONTROLADO] Sem capital real, mas os limites diarios "
-              f"da operacao real PERMANECEM ativos "
-              f"(MAX_OPERACOES_DIA={cfg.MAX_OPERACOES_DIA}, "
-              f"MAX_PERDAS_DIA={cfg.MAX_PERDAS_DIA}) - o Replay precisa "
+        # elevava os limites para 999, de modo que um Replay podia abrir dez
+        # operacoes num dia em que a operacao real teria parado na segunda. Era
+        # o artificio de maior impacto do robo: mudava a QUANTIDADE de posicoes,
+        # nao um detalhe de preco. Replay agora respeita os mesmos limites da
+        # operacao real. Para observar o comportamento sem limite, altere
+        # MAX_PERDAS_DIA em configuracao.py de forma explicita e consciente.
+        # Ver conselho/2026-09-30-T.txt.
+        print(f"[AMBIENTE CONTROLADO] Sem capital real, mas o limite diario "
+              f"da operacao real PERMANECE ativo "
+              f"(MAX_PERDAS_DIA={cfg.MAX_PERDAS_DIA}) - o Replay precisa "
               f"reproduzir o que o mercado ao vivo faria.")
     else:  # resposta_modo_dde == "N" (unico valor restante possivel, garantido pelo loop acima)
         _MODO_REPLAY = False
         _NOME_ATIVO_DDE = cfg.ATIVO
         print(f"[MODO NORMAL] Buscando ativo '{_NOME_ATIVO_DDE}' na coluna A da aba DDE.")
-        print("[AMBIENTE REAL] Limites diarios validados permanecem ativos "
-              f"(MAX_OPERACOES_DIA={cfg.MAX_OPERACOES_DIA}, MAX_PERDAS_DIA={cfg.MAX_PERDAS_DIA}).")
+        print("[AMBIENTE REAL] Limite diario validado permanece ativo "
+              f"(MAX_PERDAS_DIA={cfg.MAX_PERDAS_DIA}; sem teto de contagem de "
+              f"operacoes desde a V459).")
     print("=" * 60)
 
     if cfg.ENVIAR_ORDENS:
