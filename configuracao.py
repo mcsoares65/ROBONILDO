@@ -40,9 +40,11 @@ MODO_TESTE_REPLAY = False  # False = comportamento correto para operacao real co
                             # para True manualmente aqui se for fazer teste/replay repetido
                             # do mesmo dia, e lembrar de voltar para False depois.
 
-# Atua somente quando a pergunta inicial for respondida com REPLAY. Em NORMAL,
-# os candles continuam sendo montados pelas leituras ao vivo do DDE.
-RECONCILIAR_OHLC_OFICIAL_NO_REPLAY = True
+# V458: RECONCILIAR_OHLC_OFICIAL_NO_REPLAY foi REMOVIDA. A chave trocava, no
+# Replay, o OHLC amostrado pelo DDE pelo OHLC consolidado do arquivo - um
+# artificio sem equivalente no mercado ao vivo, que fazia o Replay entregar um
+# resultado irreproduzivel na operacao real. Em Replay e ao vivo, os candles
+# agora vem sempre das leituras do DDE. Ver conselho/2026-09-30-T.txt.
 
 # ---------- Auditoria da execução ao vivo ----------
 AUDITORIA_EXECUCAO_ATIVA = True

@@ -401,15 +401,6 @@ def _remover_candles_futuros(candles: List[Candle], referencia_tempo: datetime) 
     return filtrados
 
 
-def _reconciliar_ohlc_replay(candle: Candle, horario_mercado: datetime,
-                             ohlc_oficial: dict) -> Candle:
-    """Usa o OHLC consolidado somente depois que o candle terminou."""
-    fechamento_periodo = candle.horario + timedelta(minutes=cfg.TIMEFRAME_MINUTOS)
-    if horario_mercado < fechamento_periodo:
-        return candle
-    return ohlc_oficial.get(candle.horario, candle)
-
-
 def _ler_csv_candles(caminho: Path) -> List[Candle]:
     """Formato: Ativo;Data;Hora;Abertura;Maximo;Minimo;Fechamento;Volume;Quantidade
     (mesmo formato usado tanto pelo "Exportar Dados Historicos" do Profit quanto
@@ -555,19 +546,13 @@ def rodar():
         cfg.CAMINHO_HISTORICO_INICIAL, referencia_tempo=horario_inicial
     )
 
-    # No Replay, usa como fonte de verdade o OHLC consolidado exportado pelo
-    # Profit. A funcao de reconciliacao impede a consulta antes do fechamento.
-    ohlc_oficial_replay = {}
-    if _MODO_REPLAY and cfg.RECONCILIAR_OHLC_OFICIAL_NO_REPLAY:
-        caminho_oficial = Path(cfg.CAMINHO_HISTORICO_INICIAL)
-        if caminho_oficial.exists():
-            candles_oficiais = _ler_csv_candles(caminho_oficial)
-            ohlc_oficial_replay = {c.horario: c for c in candles_oficiais}
-            print(f"[REPLAY OHLC] Arquivo oficial habilitado: "
-                  f"{len(ohlc_oficial_replay)} candles indexados de '{caminho_oficial}'.")
-        else:
-            print(f"[REPLAY OHLC] AVISO: arquivo oficial nao encontrado em "
-                  f"'{caminho_oficial}'. Usando candles amostrados pelo DDE.")
+    # V458: a reconciliacao de OHLC no Replay foi REMOVIDA. Ela substituia o
+    # OHLC amostrado pelo DDE pelo OHLC consolidado do arquivo - um artificio
+    # que existia so no Replay e que, por isso, fazia o Replay produzir um
+    # resultado que o mercado ao vivo nao pode reproduzir. Replay e o ensaio
+    # geral da operacao real: agora ele usa exatamente a mesma fonte de preco
+    # que a operacao real, candles amostrados do DDE a cada 2 segundos.
+    # Ver conselho/2026-09-30-T.txt.
 
     if cfg.ENVIAR_ORDENS:
         aviso_ordens = "ORDENS REAIS SERAO ENVIADAS ao Profit (ALT+C/V/Z)."
@@ -1077,22 +1062,6 @@ def rodar():
             # essa informação para reproduzir exatamente o mesmo comportamento.
             houve_saida_neste_candle = saida_desde_ultimo_fechamento
             saida_desde_ultimo_fechamento = False
-            if ohlc_oficial_replay:
-                candle_amostrado = candle_fechado
-                candle_fechado = _reconciliar_ohlc_replay(
-                    candle_amostrado, agora, ohlc_oficial_replay
-                )
-                if candle_fechado != candle_amostrado:
-                    print(
-                        f"[{agora}] [REPLAY OHLC] Candle "
-                        f"{candle_fechado.horario.strftime('%H:%M')} reconciliado | "
-                        f"DDE O={candle_amostrado.abertura:.0f} "
-                        f"H={candle_amostrado.maxima:.0f} L={candle_amostrado.minima:.0f} "
-                        f"C={candle_amostrado.fechamento:.0f} -> "
-                        f"OFICIAL O={candle_fechado.abertura:.0f} "
-                        f"H={candle_fechado.maxima:.0f} L={candle_fechado.minima:.0f} "
-                        f"C={candle_fechado.fechamento:.0f}"
-                    )
             # ---------- Deteccao de salto no replay + preenchimento automatico ----------
             # Se o Profit for "arrastado"/pulado pra frente (em vez de acelerado de
             # forma continua) ENQUANTO o robo ja esta rodando, o ConstrutorCandle
@@ -1344,7 +1313,8 @@ def rodar():
                 horario=agora,
                 candle=candle_fechado,
                 modo="REPLAY" if _MODO_REPLAY else "NORMAL",
-                fonte_ohlc=("OFICIAL_REPLAY" if ohlc_oficial_replay else "DDE_AMOSTRADO"),
+                fonte_ohlc="DDE_AMOSTRADO",  # V458: unica fonte possivel, em
+                                              # Replay e ao vivo (ver ata T)
                 sinal=sinal_auditoria,
                 decisao=decisao_auditoria,
                 motivo=motivo_auditoria,
@@ -1384,17 +1354,19 @@ if __name__ == "__main__":
         _NOME_ATIVO_DDE = f"{_leitor_dde_mod.PREFIXO_REPLAY}{cfg.ATIVO}"
         print(f"[MODO REPLAY] Buscando ativo '{_NOME_ATIVO_DDE}' na coluna A da aba DDE.")
 
-        # Replay = ambiente controlado, sem capital real - mesma logica que antes
-        # vivia numa pergunta SIMULADO separada. Uma unica pergunta agora decide
-        # os dois efeitos (qual ativo buscar no DDE E se os limites diarios valem).
-        cfg.MAX_OPERACOES_DIA = 999  # sem limite pratico - so vale nesta execucao,
-        cfg.MAX_PERDAS_DIA = 999     # o arquivo de configuracao continua com os
-                                      # valores validados para uso real (ver
-                                      # MAX_OPERACOES_DIA/MAX_PERDAS_DIA em configuracao.py)
-        print(f"[AMBIENTE CONTROLADO] Limites diarios removidos para esta sessao "
+        # V458: a REMOCAO dos limites diarios no Replay foi revogada. Ela
+        # elevava MAX_OPERACOES_DIA e MAX_PERDAS_DIA para 999, de modo que um
+        # Replay podia abrir dez operacoes num dia em que a operacao real teria
+        # parado na segunda. Era o artificio de maior impacto do robo: mudava a
+        # QUANTIDADE de posicoes, nao um detalhe de preco. Replay agora respeita
+        # os mesmos limites da operacao real. Para observar o comportamento sem
+        # limites, altere MAX_OPERACOES_DIA/MAX_PERDAS_DIA em configuracao.py de
+        # forma explicita e consciente. Ver conselho/2026-09-30-T.txt.
+        print(f"[AMBIENTE CONTROLADO] Sem capital real, mas os limites diarios "
+              f"da operacao real PERMANECEM ativos "
               f"(MAX_OPERACOES_DIA={cfg.MAX_OPERACOES_DIA}, "
-              f"MAX_PERDAS_DIA={cfg.MAX_PERDAS_DIA}) - ambiente controlado, sem "
-              f"capital real, faz sentido observar o comportamento livremente.")
+              f"MAX_PERDAS_DIA={cfg.MAX_PERDAS_DIA}) - o Replay precisa "
+              f"reproduzir o que o mercado ao vivo faria.")
     else:  # resposta_modo_dde == "N" (unico valor restante possivel, garantido pelo loop acima)
         _MODO_REPLAY = False
         _NOME_ATIVO_DDE = cfg.ATIVO

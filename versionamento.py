@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V457"
+VERSAO = "V458"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -878,3 +878,78 @@ VERSAO = "V457"
 # 13:15 -> 13:30, 13:30 -> 13:45 e 18:00 -> 18:15.
 #
 # Arquivo alterado: principal.py.
+
+
+# ---------------------------------------------------------------------------
+# V458 — paridade Replay/ao vivo: removidos os dois artificios exclusivos do Replay
+# ---------------------------------------------------------------------------
+#
+# Regra de governanca estabelecida pelo dono do laboratorio em 30/09/2026:
+# qualquer artificio que rode somente no Replay e nao reproduza o mesmo
+# resultado no mercado ao vivo deve ser removido do robo imediatamente. O
+# Replay e o ensaio geral da operacao real; se ele mente, mente no lugar mais
+# caro possivel.
+#
+# Varredura do codigo encontrou DOIS artificios que violavam a regra, e tres
+# diferencas de modo que NAO a violam (mantidas, com justificativa).
+#
+# ARTIFICIO 1 — reconciliacao de OHLC (removido)
+#   Era: `_reconciliar_ohlc_replay()` + `RECONCILIAR_OHLC_OFICIAL_NO_REPLAY`.
+#   No Replay, o OHLC amostrado pelo DDE era substituido pelo OHLC consolidado
+#   do arquivo exportado do Profit, depois do fechamento do candle.
+#   Por que viola: ao vivo o robo le somente o campo ULT a cada 2 segundos
+#   (1s perto do fechamento), e monta maxima/minima a partir dessas amostras.
+#   A maxima/minima amostrada e SEMPRE mais estreita que a verdadeira, nunca
+#   mais larga. Como o stop da saida titular e `min(Minimo)` dos ultimos 5
+#   candles e o alvo e RR x risco, OHLC diferente produz stop diferente, alvo
+#   diferente e %K diferente - logo sinais diferentes.
+#   Removido de: principal.py (funcao, bloco de carga, call site, campo de
+#   auditoria) e configuracao.py (a chave).
+#
+# ARTIFICIO 2 — remocao dos limites diarios (removido; era o de maior impacto)
+#   Era: ao responder REPLAY, principal.py elevava cfg.MAX_OPERACOES_DIA e
+#   cfg.MAX_PERDAS_DIA de 2 para 999.
+#   Por que viola: `motor.pode_abrir_posicao()` barra toda entrada por esses
+#   dois limites. Um Replay podia abrir dez operacoes num dia em que a operacao
+#   real teria parado na segunda. Nao e um detalhe de preco - muda a QUANTIDADE
+#   de posicoes, e com ela o resultado do dia inteiro.
+#   Agravante: a classificacao.py nao mexe nesses limites, logo roda com 2/2,
+#   os mesmos valores do ao vivo. O Replay era o unico dos tres ambientes fora
+#   de padrao, divergindo ao mesmo tempo da operacao real E do juiz.
+#   Removido de: principal.py (bloco do modo REPLAY). Para observar sem limites,
+#   alterar MAX_OPERACOES_DIA/MAX_PERDAS_DIA em configuracao.py explicitamente.
+#
+# DIFERENCAS DE MODO MANTIDAS (nao sao artificios; nao alteram decisao de trade)
+#   a) `if not _MODO_REPLAY and agora.date() < agora_real.date()` — guarda de
+#      data velha. Existe PORQUE o Replay roda legitimamente numa data diferente
+#      do relogio do computador; mante-la ativa no Replay o tornaria impossivel.
+#      E um portao de "aguardando abertura", nao logica de estrategia.
+#   b) `verificar_integridade(..., modo_replay=...)` — pula a checagem de deriva
+#      de relogio no Replay, pela mesma razao. As checagens de salto implausivel
+#      e de preco congelado continuam ativas nos dois modos. E diagnostico.
+#   c) `PREFIXO_REPLAY = "[R] "` — qual nome de ativo procurar na coluna A da
+#      planilha. Encanamento puro.
+#
+# DIVERGENCIA RESIDUAL, AGORA EXPLICITA
+#   Depois desta versao, Replay e ao vivo usam a mesma fonte de preco (DDE
+#   amostrado) e os mesmos limites. A classificacao.py continua lendo OHLC
+#   verdadeiro do CSV, porque nao existe dado tick a tick no laboratorio - nao
+#   ha como o juiz amostrar a 2s. Essa divergencia e inevitavel, afeta todos os
+#   cartuchos na mesma direcao (e por isso tolerevel numa comparacao relativa),
+#   e passa a estar DOCUMENTADA em vez de escondida atras de um artificio.
+#   Medida do teto do efeito (amostrador de 60s, 30x mais esparso que o real,
+#   logo teto e nao estimativa; 4.009 candles de 15M de 2026): estreitamento de
+#   118,6 pts = 26,3% da largura do candle, erro de 2,86 pontos de %K em media
+#   (25,12 no pior caso), +10,2% de cruzamentos de zona do estocastico.
+#
+# EFEITO PRATICO ESPERADO: resultados de Replay passam a ser MENOS favoraveis
+# que antes, e mais parecidos com o que a operacao real entrega. Qualquer
+# comparacao com Replay anterior a V458 esta contaminada pelos dois artificios
+# e nao deve ser usada como referencia.
+#
+# Testado: py_compile em principal.py e configuracao.py; grep confirmando zero
+# residuos de ohlc_oficial_replay, _reconciliar_ohlc_replay e
+# RECONCILIAR_OHLC_OFICIAL_NO_REPLAY; timedelta e Path seguem em uso.
+# NAO testado: execucao em Replay real contra o Profit (exige a planilha DDE).
+#
+# Arquivos alterados: principal.py, configuracao.py, versionamento.py.
