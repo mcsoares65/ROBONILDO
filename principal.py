@@ -375,6 +375,24 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
     candles = _ler_csv_candles(caminho)
     candles = _remover_candles_futuros(candles, referencia_tempo)
     print(f"Carga inicial (unica vez): {len(candles)} candles de '{caminho_csv}'.")
+    # V461: o arquivo precisa chegar ate o candle que acabou de fechar. Em
+    # 01/10/2026 ele terminava em 28/09 18:15, exatamente no 7.000o candle de uma
+    # exportacao que tinha 7.081 - cortada no FIM, sem aviso.
+    if candles:
+        try:
+            faltam = candles_faltando(
+                candles[-1].horario, referencia_tempo - timedelta(minutes=cfg.TIMEFRAME_MINUTOS),
+                cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
+                cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
+        except Exception:
+            faltam = 0
+        if faltam > 0:
+            dica = (" O arquivo tem EXATAMENTE 7000 candles: a exportacao provavelmente foi "
+                    "cortada no limite. Exporte com data inicial mais recente (ex.: ultimos "
+                    "60 dias)." if len(candles) == 7000 else "")
+            print(f"[AVISO V461] O arquivo termina em {candles[-1].horario} mas o mercado "
+                  f"esta em {referencia_tempo}: faltam {faltam} candle(s) de pregao.{dica} "
+                  f"Novas entradas serao bloqueadas ao detectar o buraco.")
     _salvar_historico_persistente(candles, sobrescrever=True)
     return candles
 
@@ -1235,6 +1253,9 @@ def rodar():
                         pode = False
                         motivo_bloqueio = (f"Historico com buraco nao preenchido - aquecendo "
                                            f"({candles_aquecimento_restantes} candles restantes)")
+                    if pode:
+                        # V461: limite de risco por operacao ANTES de enviar ordem
+                        pode, motivo_bloqueio = gestor.validar_risco_inicial(sinal, row_fechamento)
                     if pode:
                         origem_sinal = (
                             diagnostico_fechamento.get("estrategia")

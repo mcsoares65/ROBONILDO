@@ -22,6 +22,15 @@ dono do laboratório.
 - Às 12:08 o log mostrava a posição em -R$ 329,50 com o stop ainda 1.890 pts
   abaixo.
 
+CORREÇÃO DO DONO (21:44): ele HAVIA exportado o histórico antes de iniciar o
+robô. Confirmado: o arquivo dele (01/01 a 01/10 10:00) tem 7.081 candles; o robô
+carregou EXATAMENTE 7.000 ("Carga inicial: 7000 candles") e o 7.000º candle desse
+arquivo é 28/09 18:15, justamente onde o histórico do robô acabou. O arquivo que
+o robô leu estava cortado no FIM em 7.000 candles (limite da exportação, ou
+arquivo diferente do anexado; não consigo distinguir daqui). Falha de borda,
+não descuido: a V461 agora avisa na carga quando o arquivo não alcança o mercado
+(com dica de 7.000) e bloqueia entradas se houver buraco real.
+
 CAUSA: o aviso de buraco não bloqueava nada. Indicadores (MA21/MA50, MACD,
 estocástico, ATR) e o stop foram calculados sobre uma série descontínua que
 saltou ~3.000 pts de um candle para outro.
@@ -54,7 +63,20 @@ essas datas em FERIADOS_B3 porque não são feriado. Aceitei o erro para o lado
 seguro. Se incomodar, o remédio é reexportar o CSV ao reiniciar.
 
 ---------------------------------------------------------------------------
-3. O QUE NÃO FIZ E PRECISA DE DECISÃO DO DONO
+2b. LIMITE DE RISCO POR OPERAÇÃO (pedido do dono, 21:44)
+---------------------------------------------------------------------------
+
+Banca real informada: R$ 1.490,00 (a banca configurada era R$ 200: a corretora
+não nos tirou do trade de 01/10 porque a banca real aguentou o fundo de
+-R$ 390,50). Regra: se o stop inicial custar mais de 25% da banca real, não
+entra e avisa "Oportunidade à frente mas a banca não irá suportar o tamanho do
+stop loss". Limite = R$ 372,50 = ~1.862 pts. O stop de 01/10 (3.535 pts, R$ 707,
+47%) seria barrado. Vale igual no ao vivo e no backtest (paridade). Medido: 2026
+-2 ops, -R$ 1.815; 2023-24 -7 ops, +R$ 757; ambos dentro da faixa de ruído.
+Esta regra substitui o item 3 abaixo (decisão do dono, Regra 1 v9 revista).
+
+---------------------------------------------------------------------------
+3. (SUPERADO PELA 2b) TETO DE RISCO POR OPERAÇÃO
 ---------------------------------------------------------------------------
 
 Teto de risco por operação (rejeitar entrada se o stop inicial estiver a mais

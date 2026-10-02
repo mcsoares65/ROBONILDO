@@ -1076,8 +1076,27 @@ VERSAO = "V461"
 #   principal.py        : arma o bloqueio no ramo "nao foi possivel preencher",
 #                         decrementa a cada candle e barra a entrada.
 #
-# Motor, cartuchos e classificacao.py intactos: sem buraco de pregao o
-# comportamento e identico (paridade backtest/replay/ao vivo preservada).
+# Motor, cartuchos e classificacao.py intactos NESTA PARTE: sem buraco de pregao
+# o comportamento e identico (paridade backtest/replay/ao vivo preservada).
+#
+# CAUSA DO BURACO (correcao do dono, 01/10): ele HAVIA exportado o historico antes
+# de iniciar. O arquivo do dono tem 7.081 candles (ate 01/10 10:00); o robo
+# carregou exatamente 7.000, e o 7.000o candle desse arquivo e 28/09 18:15 - onde o
+# historico do robo terminou. Ou seja, a exportacao lida estava cortada no FIM em
+# 7.000. Agora ha aviso na carga e o bloqueio acima.
+#
+# V461 tambem traz o LIMITE DE RISCO POR OPERACAO pedido pelo dono em 01/10:
+#   configuracao.py : BANCA_REAL_REAIS = 1490.00 e RISCO_MAXIMO_PCT_BANCA = 0.25
+#   motor.py        : validar_risco_inicial() - pergunta o stop ao cartucho de
+#                     saida (sem abrir nada) e recusa se risco > 25% da banca
+#                     real; usada em avaliar_candle (backtest) e em principal.py
+#                     ANTES de enviar a ordem (ao vivo) => paridade.
+#   Mensagem: "Oportunidade a frente mas a banca nao ira suportar o tamanho do
+#   stop loss (...)". Limite hoje: R$ 372,50 = ~1.862 pts.
+#   Medido no motor oficial (titular x saida_chatgpt_v4): 2026 -2 ops, -R$ 1.815
+#   (17.013,59 -> 15.198,56; ruido R$ 2.184); 2023-24 -7 ops, +R$ 757 (-292,89 ->
+#   +464,20; ruido R$ 2.580). Dentro do ruido nos dois, sinais opostos: e o
+#   preco de nao carregar stops que a banca nao suporta.
 # NAO implementado: teto de risco por operacao (conflita com Regra 1 v9;
 # precisa decisao do dono e medicao previa). Ata: conselho/2026-10-01-W.txt
 #
