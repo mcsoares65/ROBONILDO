@@ -83,6 +83,12 @@ def _resolver_caminho_historico(informado: str) -> Path:
         print(f"[HISTÓRICO] Pasta informada; usando o CSV mais recente: {escolhido.name}")
         return escolhido
     if not caminho.exists():
+        from historico_csv import resolver_csv_historico
+        import configuracao as _cfg
+        achado = Path(resolver_csv_historico(str(caminho), _cfg.TIMEFRAME_MINUTOS))
+        if achado.exists():
+            print(f"[HISTÓRICO] '{caminho.name}' não existe; usando '{achado.name}'.")
+            return achado
         raise SystemExit(f"Caminho não encontrado: '{caminho}'.")
     return caminho
 
