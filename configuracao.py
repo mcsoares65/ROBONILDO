@@ -91,7 +91,16 @@ HORARIO_LIMITE_ABSOLUTO = "18:20:58"   # UNICO horario de saida forcada do proje
 # HORARIO_LIMITE_ABSOLUTO, exclusivamente.
 
 # ---------- Gestao de risco (banca atual: R$200 - ajustar conforme o extrato real) ----------
-BANCA_ATUAL_REAIS = 200.00
+BANCA_ATUAL_REAIS = 200.00   # contador inicial do estado de risco (acumula resultado; persistido em estado_risco.json)
+# V461: BANCA REAL na corretora, informada pelo dono em 01/10/2026. E a base do
+# limite de risco por operacao (abaixo) - NAO e o contador acima.
+BANCA_REAL_REAIS = 1490.00
+# V461: se o stop inicial (distancia entrada-stop em reais, + custo) passar desta
+# fracao da banca real, a entrada NAO acontece e o robo avisa. Vale tambem no
+# backtest (motor.validar_risco_inicial), para ao vivo e laboratorio decidirem
+# igual. 0 desliga. Incidente de 01/10: stop de 3.535 pts = R$ 707 (47% da banca
+# real, 354% da banca configurada de R$ 200).
+RISCO_MAXIMO_PCT_BANCA = 0.25
 # V459: MAX_OPERACOES_DIA foi REMOVIDA. Era um teto de CONTAGEM de operacoes
 # (2 por pregao) que, medido no motor oficial nos dois periodos, praticamente
 # nunca mordia - a estrategia simplesmente nao gera tantas oportunidades:
@@ -117,6 +126,21 @@ MAX_PERDAS_DIA = 2         # ATUALIZADO de 1 para 2: a CLAUDE_HIBRIDA_3_PORTAS_v
                             # validada. Se trocar de estrategia titular no futuro,
                             # reconferir qual limite foi usado na validacao dela.
 VALOR_PONTO_REAIS = 0.20  # fixo, WIN
+
+# V461 - BLOQUEIO DE ENTRADA APOS BURACO NO HISTORICO. Se ao fechar um candle
+# faltarem candles do pregao entre o ultimo conhecido e ele, e o arquivo de
+# historico nao cobrir o trecho, MA21/MA50/MACD/RSI/ATR/estocastico e o stop
+# estrutural ficam calculados sobre uma serie descontinua. Incidente de
+# 01/10/2026 (ver conselho/2026-10-01-W.txt): sinal da Porta 2 gerado com
+# "Distancia=3006pts" e stop a 3.535 pts (R$ 707) da entrada. Enquanto a
+# janela do indicador mais longo (MA50) nao se renovar, NAO abre posicao nova
+# (posicao ja aberta continua sendo gerida normalmente).
+CANDLES_AQUECIMENTO_APOS_BURACO = 50
+HORARIO_PRIMEIRO_CANDLE = "09:00"   # rotulo do 1o candle do pregao regular
+HORARIO_ULTIMO_CANDLE = "18:15"     # rotulo do ultimo candle do pregao regular
+# Dias sem pregao em dia util (conferir/atualizar a cada ano). Sem isso, um
+# feriado e visto como "pregao inteiro faltando" e bloqueia a 1a entrada depois.
+FERIADOS_B3 = {"2026-11-20", "2026-12-25"}
 
 # ---------- Custos reais (Santander Corretora, confirmado na documentacao oficial) ----------
 CORRETAGEM_ENCERRAMENTO_AUTOMATICO_APP = 0.00   # gratis, desde que NAO seja via Mesa de Operacoes

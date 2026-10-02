@@ -76,3 +76,26 @@ class ConstrutorCandle:
             minima=self._atual.minima,
             fechamento=self._atual.fechamento,
         )
+
+
+
+def candles_faltando(ultimo, novo, minutos, primeiro="09:00", ultimo_rotulo="18:15", feriados=()):
+    """V461: quantos candles de pregao regular FALTAM entre `ultimo` e `novo`
+    (ambos horarios de abertura de candle, exclusivos). Fim de semana, feriado
+    e a noite nao contam: sexta 18:15 -> segunda 09:00 devolve 0, mas
+    segunda 18:15 -> quinta 10:00 devolve 3 pregoes + manha inteira."""
+    from datetime import datetime, timedelta
+    h0, m0 = (int(x) for x in primeiro.split(":"))
+    h1, m1 = (int(x) for x in ultimo_rotulo.split(":"))
+    faltam = 0
+    dia = ultimo.date()
+    while dia <= novo.date():
+        if dia.weekday() < 5 and dia.isoformat() not in feriados:
+            t = datetime(dia.year, dia.month, dia.day, h0, m0)
+            fim = datetime(dia.year, dia.month, dia.day, h1, m1)
+            while t <= fim:
+                if ultimo < t < novo:
+                    faltam += 1
+                t += timedelta(minutes=minutos)
+        dia += timedelta(days=1)
+    return faltam

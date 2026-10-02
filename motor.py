@@ -573,6 +573,40 @@ class MotorRobonildo:
             return False, f"Após horário limite para novas entradas ({cfg.HORARIO_BLOQUEIO_NOVAS_ENTRADAS})"
         return True, ""
 
+    def validar_risco_inicial(self, sinal: Sinal, row: Optional[dict]):
+        """V461: recusa a entrada se o stop inicial proposto pelo cartucho de
+        saida custar mais que cfg.RISCO_MAXIMO_PCT_BANCA da banca real.
+
+        Pergunta ao cartucho (candles_decorridos == 0, a mesma chamada que
+        abrir_posicao faz) SEM abrir nada, entao pode ser chamada ANTES de
+        enviar a ordem. E usada igual no ao vivo e no backtest (paridade).
+        Se nao houver cartucho/row/stop, ou o cartucho falhar, nao bloqueia
+        (o cartucho segue dono do stop - Regra 1 v9)."""
+        pct = getattr(cfg, "RISCO_MAXIMO_PCT_BANCA", 0) or 0
+        banca = getattr(cfg, "BANCA_REAL_REAIS", 0) or 0
+        if not pct or not banca or self.avaliar_saida is None or row is None:
+            return True, ""
+        try:
+            resposta = self.avaliar_saida(row, {
+                "lado": sinal.lado, "entrada": sinal.entrada, "candles_decorridos": 0,
+                "maxima_desde_entrada": sinal.entrada, "minima_desde_entrada": sinal.entrada,
+                "resultado_flutuante_pts": 0.0,
+            })
+        except Exception:
+            return True, ""
+        stop = resposta.get("novo_stop") if isinstance(resposta, dict) else None
+        if stop is None:
+            return True, ""
+        pontos = abs(float(sinal.entrada) - float(stop))
+        risco = pontos * cfg.VALOR_PONTO_REAIS + cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        limite = pct * banca
+        if risco > limite:
+            return False, (
+                f"Oportunidade à frente mas a banca não irá suportar o tamanho do stop loss "
+                f"(stop de {pontos:.0f} pts = R${risco:.2f} = {100 * risco / banca:.0f}% da banca "
+                f"de R${banca:.2f}; limite {100 * pct:.0f}% = R${limite:.2f})")
+        return True, ""
+
     def abrir_posicao(self, sinal: Sinal, row: Optional[dict] = None):
         """Abre a posição e, na sequência, pergunta ao cartucho de saída
         titular quais são o stop e o alvo iniciais (Regra 1 v10) - o motor
@@ -857,6 +891,10 @@ class MotorRobonildo:
         pode, motivo = self.pode_abrir_posicao(sinal.horario)
         if not pode:
             eventos.append({"tipo": "SINAL_BLOQUEADO", "sinal": sinal, "motivo": motivo})
+            return eventos
+        ok_risco, motivo_risco = self.validar_risco_inicial(sinal, row)
+        if not ok_risco:
+            eventos.append({"tipo": "SINAL_BLOQUEADO", "sinal": sinal, "motivo": motivo_risco})
             return eventos
         abriu, motivo = self.abrir_posicao(sinal, row=row)
         if abriu:

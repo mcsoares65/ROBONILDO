@@ -308,7 +308,7 @@ _nome_saida, _modulo_saida = _descobrir_cartucho("saida", "avaliar_saida")
 diagnosticar_saida = getattr(_modulo_saida, "diagnosticar_saida", None)
 print(f"Cartucho de saída: {_nome_saida}.py  [estrategia/saida/titular/]")
 
-from construtor_candle import ConstrutorCandle
+from construtor_candle import ConstrutorCandle, candles_faltando
 from registrador import Registrador
 from auditor_execucao import AuditorExecucao
 from leitor_dde import LeitorDDE
@@ -322,6 +322,38 @@ _MODO_REPLAY = False          # idem - definido em __main__ pela mesma resposta 
                                # sobre limpeza de historico acumulado - fixa em False)
 from executor_ordem import ExecutorOrdem
 import email_notificacao
+
+
+def _resolver_csv_historico(caminho_csv: str) -> Path:
+    """V461: devolve o CSV de historico com o candle MAIS RECENTE entre os arquivos da
+    mesma pasta que comecam com o mesmo ativo (ex.: WINFUT*.csv). Em 01/10/2026 o
+    dono salvou o export novo como 'WINFUT_F_0_15min_01-01-2026_01-10-2026.csv', mas
+    o robo leu o antigo 'WINFUT_F_0_15min.csv' (terminava em 28/09 18:15). Empate ou
+    falha: fica o arquivo configurado."""
+    configurado = Path(caminho_csv)
+    pasta = configurado.parent
+    prefixo = configurado.name.split("_")[0]
+    melhor, melhor_fim = configurado, None
+    if configurado.exists():
+        try:
+            c = _ler_csv_candles(configurado)
+            melhor_fim = c[-1].horario if c else None
+        except Exception:
+            melhor_fim = None
+    try:
+        outros = [p for p in pasta.glob(f"{prefixo}*.csv") if p != configurado]
+    except OSError:
+        outros = []
+    for p in outros:
+        try:
+            c = _ler_csv_candles(p)
+        except Exception:
+            continue
+        if c and (melhor_fim is None or c[-1].horario > melhor_fim):
+            print(f"[HISTORICO] '{p.name}' tem candle mais recente ({c[-1].horario}) que "
+                  f"'{melhor.name}' ({melhor_fim}) - usando '{p.name}'.")
+            melhor, melhor_fim = p, c[-1].horario
+    return melhor
 
 
 def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> List[Candle]:
@@ -365,7 +397,7 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
               f"'{caminho_persistente}'. Fazendo carga inicial (unica vez) a partir "
               f"da exportacao manual do Profit: '{caminho_csv}'.")
 
-    caminho = Path(caminho_csv)
+    caminho = _resolver_csv_historico(caminho_csv)
     if not caminho.exists():
         print(f"[AVISO] Arquivo de historico '{caminho_csv}' tambem nao encontrado. "
               f"O robo vai iniciar sem historico previo e pode demorar ~2 dias "
@@ -374,7 +406,24 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
 
     candles = _ler_csv_candles(caminho)
     candles = _remover_candles_futuros(candles, referencia_tempo)
-    print(f"Carga inicial (unica vez): {len(candles)} candles de '{caminho_csv}'.")
+    print(f"Carga inicial (unica vez): {len(candles)} candles de '{caminho}'.")
+    # V461: o arquivo precisa chegar ate o candle que acabou de fechar. Em
+    # 01/10/2026 o robo leu um export ANTIGO (terminava em 28/09 18:15) porque o
+    # export novo foi salvo com outro nome.
+    if candles:
+        try:
+            faltam = candles_faltando(
+                candles[-1].horario, referencia_tempo - timedelta(minutes=cfg.TIMEFRAME_MINUTOS),
+                cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
+                cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
+        except Exception:
+            faltam = 0
+        if faltam > 0:
+            dica = (" Confira se o export mais recente do Profit foi salvo na pasta "
+                    "e se o nome comeca com o mesmo ativo (ex.: WINFUT...csv).")
+            print(f"[AVISO V461] O arquivo termina em {candles[-1].horario} mas o mercado "
+                  f"esta em {referencia_tempo}: faltam {faltam} candle(s) de pregao.{dica} "
+                  f"Novas entradas serao bloqueadas ao detectar o buraco.")
     _salvar_historico_persistente(candles, sobrescrever=True)
     return candles
 
@@ -587,6 +636,9 @@ def rodar():
     # Paridade com o motor: se uma posição for encerrada durante um candle,
     # o backtest não permite reentrada usando o fechamento desse mesmo candle.
     saida_desde_ultimo_fechamento = False
+    # V461: candles que ainda precisam fechar antes de liberar NOVA entrada
+    # depois de um buraco nao preenchido no historico (posicao aberta segue gerida).
+    candles_aquecimento_restantes = 0
 
     while True:
         agora_real = datetime.now()
@@ -1093,7 +1145,7 @@ def rodar():
                           f"(replay pulado/arrastado?) - tentando preencher com dado real "
                           f"do arquivo historico...")
                     try:
-                        candles_arquivo = _ler_csv_candles(Path(cfg.CAMINHO_HISTORICO_INICIAL))
+                        candles_arquivo = _ler_csv_candles(_resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL))
                     except (FileNotFoundError, OSError, ValueError) as e:
                         print(f"[{agora}] [AVISO] Nao foi possivel ler '{cfg.CAMINHO_HISTORICO_INICIAL}' "
                               f"para preencher o buraco: {e}")
@@ -1109,6 +1161,19 @@ def rodar():
                         print(f"[{agora}] [AVISO] Nao foi possivel preencher o buraco (arquivo "
                               f"historico nao cobre esse trecho) - MA21/RSI/ATR podem estar "
                               f"incorretos ate a media 'esquentar' de novo com candles novos.")
+                        # V461: so e buraco de verdade se faltarem candles de PREGAO
+                        # (fim de semana/feriado/noite nao contam).
+                        faltam = candles_faltando(
+                            historico_candles[-1].horario, candle_fechado.horario,
+                            cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
+                            cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
+                        if faltam > 0:
+                            candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
+                            print(f"[{agora}] [BLOQUEIO V461] Faltam {faltam} candle(s) de pregao no "
+                                  f"historico. NOVAS ENTRADAS BLOQUEADAS por "
+                                  f"{candles_aquecimento_restantes} candles (posicao aberta segue "
+                                  f"gerida). Para liberar antes: exporte o historico atualizado do "
+                                  f"Profit para '{cfg.CAMINHO_HISTORICO_INICIAL}' e reinicie o robo.")
 
             # remove qualquer candle ja existente no mesmo horario (evita duplicar
             # quando o historico de bootstrap ja cobre parte do periodo que o
@@ -1116,6 +1181,8 @@ def rodar():
             historico_candles = [c for c in historico_candles if c.horario != candle_fechado.horario]
             historico_candles.append(candle_fechado)
             historico_candles.sort(key=lambda c: c.horario)
+            if candles_aquecimento_restantes > 0:
+                candles_aquecimento_restantes -= 1
             _salvar_historico_persistente([candle_fechado])
 
             sinal_auditoria = None
@@ -1213,6 +1280,13 @@ def rodar():
                         sinal.lado,
                     )
                     pode, motivo_bloqueio = gestor.pode_abrir_posicao(sinal.horario)
+                    if pode and candles_aquecimento_restantes > 0:
+                        pode = False
+                        motivo_bloqueio = (f"Historico com buraco nao preenchido - aquecendo "
+                                           f"({candles_aquecimento_restantes} candles restantes)")
+                    if pode:
+                        # V461: limite de risco por operacao ANTES de enviar ordem
+                        pode, motivo_bloqueio = gestor.validar_risco_inicial(sinal, row_fechamento)
                     if pode:
                         origem_sinal = (
                             diagnostico_fechamento.get("estrategia")

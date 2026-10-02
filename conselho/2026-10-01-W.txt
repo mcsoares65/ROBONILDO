@@ -1,0 +1,100 @@
+# Incidente de 01/10/2026: entrada real com histórico furado (V461)
+
+Autoria: Claude (Anthropic), 01/10/2026. Base: main (V460). Entrega: V461.
+Fonte: log da sessão ao vivo (ROBONILDO [V460], ENVIAR_ORDENS=True) anexado pelo
+dono do laboratório.
+
+---------------------------------------------------------------------------
+1. O QUE ACONTECEU
+---------------------------------------------------------------------------
+
+- Início às 10:05:57. O último candle persistido era de 28/09 18:15 (gap de
+  63,8 h > 48 h), o histórico foi descartado e recarregado do CSV manual do
+  Profit (7.000 candles). O CSV NÃO cobria 29/09, 30/09 nem a manhã de 01/10.
+- No fechamento das 10:15 o robô avisou: "Buraco de 3825 min ... Nao foi
+  possivel preencher o buraco ... MA21/RSI/ATR podem estar incorretos".
+  E ENTÃO OPEROU: "[CANDLE FECHADO] Fechamento=187390 MA21=184383,57
+  MA50=184294,20 Distância=3006,4pts". A Porta 2 (MACD + Estocástico, que
+  exige distância da MA21 > 200) deu 4/4 e foi enviada ALT+C, COMPRA @187.390.
+- Stop estrutural 183.855 (3.535 pts = R$ 707 de risco com 1 contrato; banca
+  configurada R$ 200) e alvo 192.869: o stop da saida_chatgpt_v4 usa a mínima
+  dos últimos 5 candles, e esses candles eram de ANTES do buraco (~184 mil).
+- Às 12:08 o log mostrava a posição em -R$ 329,50 com o stop ainda 1.890 pts
+  abaixo.
+
+CORREÇÃO DO DONO (21:44 e 23:32), CONFIRMADA: ele HAVIA exportado o histórico
+antes de iniciar o robô, mas o export novo foi salvo como
+'WINFUT_F_0_15min_01-01-2026_01-10-2026.csv' (7.081 candles, até 01/10 10:00),
+enquanto o robô lê o nome configurado 'WINFUT_F_0_15min.csv', que era o export
+ANTIGO: 7.000 candles terminando em 28/09 18:15 (conferido nos dois arquivos
+anexados; o 7.000 exato é coincidência, não limite do Profit - minha hipótese
+anterior de "export cortado em 7.000" estava ERRADA). O robô leu o arquivo
+certo para o nome, e o nome errado para a intenção. A V461 agora: (1) escolhe,
+entre os WINFUT*.csv da pasta, o que tem o candle mais recente e diz qual usou;
+(2) avisa na carga se o arquivo não alcança o mercado; (3) bloqueia entradas se
+houver buraco real.
+
+CAUSA: o aviso de buraco não bloqueava nada. Indicadores (MA21/MA50, MACD,
+estocástico, ATR) e o stop foram calculados sobre uma série descontínua que
+saltou ~3.000 pts de um candle para outro.
+
+---------------------------------------------------------------------------
+2. O QUE A V461 FAZ
+---------------------------------------------------------------------------
+
+ - `construtor_candle.candles_faltando()` conta candles de PREGÃO que faltam
+   entre o último candle conhecido e o que acabou de fechar. Fim de semana,
+   feriado (FERIADOS_B3) e a noite não contam. Testado: o incidente (28/09
+   18:15 -> 01/10 10:00) dá 80; sexta 18:15 -> segunda 09:00 dá 0; mesmo dia
+   10:00 -> 10:15 dá 0, -> 10:45 dá 2; quinta -> segunda com sexta feriado
+   (20/11) dá 0.
+ - Se o buraco não for preenchido pelo arquivo e faltar ao menos 1 candle de
+   pregão, `principal.py` bloqueia NOVAS entradas por 50 candles
+   (CANDLES_AQUECIMENTO_APOS_BURACO = janela da MA50). Posição já aberta
+   continua gerida normalmente (stop, alvo, corte de horário).
+ - A mensagem diz como liberar antes: exportar o histórico atualizado para
+   CAMINHO_HISTORICO_INICIAL e reiniciar o robô.
+
+Paridade replay/ao vivo e backtest: o bloqueio só age quando FALTAM candles de
+pregão na série. No backtest (CSV contínuo) e em replay sem pulo não existe tal
+buraco, então decisões e resultados ficam idênticos (motor, cartuchos e
+classificacao.py não foram tocados).
+
+LIMITAÇÃO CONHECIDA: pregão encurtado (24 e 31/12) deixa "candles faltando"
+até o fim do dia e bloquearia a primeira entrada do dia seguinte; não coloquei
+essas datas em FERIADOS_B3 porque não são feriado. Aceitei o erro para o lado
+seguro. Se incomodar, o remédio é reexportar o CSV ao reiniciar.
+
+---------------------------------------------------------------------------
+2b. LIMITE DE RISCO POR OPERAÇÃO (pedido do dono, 21:44)
+---------------------------------------------------------------------------
+
+Banca real informada: R$ 1.490,00 (a banca configurada era R$ 200: a corretora
+não nos tirou do trade de 01/10 porque a banca real aguentou o fundo de
+-R$ 390,50). Regra: se o stop inicial custar mais de 25% da banca real, não
+entra e avisa "Oportunidade à frente mas a banca não irá suportar o tamanho do
+stop loss". Limite = R$ 372,50 = ~1.862 pts. O stop de 01/10 (3.535 pts, R$ 707,
+47%) seria barrado. Vale igual no ao vivo e no backtest (paridade). Medido: 2026
+-2 ops, -R$ 1.815; 2023-24 -7 ops, +R$ 757; ambos dentro da faixa de ruído.
+Esta regra substitui o item 3 abaixo (decisão do dono, Regra 1 v9 revista).
+
+---------------------------------------------------------------------------
+3. (SUPERADO PELA 2b) TETO DE RISCO POR OPERAÇÃO
+---------------------------------------------------------------------------
+
+Teto de risco por operação (rejeitar entrada se o stop inicial estiver a mais
+de X reais). Teria impedido o incidente mesmo sem o bloqueio de buraco. Mas
+`motor._aplicar_reconfiguracao` registra decisão explícita do dono (Regra 1
+v9): "o motor não impõe piso de segurança". Um teto muda esse princípio e pode
+mudar o backtest (precisa medir o maior stop dos 186 e 489 trades antes de
+escolher X). Fica como proposta: medir a distribuição de risco por operação e,
+se houver folga clara, adotar um teto acima do maior stop histórico.
+
+---------------------------------------------------------------------------
+4. OPERAÇÃO (MANUAL, HOJE)
+---------------------------------------------------------------------------
+
+ - Antes de iniciar o robô, exportar o histórico atualizado do Profit para o
+   CSV; isso evita o bloqueio e dá MA/ATR corretos desde o 1o candle.
+ - Posição aberta no incidente: decisão do dono (fechar manualmente ou deixar o
+   stop em 183.855 agir).
