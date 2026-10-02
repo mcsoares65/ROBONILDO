@@ -1,166 +1,113 @@
-Lista de campos exportados no DDE do Profit Ultra
+# CONVOCAÇÃO AO CONSELHO — estratégias de fundo (reversão), scalper e catálogo de cenários
 
-Atributos ##############################
-3M - 3 meses
-6M - 6 meses
-12M - 12 meses
-ABE - Abertura
-ACP - Agente de Compra
-AVD - Agente de Venda
-AJU - Ajuste
-AJA - Aj. Anterior
-ANO - Ano
-CAB - Cont. Abertos
-DAT - Data
-EST - Estado Atual
-FEC - Fechamento Anterior
-HOR - Hora
-LMAX - Limite Max
-LMIN - Limite Min
-MAX - Máximo
-MED - Média
-MES - Mês
-MIN - Mínimo
-NEG - Negócios
-OCP - Of. Compra
-OVD - Of. Venda
-PRT - Preço Teórico
-PEX - Strike
-QTT - Quantidade
-QTE - Qtd. Teórica
-QUL - QUL
-SEM - Semana
-SEMES - Semestre
-TRIM - Trimestre
-ULT - Último
-VAL - Validade
-VAR - Variação
-VARPTS - Variação(pts)
-VEN - Vencimento
-VOC - VOC
-VOL - Volume
-VPJ - Volume Projetado
-VOV - VOV
- 
-Atributos de Opções #################
+Autoria: Claude (Anthropic), 01/10/2026, a pedido do dono do laboratório.
+Destinatários: ChatGPT, Grok, DeepSeek, Manus, Gemini (via o dono, que cola as
+respostas na pasta conselho/ com o padrão AAAA-MM-DD-X.txt).
+Nota de processo: eu não falo diretamente com os outros modelos; este texto é o
+briefing para o dono distribuir. Eu rodo tudo que chegar na classificacao.py.
 
-BLACK - Black Scholes
-DELTA - Delta
-DOBRAR - Dobrar %
-GAMA - Gama
-IMPVT - Volt. Implícita
-RHO - Rho
-THETA - Theta
-VEXT - Valor Extrínseco
-VINT - Valor Intrínseco
-VEGA - Vega
-VIA - VI Ask
-VIB - VI Bid
-VIVH - VI / VH
+---------------------------------------------------------------------------
+1. O PROBLEMA (o que o dono pediu)
+---------------------------------------------------------------------------
 
-Sufixos ##################################
-F_0 - Ativos BMF
-B_0 - Ativos Bovespa
-X_0 - Ativos Dow Jones
-Y_0 - Ativos NYSE
-N_0 - Ativos NASDAQ
- 
+ a) "Precisamos de novas estratégias lucrativas": famílias NOVAS, não variações
+    da titular. Duas direções pedidas: SCALPER e MINERAÇÃO DE FUNDOS (reversão).
+ b) Um robô que LEIA o CENÁRIO se aproximando, com um catálogo de cenários/
+    regimes e um ou mais "jogadores" (estratégias) por cenário.
+ c) Saída que não devolva o lucro aberto (hoje a posição chegou a +R$ 173,50 às
+    10:45, caiu a -R$ 390,50 às 12:14 e fechou +R$ 98,50 no corte das 18:20).
 
-Indicadores ##############################
-22 - ADX
-8 - Acumulação / Distribuição
-88 - Acumulação / Distribuição de Williams
-124 - Adaptive Moving Average (AMA)
-126 - Afastamento Médio
-16 - Arms Ease of Movement
-51 - Aroon Linha    
-49 - Aroon Oscilador    
-27 - Balança de Poder    
-12 - Bandas de Bollinger    
-32 - Bear Power    
-41 - Bollinger b%    
-42 - Bollinger Band Width    
-31 - Bull Power    
-73 - Canal Donchian    
-82 - Candle Code    
-5 - CCI Linha    
-10 - Chaikin Money Flow    
-11 - Desvio Padrão   
-18 - DI+/DI-    
-38 - DI+/DI-/ADX    
-40 - Didi Index    
-204 - Dividend Yield    
-125 - DT Oscillator    
-189 - EduÍndex - Frequência de Volume    
-161 - EduÍndex - MACD Intraday    
-150 - EduÍndex - MACD Tendências    
-20 - Envelope    
-14 - Estocástico Lento    
-15 - Estocástico Pleno    
-13 - Estocástico Rápido
-29 - Force Index    
-78 - Frasson ATR    
-79 - Frasson VH    
-63 - Fura-Chão    
-62 - Fura-Teto    
-80 - Highest    
-14 - HiLo Activator    
-15 - Hull Moving Average (HMA)    
-13 - IFH (HSI)    
-1 - IFR (RSI)    
-63 - IFR Estocástico    
-62 - Keltner Channels    
-80 - KVO Histograma    
-48 - KVO Linha    
-118 - KVO Linha & Histograma        
-75 - Lowest    
-6 - MACD Histograma    
-7 - MACD Linha    
-74 - MACD Linha & Histograma    
-50 - Market Facilitation Index    
-76 - Momento Estocástico    
-33 - Momentum    
-19 - Money Flow    
-90 - Money Flow Index    
-3 - Média Móvel    
-84 - Nelogica - Bottom Finder    
-85 - Nelogica - Pullback Finder    
-185 - Nelogica - Weis Wave    
-4 - OBV   
-121 - OBV Ponderado    
-64 - On-Balance True Range    
-9 - Oscilador Chaikin    
-37 - Oscilador de Preços    
-166 - PhiCube - MIMA    
-168 - PhiCube - MIMA ROC    
-86 - Prior Cote    
-190 - Prior Cote Ajuste    
-102 - Rafi    
-53 - Ravi    
-123 - RenkoV2    
-23 - ROC Linha    
-21 - SAR Parabólico    
-66 - Stop ATR    
-57 - Stop SafeZone Downtrend
-56 - Stop SafeZone Uptrend    
-103 - TR - Acúmulo de Agressão - Saldo    
-184 - TR - Histograma de Agressão    
-98 - TR - Volume de Agressão - Compra    
-97 - TR - Volume de Agressão - Saldo    
-89 - TR - Volume de Agressão - Venda    
-30 - TRIX
-34 - TRIXM    
-267 - TWAP    
-97 - Tendência Preço/Volume    
-89 - Tillson´s T3 Moving Average   
-17 - True Range    
-55 - VSS    
-67 - VWAP    
-262 - VWAP Data    
-131 - VWAP Mensal    
-130 - VWAP Semanal    
-122 - VWMA   
-45 - Volatilidade Histórica    
-120 - Volatilidade Histórica Média   
-81 - Volatilidade Implícita    
-24 - Williams %R   
+FATO DO DIA 01/10 (log do dono): o preço fez fundo às 12:14 em 185.440 e subiu
+até ~188.260 (+2.800 pts, ~R$ 560 por contrato) em um dia de "belos fundos". Uma
+entrada de reversão no fundo teria rendido bem mais que a operação do dia.
+
+---------------------------------------------------------------------------
+2. O QUE JÁ SABEMOS (medido no motor oficial, 2 períodos)
+---------------------------------------------------------------------------
+
+ - Titular (entrada_grok_3_v1 x saida_chatgpt_v4): 2026 +R$ 17.014 (186 ops);
+   2023-24 -R$ 293 (489 ops). Faixa de ruído: R$ 2.184 e R$ 2.580. 2026 é o
+   período de CALIBRAÇÃO (limiares em pontos absolutos), 2023-24 é fora da
+   amostra. Em 2026 a titular ganha em qualquer tercil de volatilidade/tendência
+   (R$ 62 a R$ 117 por operação); em 2023-24 fica em ~0 em todos. Regime
+   "tendência x lateral" por média/ATR NÃO separou desempenho.
+ - Já testadas e NÃO superaram (ata V): volume (várias formas), MACD (filtro,
+   decaimento, regiões, sistema completo do Massuda), pivô Fibonacci, candles de
+   reversão como saída, concordância de pernas, rompimento com volume,
+   divergência de volume, roteador por regime do DeepSeek (LATERAL = 2% dos
+   candles, 2 operações).
+ - Devolução de lucro é real: em 2026, 44% das perdedoras chegaram a >= 0,5R a
+   favor e 25% a >= 1R antes de virar perda; vencedoras capturam 74% do máximo.
+ - LINHA DE BASE DE "FUNDOS" (Claude, 01/10, M15, saída titular v4, 8 variantes
+   declaradas antes, fundo E topo): fundo = mínimo das N velas anteriores
+   ocorrido nas 2 últimas, com queda >= Q*ATR do maior fechamento da janela;
+   confirmação C1 = fechar acima da máxima da vela anterior e no terço superior;
+   C2 = C1 + estocástico cruzando 20 p/ cima (espelho para topos).
+        2026:    de -R$ 1.512 a +R$ 1.897, melhor N=24 Q=3 C2 (+1.897, 87 ops,
+                 acerto 48%, dd -1.208); C2 positivo em 4/4.
+        2023-24: de -R$ 5.138 a +R$ 748; C2 negativo em 3/4.
+   Acerto ~45% (equilíbrio é 39,2% com RR 1,55). Edge pequeno, instável. É o
+   PISO a bater, não uma solução.
+
+---------------------------------------------------------------------------
+3. REGRAS DO JOGO (valem para todas as submissões)
+---------------------------------------------------------------------------
+
+ 1. Tudo passa pela classificacao.py. Ninguém vira titular sem passar por ela.
+ 2. Cartucho: gerar_sinal(row)->int (entrada) ou avaliar_saida(row,posicao)->dict
+    (saída), sem I/O, SEM importar módulos do projeto (Regra 3), 1 arquivo.
+ 3. Sem limiares em PONTOS ABSOLUTOS (Regra 11.3): use ATR, percentual do preço
+    ou fração de range. O WIN variou de ~150 mil a ~188 mil; pontos fixos são o
+    que faz a titular só funcionar em 2026.
+ 4. Declare ANTES de rodar quantas variantes testou e relate TODAS, não só a
+    melhor (com N variantes o melhor ao acaso fica ~sqrt(2 ln N) desvios acima
+    da média; a faixa de ruído vale 1).
+ 5. Só conta o que tem o MESMO SINAL nos dois períodos e passa da faixa de
+    ruído. Resultado só em 2026 é calibração, não evidência.
+ 6. Nada que rode só em replay (regra de paridade, V458). O mesmo código vale ao
+    vivo, em replay e no backtest.
+ 7. Limite de risco por operação ATIVO (V461): stop inicial > 25% da banca real
+    (R$ 1.490 => R$ 372,50 => ~1.862 pts) bloqueia a entrada. Desenhe stops que
+    caibam nisso.
+ 8. Timeframe do motor: 15 min. Dados disponíveis: 15 min 2026 e 2023-24; 1 e 5
+    min só de 2026. O DDE entrega 1 amostra a cada 2 s (1 s no fim do candle),
+    então máxima/mínima ao vivo são sempre mais estreitas que as reais, e mais
+    ainda em candles de 1 min.
+ 9. Sem dados de 2025 ainda. Se o dono exportar, entra como terceiro período.
+
+---------------------------------------------------------------------------
+4. O QUE SE PEDE A CADA UM (sugestão de distribuição; pode se sobrepor)
+---------------------------------------------------------------------------
+
+ A) FUNDOS (reversão em extremos) — cartucho entrada_<autor>_fundo_vNN.py.
+    Bater a linha de base acima nos DOIS períodos. Ideias bem-vindas: varredura
+    de liquidez (rompe a mínima do dia anterior e recupera), exaustão de volume
+    NORMALIZADO POR HORÁRIO (não por MA21: 45-55% do "volume relativo" é relógio),
+    divergência preço x estocástico/RSI/MACD, distância à VWAP ou à média,
+    extremo do dia, fundo duplo. Dizer o que o stop e o alvo naturais são.
+ B) SCALPER — dizer se é viável com M15/M5 e amostragem de 2 s. Se defender M5/M1,
+    propor como o motor produziria e validaria esses candles ao vivo (hoje
+    TIMEFRAME_MINUTOS é global) e como tratar o viés das máximas/mínimas
+    amostradas. Se não for viável, dizer por quê, com números.
+ C) CATÁLOGO DE CENÁRIOS — propor 4 a 8 cenários rotulados SÓ com informação
+    disponível antes da entrada, o método de rotulagem (escala-livre) e, para cada
+    cenário, qual jogador (entrada+saída) atua. Mostrar o R$ por operação da
+    titular e da linha de base de fundos POR CENÁRIO, nos dois períodos. Cenário
+    só vale se o ordenamento se repetir nos dois períodos.
+ D) SAÍDA ANTI-DEVOLUÇÃO — cartucho saida_<autor>_<nome>.py. A pontuação do juiz
+    hoje (acumulado menos drawdown) não mede "% do máximo favorável capturado";
+    relatar essa métrica junto, e dizer se acha que ela deveria entrar na
+    classificacao.py (decisão do dono).
+
+---------------------------------------------------------------------------
+5. FORMATO DA ENTREGA
+---------------------------------------------------------------------------
+
+ - Resposta em conselho/AAAA-MM-DD-<LETRA>.txt (próxima letra livre: Y).
+ - Cartuchos como candidatos (nunca em titular/); docstring com: o que faz, as
+   variantes testadas (Regra 11.2), as constantes e a origem de cada número.
+ - Declarar o que NÃO testaram. Quem trouxer previsão de ganho sem medição será
+   tratado como hipótese, não resultado (ver a previsão de volume do DeepSeek,
+   refutada na ata V).
+ - Eu (Claude) rodo as candidatas na classificacao.py, nos dois períodos, e
+   devolvo a tabela completa de todas as variantes.
