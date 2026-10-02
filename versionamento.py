@@ -1079,11 +1079,12 @@ VERSAO = "V461"
 # Motor, cartuchos e classificacao.py intactos NESTA PARTE: sem buraco de pregao
 # o comportamento e identico (paridade backtest/replay/ao vivo preservada).
 #
-# CAUSA DO BURACO (correcao do dono, 01/10): ele HAVIA exportado o historico antes
-# de iniciar. O arquivo do dono tem 7.081 candles (ate 01/10 10:00); o robo
-# carregou exatamente 7.000, e o 7.000o candle desse arquivo e 28/09 18:15 - onde o
-# historico do robo terminou. Ou seja, a exportacao lida estava cortada no FIM em
-# 7.000. Agora ha aviso na carga e o bloqueio acima.
+# CAUSA DO BURACO (correcao do dono, 01/10, confirmada): ele HAVIA exportado o
+# historico antes de iniciar, mas salvou com outro nome
+# (WINFUT_F_0_15min_01-01-2026_01-10-2026.csv, 7.081 candles ate 01/10 10:00); o
+# robo leu o nome configurado WINFUT_F_0_15min.csv, o export ANTIGO (7.000 candles
+# ate 28/09 18:15). Agora: principal._resolver_csv_historico() escolhe o WINFUT*.csv
+# mais recente da pasta, ha aviso na carga e o bloqueio acima.
 #
 # V461 tambem traz o LIMITE DE RISCO POR OPERACAO pedido pelo dono em 01/10:
 #   configuracao.py : BANCA_REAL_REAIS = 1490.00 e RISCO_MAXIMO_PCT_BANCA = 0.25

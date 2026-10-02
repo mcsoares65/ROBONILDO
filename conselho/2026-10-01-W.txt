@@ -22,14 +22,17 @@ dono do laboratório.
 - Às 12:08 o log mostrava a posição em -R$ 329,50 com o stop ainda 1.890 pts
   abaixo.
 
-CORREÇÃO DO DONO (21:44): ele HAVIA exportado o histórico antes de iniciar o
-robô. Confirmado: o arquivo dele (01/01 a 01/10 10:00) tem 7.081 candles; o robô
-carregou EXATAMENTE 7.000 ("Carga inicial: 7000 candles") e o 7.000º candle desse
-arquivo é 28/09 18:15, justamente onde o histórico do robô acabou. O arquivo que
-o robô leu estava cortado no FIM em 7.000 candles (limite da exportação, ou
-arquivo diferente do anexado; não consigo distinguir daqui). Falha de borda,
-não descuido: a V461 agora avisa na carga quando o arquivo não alcança o mercado
-(com dica de 7.000) e bloqueia entradas se houver buraco real.
+CORREÇÃO DO DONO (21:44 e 23:32), CONFIRMADA: ele HAVIA exportado o histórico
+antes de iniciar o robô, mas o export novo foi salvo como
+'WINFUT_F_0_15min_01-01-2026_01-10-2026.csv' (7.081 candles, até 01/10 10:00),
+enquanto o robô lê o nome configurado 'WINFUT_F_0_15min.csv', que era o export
+ANTIGO: 7.000 candles terminando em 28/09 18:15 (conferido nos dois arquivos
+anexados; o 7.000 exato é coincidência, não limite do Profit - minha hipótese
+anterior de "export cortado em 7.000" estava ERRADA). O robô leu o arquivo
+certo para o nome, e o nome errado para a intenção. A V461 agora: (1) escolhe,
+entre os WINFUT*.csv da pasta, o que tem o candle mais recente e diz qual usou;
+(2) avisa na carga se o arquivo não alcança o mercado; (3) bloqueia entradas se
+houver buraco real.
 
 CAUSA: o aviso de buraco não bloqueava nada. Indicadores (MA21/MA50, MACD,
 estocástico, ATR) e o stop foram calculados sobre uma série descontínua que

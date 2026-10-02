@@ -324,6 +324,38 @@ from executor_ordem import ExecutorOrdem
 import email_notificacao
 
 
+def _resolver_csv_historico(caminho_csv: str) -> Path:
+    """V461: devolve o CSV de historico com o candle MAIS RECENTE entre os arquivos da
+    mesma pasta que comecam com o mesmo ativo (ex.: WINFUT*.csv). Em 01/10/2026 o
+    dono salvou o export novo como 'WINFUT_F_0_15min_01-01-2026_01-10-2026.csv', mas
+    o robo leu o antigo 'WINFUT_F_0_15min.csv' (terminava em 28/09 18:15). Empate ou
+    falha: fica o arquivo configurado."""
+    configurado = Path(caminho_csv)
+    pasta = configurado.parent
+    prefixo = configurado.name.split("_")[0]
+    melhor, melhor_fim = configurado, None
+    if configurado.exists():
+        try:
+            c = _ler_csv_candles(configurado)
+            melhor_fim = c[-1].horario if c else None
+        except Exception:
+            melhor_fim = None
+    try:
+        outros = [p for p in pasta.glob(f"{prefixo}*.csv") if p != configurado]
+    except OSError:
+        outros = []
+    for p in outros:
+        try:
+            c = _ler_csv_candles(p)
+        except Exception:
+            continue
+        if c and (melhor_fim is None or c[-1].horario > melhor_fim):
+            print(f"[HISTORICO] '{p.name}' tem candle mais recente ({c[-1].horario}) que "
+                  f"'{melhor.name}' ({melhor_fim}) - usando '{p.name}'.")
+            melhor, melhor_fim = p, c[-1].horario
+    return melhor
+
+
 def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> List[Candle]:
     """
     Carrega candles de 15min ja fechados. PRIMEIRO tenta o arquivo persistente
@@ -365,7 +397,7 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
               f"'{caminho_persistente}'. Fazendo carga inicial (unica vez) a partir "
               f"da exportacao manual do Profit: '{caminho_csv}'.")
 
-    caminho = Path(caminho_csv)
+    caminho = _resolver_csv_historico(caminho_csv)
     if not caminho.exists():
         print(f"[AVISO] Arquivo de historico '{caminho_csv}' tambem nao encontrado. "
               f"O robo vai iniciar sem historico previo e pode demorar ~2 dias "
@@ -374,10 +406,10 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
 
     candles = _ler_csv_candles(caminho)
     candles = _remover_candles_futuros(candles, referencia_tempo)
-    print(f"Carga inicial (unica vez): {len(candles)} candles de '{caminho_csv}'.")
+    print(f"Carga inicial (unica vez): {len(candles)} candles de '{caminho}'.")
     # V461: o arquivo precisa chegar ate o candle que acabou de fechar. Em
-    # 01/10/2026 ele terminava em 28/09 18:15, exatamente no 7.000o candle de uma
-    # exportacao que tinha 7.081 - cortada no FIM, sem aviso.
+    # 01/10/2026 o robo leu um export ANTIGO (terminava em 28/09 18:15) porque o
+    # export novo foi salvo com outro nome.
     if candles:
         try:
             faltam = candles_faltando(
@@ -387,9 +419,8 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
         except Exception:
             faltam = 0
         if faltam > 0:
-            dica = (" O arquivo tem EXATAMENTE 7000 candles: a exportacao provavelmente foi "
-                    "cortada no limite. Exporte com data inicial mais recente (ex.: ultimos "
-                    "60 dias)." if len(candles) == 7000 else "")
+            dica = (" Confira se o export mais recente do Profit foi salvo na pasta "
+                    "e se o nome comeca com o mesmo ativo (ex.: WINFUT...csv).")
             print(f"[AVISO V461] O arquivo termina em {candles[-1].horario} mas o mercado "
                   f"esta em {referencia_tempo}: faltam {faltam} candle(s) de pregao.{dica} "
                   f"Novas entradas serao bloqueadas ao detectar o buraco.")
@@ -1114,7 +1145,7 @@ def rodar():
                           f"(replay pulado/arrastado?) - tentando preencher com dado real "
                           f"do arquivo historico...")
                     try:
-                        candles_arquivo = _ler_csv_candles(Path(cfg.CAMINHO_HISTORICO_INICIAL))
+                        candles_arquivo = _ler_csv_candles(_resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL))
                     except (FileNotFoundError, OSError, ValueError) as e:
                         print(f"[{agora}] [AVISO] Nao foi possivel ler '{cfg.CAMINHO_HISTORICO_INICIAL}' "
                               f"para preencher o buraco: {e}")
