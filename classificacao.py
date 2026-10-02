@@ -979,6 +979,15 @@ def _perguntar_modo_ranking() -> str:
 def executar(caminho_csv: Optional[str] = None):
     caminho = Path(caminho_csv or cfg.CAMINHO_HISTORICO_INICIAL)
     if not caminho.exists():
+        # V462: o Profit passou a gravar o export com datas no nome
+        # (WINFUT_F_0_15min_01-01-2026_02-10-2026.csv). Tenta o CSV mais recente
+        # da mesma pasta (mesmo ativo/timeframe) antes de perguntar.
+        from historico_csv import resolver_csv_historico
+        achado = resolver_csv_historico(str(caminho), cfg.TIMEFRAME_MINUTOS)
+        if Path(achado).exists():
+            print(f"[HISTÓRICO] '{caminho.name}' não existe; usando '{Path(achado).name}'.")
+            caminho = Path(achado)
+    if not caminho.exists():
         informado = input(
             f"CSV não encontrado em '{caminho}'. Informe o caminho completo: "
         ).strip().strip('"')
