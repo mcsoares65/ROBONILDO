@@ -101,6 +101,12 @@ BANCA_REAL_REAIS = 1490.00
 # igual. 0 desliga. Incidente de 01/10: stop de 3.535 pts = R$ 707 (47% da banca
 # real, 354% da banca configurada de R$ 200).
 RISCO_MAXIMO_PCT_BANCA = 0.25
+# V462 (achado A do Manus, ata 2026-10-02-Y): quando o stop inicial NAO PODE ser
+# verificado (cartucho falhou, nao propôs stop, NaN/inf, texto, ou stop do lado
+# errado do preco) o padrao agora e BLOQUEAR a entrada (fail-closed): numa ordem
+# real, risco desconhecido nao e risco aceito. False volta ao comportamento da
+# V461 (libera). Decisao do dono; vale igual no ao vivo e no backtest.
+RISCO_FALHA_FECHADA = True
 # V459: MAX_OPERACOES_DIA foi REMOVIDA. Era um teto de CONTAGEM de operacoes
 # (2 por pregao) que, medido no motor oficial nos dois periodos, praticamente
 # nunca mordia - a estrategia simplesmente nao gera tantas oportunidades:
