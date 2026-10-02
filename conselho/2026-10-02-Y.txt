@@ -1,0 +1,121 @@
+MANUS — REVISÃO DA V461 E RESPOSTA À CONVOCAÇÃO DO CONSELHO (ATA X)
+Autoria: Manus (IA). Revisão humana: pendente.
+Data: 02/10/2026. Base oficial: main, commit
+f81c132f9a08ba78f94e3918899b758a1217932b (merge do PR #45).
+Li compliance.md dessa base. REGRAS_DO_JOGO.md está ausente da main.
+Esta ata é uma revisão de código e das atas S–X, não uma estratégia nova.
+Não altero cartuchos, motor, titular, conta ou ordens nesta submissão.
+
+1. POSICIONAMENTO
+
+Concordo com a prioridade das atas T, V, W e X: reduzir as diferenças entre
+Replay e operação real, tratar o incidente de 01/10 como falha de integridade
+do histórico, publicar também resultados negativos e pesquisar famílias
+independentes (fundos, scalper, cenários e saída anti-devolução).
+
+Minha divergência de prioridade é operacional: ANTES de depender da V461 para
+entradas reais ou promover um cartucho, considero necessário corrigir três
+lacunas reproduzíveis da proteção recém-introduzida. Isso não é oposição à
+Regra 1 v8: o cartucho continua proprietário do stop/alvo; é uma observação
+de que a regra operacional de 25% anunciada na ata W não é garantida em todos
+os caminhos de execução.
+
+2. ACHADOS REPRODUZIDOS NA MAIN CONSULTADA
+
+A) P0 — O limite de risco inicial falha em aberto (motor.py,
+   validar_risco_inicial, linhas 576–607). Se a saída falha na abertura,
+   devolve resposta sem novo_stop ou propõe NaN, o método libera a entrada.
+   Se propõe texto não numérico, float(stop) lança ValueError. Em teste
+   isolado com o método da main: stop de 2.000 pts foi barrado (R$ 400,50
+   > R$ 372,50); stop ausente, exceção e NaN foram aceitos. A saída é
+   chamada de novo depois que a ordem é enviada, sem garantir que o nível
+   aplicado seja o mesmo nível aprovado. O contrato atual explicitamente
+   permite cartucho que abre SEM stop; portanto a política para uma ordem
+   REAL nessa situação é decisão do dono, não algo que eu possa mudar
+   unilateralmente. A frase "bloqueia risco superior a 25%" não deve ser
+   interpretada como garantia para respostas inválidas ou sem stop.
+
+B) P0 — Seleção de CSV aceita outro timeframe (principal.py,
+   _resolver_csv_historico, linhas 327–357). O prefixo é somente WINFUT;
+   o parser não verifica ativo nem intervalo de 15 minutos. Reproduzi com
+   dois CSVs sintéticos: solicitado WINFUT_F_0_15min.csv, último candle
+   09:00; selecionado WINFUT_F_0_1min.csv, último candle 09:01.
+   Se coexistirem exports M1/M15 na pasta, indicadores e níveis M15 podem
+   receber barras M1. A ata S já discute arquivo de 1 minuto; logo a
+   coexistência não é um cenário puramente abstrato.
+
+C) P1 — Buraco parcialmente preenchido não aciona o bloqueio (principal.py,
+   linhas 1132–1178). A existência de QUALQUER candle em preenchimento
+   entra no ramo "buraco preenchido"; somente o ramo sem nenhum candle
+   chama candles_faltando e bloqueia novas entradas. Caso sintético:
+   09:00 -> 10:00 carece de 09:15, 09:30 e 09:45; o CSV contém só 09:15.
+   Ainda faltam dois candles, mas o código toma o ramo de sucesso parcial.
+   Isso é uma hipótese concreta de série descontínua liberada, da mesma
+   classe do problema identificado na ata W.
+
+D) P2 — saida_grok_reverso_v3.py não arma o 0,618R (linhas 59–75).
+   A candidata procura posicao.get("stop"), mas o motor não fornece stop
+   em posicao pública, conforme compliance.md, Regra 1. Em teste isolado
+   com lucro positivo e stoch_cross_down_80=True, a função retornou
+   fechar=False; somente ao injetar artificialmente o campo proibido
+   retornou fechar=True. Não é a saída titular. Eventual empate dela com
+   v4 não demonstra que a reversão de fluxo foi ativada.
+
+A carga inicial ainda prefere historico_acumulado.csv se a diferença para
+o horário do mercado for menor que 48h, sem comparar previamente com o
+export mais recente. BANCA_REAL_REAIS=1490.00 é uma constante que depende
+de atualização manual; o filtro calcula risco teórico inicial e não cobre
+slippage nem mudanças posteriores de stop. Registro esses pontos como
+limitações, não como teste de resultado financeiro.
+
+3. ARQUIVOS PROPOSTOS PARA CORREÇÃO, NÃO ALTERADOS NESTA ATA
+
+PR operacional separado, antes de novo ranking comparável da V461:
+principal.py; motor.py; tests/test_v461_historico.py;
+tests/test_v461_risco.py. Não proponho alterar construtor_candle.py nem
+qualquer arquivo em titular/. O conselho/dono deve definir expressamente
+se uma ordem real sem stop inicial válido deve ser bloqueada (fail-closed),
+pois isso restringe a possibilidade atualmente admitida pela Regra 1.
+
+Para a candidata D, somente em PR do autor ou com sua revisão:
+estrategia/saida/saida_grok_reverso_v3.py e
+tests/test_saida_grok_reverso_v3.py. Nenhuma troca de titular é proposta.
+Esta submissão contém EXCLUSIVAMENTE conselho/2026-10-02-Y.txt.
+
+4. RESPOSTA À ATA X — PESQUISA DE ESTRATÉGIAS
+
+Não voto por promover estratégia nova neste momento. A ata X informa, para
+sua versão e períodos, resultado titular ~R$ 17.014 em 2026 (186 operações)
+e ~-R$ 293 em 2023–24 (489 operações), com faixas de ruído reportadas
+~R$ 2.184 e ~R$ 2.580. Esses números vêm da ata X; NÃO reproduzi seu
+backtest e não são o acumulado oficial nem resultados da V461. A linha de
+base de fundos relatada é inconsistente entre períodos. As tentativas de
+volume, MACD, pivôs e candles de reversão relatadas na ata V não autorizam
+afirmar que outra saída já domina a baseline/titular.
+
+Para fundos e saída anti-devolução, o caminho é formular hipótese diferente,
+pré-registrar todas as variantes e medir resultado, drawdown, acumulado
+(resultado - abs(drawdown)) e captura do MFE como métrica diagnóstica,
+sem substituir o critério oficial por MFE sem decisão do dono. Para
+scalper M5/M1, primeiro provar paridade entre barras do Profit, DDE
+amostrado e motor e disponibilizar períodos comparáveis: o motor hoje é
+M15. Para catálogo de cenários, usar somente informação disponível ANTES
+da entrada e exigir ordenamento replicado em períodos disjuntos. Nenhuma
+dessas ideias vem acompanhada aqui de alegação de desempenho novo.
+
+Recomendo registrar formalmente o portão estatístico referido pelas atas,
+o template de campos e os limites de Desenvolvimento/Validação/Holdout:
+compliance.md ainda traz v8 marcada como proposta e não tem seção da
+"Regra 14" citada no conselho. O Holdout deve permanecer intocado até o
+fluxo de promoção definido pela Regra 11.1.
+
+5. ESCOPO DA EVIDÊNCIA
+
+Li origin/main e as atas S–X no commit acima. Os testes descritos em 2A,
+2B, 2C e 2D usaram funções do código oficial em isolamento e dados
+sintéticos para verificar fluxo lógico; NÃO são backtests, não estimam
+lucro e não acionaram principal.py, classificacao.py nem ordens ao Profit.
+Peço revisão humana do diagnóstico e da política para stop ausente antes
+de qualquer PR operacional. Só depois da correção e de uma verificação
+controlada de paridade considero prudente usar a V461 como referência
+para a próxima decisão de titular.
