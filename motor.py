@@ -574,30 +574,51 @@ class MotorRobonildo:
         return True, ""
 
     def validar_risco_inicial(self, sinal: Sinal, row: Optional[dict]):
-        """V461: recusa a entrada se o stop inicial proposto pelo cartucho de
+        """V461/V462: recusa a entrada se o stop inicial proposto pelo cartucho de
         saida custar mais que cfg.RISCO_MAXIMO_PCT_BANCA da banca real.
 
         Pergunta ao cartucho (candles_decorridos == 0, a mesma chamada que
         abrir_posicao faz) SEM abrir nada, entao pode ser chamada ANTES de
         enviar a ordem. E usada igual no ao vivo e no backtest (paridade).
-        Se nao houver cartucho/row/stop, ou o cartucho falhar, nao bloqueia
-        (o cartucho segue dono do stop - Regra 1 v9)."""
+
+        V462: com cartucho + row, se o stop NAO puder ser verificado (excecao, sem
+        novo_stop, nao numerico, NaN/inf, ou do lado errado) e
+        cfg.RISCO_FALHA_FECHADA for True (padrao), a entrada e BLOQUEADA. Sem
+        cartucho de saida ou sem row nao ha o que verificar e nao bloqueia."""
         pct = getattr(cfg, "RISCO_MAXIMO_PCT_BANCA", 0) or 0
         banca = getattr(cfg, "BANCA_REAL_REAIS", 0) or 0
         if not pct or not banca or self.avaliar_saida is None or row is None:
             return True, ""
+        fechada = bool(getattr(cfg, "RISCO_FALHA_FECHADA", False))
+
+        def invalido(motivo):
+            if not fechada:
+                return True, ""
+            return False, (f"Entrada bloqueada: não foi possível validar o stop inicial "
+                           f"({motivo}). Risco desconhecido não é risco aceito.")
+
         try:
             resposta = self.avaliar_saida(row, {
                 "lado": sinal.lado, "entrada": sinal.entrada, "candles_decorridos": 0,
                 "maxima_desde_entrada": sinal.entrada, "minima_desde_entrada": sinal.entrada,
                 "resultado_flutuante_pts": 0.0,
             })
-        except Exception:
-            return True, ""
+        except Exception as e:
+            return invalido(f"a saída falhou: {type(e).__name__}")
         stop = resposta.get("novo_stop") if isinstance(resposta, dict) else None
         if stop is None:
-            return True, ""
-        pontos = abs(float(sinal.entrada) - float(stop))
+            return invalido("a saída não propôs stop")
+        try:
+            stop = float(stop)
+            entrada = float(sinal.entrada)
+        except (TypeError, ValueError):
+            return invalido("stop não numérico")
+        if stop != stop or stop in (float("inf"), float("-inf")):
+            return invalido("stop NaN/infinito")
+        lado = str(sinal.lado).upper()
+        if (lado == "COMPRA" and stop >= entrada) or (lado == "VENDA" and stop <= entrada):
+            return invalido("stop do lado errado do preço")
+        pontos = abs(entrada - stop)
         risco = pontos * cfg.VALOR_PONTO_REAIS + cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
         limite = pct * banca
         if risco > limite:

@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V461"
+VERSAO = "V462"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1105,4 +1105,25 @@ VERSAO = "V461"
 # sexta->segunda = 0; feriado = 0).
 #
 # Arquivos alterados: construtor_candle.py, configuracao.py, principal.py,
+# versionamento.py.
+
+# ---------------------------------------------------------------------------
+# V462 - Correcoes da revisao do Manus (ata 2026-10-02-Y) a V461
+# ---------------------------------------------------------------------------
+#   A) motor.validar_risco_inicial: stop que NAO pode ser verificado (excecao,
+#      ausente, nao numerico, NaN/inf, lado errado) agora BLOQUEIA a entrada
+#      (cfg.RISCO_FALHA_FECHADA = True). Antes liberava e, com texto, lancava erro.
+#   B) historico_csv.py (novo): a escolha do CSV exige mesmo ativo e MESMO
+#      timeframe (mediana do intervalo). principal.py passa a importar dele.
+#   C) principal.py: o bloqueio apos buraco e decidido DEPOIS de qualquer tentativa
+#      de preenchimento, pelo que ainda falta (preenchimento parcial nao libera).
+#   D) saida_grok_reverso_v3 le posicao["stop"], que o motor nao entrega: nunca
+#      arma o 0,618R (por isso empata ao centavo com a v4). NAO alterada (autor).
+#
+# Titular x saida_chatgpt_v4 identica ao centavo com fail-closed: 2026 R$ 15.198,56
+# (184 ops) e 2023-24 R$ 464,20 (482 ops). tests/ novos (18 testes, unittest).
+# Ata: conselho/2026-10-02-Z.txt
+#
+# Arquivos alterados: motor.py, principal.py, configuracao.py, historico_csv.py
+# (novo), tests/test_v461_risco.py e tests/test_v461_historico.py (novos),
 # versionamento.py.

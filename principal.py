@@ -309,6 +309,8 @@ diagnosticar_saida = getattr(_modulo_saida, "diagnosticar_saida", None)
 print(f"Cartucho de saída: {_nome_saida}.py  [estrategia/saida/titular/]")
 
 from construtor_candle import ConstrutorCandle, candles_faltando
+from historico_csv import ler_csv_candles as _ler_csv_candles
+from historico_csv import resolver_csv_historico
 from registrador import Registrador
 from auditor_execucao import AuditorExecucao
 from leitor_dde import LeitorDDE
@@ -322,38 +324,6 @@ _MODO_REPLAY = False          # idem - definido em __main__ pela mesma resposta 
                                # sobre limpeza de historico acumulado - fixa em False)
 from executor_ordem import ExecutorOrdem
 import email_notificacao
-
-
-def _resolver_csv_historico(caminho_csv: str) -> Path:
-    """V461: devolve o CSV de historico com o candle MAIS RECENTE entre os arquivos da
-    mesma pasta que comecam com o mesmo ativo (ex.: WINFUT*.csv). Em 01/10/2026 o
-    dono salvou o export novo como 'WINFUT_F_0_15min_01-01-2026_01-10-2026.csv', mas
-    o robo leu o antigo 'WINFUT_F_0_15min.csv' (terminava em 28/09 18:15). Empate ou
-    falha: fica o arquivo configurado."""
-    configurado = Path(caminho_csv)
-    pasta = configurado.parent
-    prefixo = configurado.name.split("_")[0]
-    melhor, melhor_fim = configurado, None
-    if configurado.exists():
-        try:
-            c = _ler_csv_candles(configurado)
-            melhor_fim = c[-1].horario if c else None
-        except Exception:
-            melhor_fim = None
-    try:
-        outros = [p for p in pasta.glob(f"{prefixo}*.csv") if p != configurado]
-    except OSError:
-        outros = []
-    for p in outros:
-        try:
-            c = _ler_csv_candles(p)
-        except Exception:
-            continue
-        if c and (melhor_fim is None or c[-1].horario > melhor_fim):
-            print(f"[HISTORICO] '{p.name}' tem candle mais recente ({c[-1].horario}) que "
-                  f"'{melhor.name}' ({melhor_fim}) - usando '{p.name}'.")
-            melhor, melhor_fim = p, c[-1].horario
-    return melhor
 
 
 def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> List[Candle]:
@@ -397,7 +367,7 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
               f"'{caminho_persistente}'. Fazendo carga inicial (unica vez) a partir "
               f"da exportacao manual do Profit: '{caminho_csv}'.")
 
-    caminho = _resolver_csv_historico(caminho_csv)
+    caminho = resolver_csv_historico(caminho_csv, cfg.TIMEFRAME_MINUTOS)
     if not caminho.exists():
         print(f"[AVISO] Arquivo de historico '{caminho_csv}' tambem nao encontrado. "
               f"O robo vai iniciar sem historico previo e pode demorar ~2 dias "
@@ -448,37 +418,6 @@ def _remover_candles_futuros(candles: List[Candle], referencia_tempo: datetime) 
               f"foram descartados - o arquivo exportado provavelmente cobre um "
               f"periodo alem da data sendo usada agora.")
     return filtrados
-
-
-def _ler_csv_candles(caminho: Path) -> List[Candle]:
-    """Formato: Ativo;Data;Hora;Abertura;Maximo;Minimo;Fechamento;Volume;Quantidade
-    (mesmo formato usado tanto pelo "Exportar Dados Historicos" do Profit quanto
-    pelo arquivo persistente que o proprio robo grava)."""
-    candles = []
-    with open(caminho, encoding="latin1") as f:
-        leitor = csv.reader(f, delimiter=";")
-        for linha in leitor:
-            if len(linha) < 7:
-                continue
-            _, data_str, hora_str, abertura, maxima, minima, fechamento = linha[:7]
-            horario = datetime.strptime(f"{data_str} {hora_str}", "%d/%m/%Y %H:%M:%S")
-            candles.append(Candle(
-                horario=horario,
-                abertura=float(abertura.replace(",", ".")),
-                maxima=float(maxima.replace(",", ".")),
-                minima=float(minima.replace(",", ".")),
-                fechamento=float(fechamento.replace(",", ".")),
-            ))
-    # remove duplicatas por horario (mantem a ULTIMA ocorrencia - normalmente a
-    # mais recente/confiavel, ja que candles ao vivo sao gravados depois dos de
-    # bootstrap). Necessario porque execucoes repetidas podem acumular o mesmo
-    # horario mais de uma vez no arquivo persistente.
-    por_horario = {}
-    for c in candles:
-        por_horario[c.horario] = c
-    candles = list(por_horario.values())
-    candles.sort(key=lambda c: c.horario)
-    return candles
 
 
 def _salvar_historico_persistente(candles: List[Candle], sobrescrever: bool = False):
@@ -1145,7 +1084,7 @@ def rodar():
                           f"(replay pulado/arrastado?) - tentando preencher com dado real "
                           f"do arquivo historico...")
                     try:
-                        candles_arquivo = _ler_csv_candles(_resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL))
+                        candles_arquivo = _ler_csv_candles(resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL, cfg.TIMEFRAME_MINUTOS))
                     except (FileNotFoundError, OSError, ValueError) as e:
                         print(f"[{agora}] [AVISO] Nao foi possivel ler '{cfg.CAMINHO_HISTORICO_INICIAL}' "
                               f"para preencher o buraco: {e}")
@@ -1156,24 +1095,27 @@ def rodar():
                         historico_candles.extend(preenchimento)
                         _salvar_historico_persistente(preenchimento)
                         print(f"[{agora}] [AVISO] Buraco preenchido com {len(preenchimento)} "
-                              f"candle(s) reais do arquivo - MA21/RSI/ATR seguem validos.")
+                              f"candle(s) reais do arquivo.")
                     else:
                         print(f"[{agora}] [AVISO] Nao foi possivel preencher o buraco (arquivo "
                               f"historico nao cobre esse trecho) - MA21/RSI/ATR podem estar "
                               f"incorretos ate a media 'esquentar' de novo com candles novos.")
-                        # V461: so e buraco de verdade se faltarem candles de PREGAO
-                        # (fim de semana/feriado/noite nao contam).
-                        faltam = candles_faltando(
-                            historico_candles[-1].horario, candle_fechado.horario,
-                            cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
-                            cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
-                        if faltam > 0:
-                            candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
-                            print(f"[{agora}] [BLOQUEIO V461] Faltam {faltam} candle(s) de pregao no "
-                                  f"historico. NOVAS ENTRADAS BLOQUEADAS por "
-                                  f"{candles_aquecimento_restantes} candles (posicao aberta segue "
-                                  f"gerida). Para liberar antes: exporte o historico atualizado do "
-                                  f"Profit para '{cfg.CAMINHO_HISTORICO_INICIAL}' e reinicie o robo.")
+                    # V462 (achado C do Manus): a decisao de bloquear vem DEPOIS de qualquer
+                    # tentativa, olhando o que AINDA falta - preenchimento parcial nao libera.
+                    # So e buraco de verdade se faltarem candles de PREGAO (fim de semana/
+                    # feriado/noite nao contam).
+                    faltam = candles_faltando(
+                        historico_candles[-1].horario, candle_fechado.horario,
+                        cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
+                        cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
+                    if faltam > 0:
+                        candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
+                        print(f"[{agora}] [BLOQUEIO V462] Ainda faltam {faltam} candle(s) de pregao "
+                              f"no historico. NOVAS ENTRADAS BLOQUEADAS por "
+                              f"{candles_aquecimento_restantes} candles (posicao aberta segue "
+                              f"gerida). Para liberar antes: exporte o historico atualizado do "
+                              f"Profit para a pasta de '{cfg.CAMINHO_HISTORICO_INICIAL}' e "
+                              f"reinicie o robo.")
 
             # remove qualquer candle ja existente no mesmo horario (evita duplicar
             # quando o historico de bootstrap ja cobre parte do periodo que o
