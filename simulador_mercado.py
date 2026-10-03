@@ -42,9 +42,9 @@ MODOS = ("reamostragem", "regimes")
 # Regimes do modo "regimes": (deriva por candle em sigmas, autocorrelação,
 # multiplicador de volatilidade). Autocorrelação negativa = tende a reverter.
 REGIMES = {
-    "tendencia_alta":  (+0.18, +0.15, 1.00),
-    "tendencia_baixa": (-0.18, +0.15, 1.00),
-    "lateral":         (0.00, -0.25, 0.65),
+    "tendencia_alta":  (+0.35, +0.20, 1.00),
+    "tendencia_baixa": (-0.35, +0.20, 1.00),
+    "lateral":         (0.00, -0.35, 0.65),
     "volatil":         (0.00, 0.00, 1.70),
 }
 PROB_MANTER_REGIME = 0.55       # chance de o regime do pregão repetir o anterior
