@@ -110,3 +110,24 @@ class Consistencia(unittest.TestCase):
         r = dg.consistencia(a, b, "E", "T")
         nomes = {(x["estrategia"], x["cenario"]): x["efeito_minimo"] for x in r}
         self.assertEqual(nomes, {("A", "x"): 150.0})   # B muda de sinal; C tem poucas ops; A em y muda de sinal
+
+
+class NomesCurtos(unittest.TestCase):
+    def test_remove_prefixo_e_ia_so_quando_sobra_descricao(self):
+        import diagnostico_cenarios as dg
+        r = dg.nomes_curtos(["entrada_macd_estocastico_claude_v1", "saida_alvo_tendencia_forte_claude_v1",
+                             "entrada_grok_3_v1", "entrada_claude_v1", "saida_baseline",
+                             "saida_grok_reverso_v3", "entrada_deepseek_V06"])
+        self.assertEqual(r["entrada_macd_estocastico_claude_v1"], "macd_estocastico_v1")
+        self.assertEqual(r["saida_alvo_tendencia_forte_claude_v1"], "alvo_tendencia_forte_v1")
+        self.assertEqual(r["entrada_grok_3_v1"], "grok_3_v1")      # sem descricao: a IA e o nome
+        self.assertEqual(r["entrada_claude_v1"], "claude_v1")
+        self.assertEqual(r["saida_baseline"], "baseline")
+        self.assertEqual(r["saida_grok_reverso_v3"], "reverso_v3")
+        self.assertEqual(r["entrada_deepseek_V06"], "deepseek_V06")
+
+    def test_colisao_volta_ao_nome_sem_prefixo(self):
+        import diagnostico_cenarios as dg
+        r = dg.nomes_curtos(["saida_giveback_claude_v1", "saida_giveback_manus_v1"])
+        self.assertEqual(r["saida_giveback_claude_v1"], "giveback_claude_v1")
+        self.assertEqual(r["saida_giveback_manus_v1"], "giveback_manus_v1")

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Optional
@@ -93,8 +94,25 @@ def acerto_geral(matriz: dict) -> float:
     return ok / tot if tot else float("nan")
 
 
-LARGURA_NOME = 36
-LARGURA_CEL = 11           # 36 + 7*11 = 113 colunas: cabe no console do Windows (120)
+LARGURA_NOME = 24
+LARGURA_CEL = 11           # 24 + 7*11 = 101 colunas: cabe ate num console estreito
+_IAS = ("chatgpt", "claude", "deepseek", "gemini", "grok", "manus")
+
+
+def nomes_curtos(nomes) -> dict:
+    """Nome para exibir: sem o prefixo entrada_/saida_ (o titulo da tabela ja diz)
+    e sem o nome da IA quando sobra uma descricao (macd_estocastico_claude_v1 ->
+    macd_estocastico_v1). Cartuchos antigos, cujo nome e so a IA, ficam como estao.
+    Se dois nomes curtos colidirem, os dois voltam ao nome sem prefixo."""
+    base = {n: re.sub(r"^(entrada|saida)_", "", n) for n in nomes}
+    curto = {}
+    for n, b in base.items():
+        partes = b.split("_")
+        sem_ia = [x for x in partes if x.lower() not in _IAS]
+        descricao = [x for x in sem_ia if not re.fullmatch(r"v?\d+", x, re.I)]
+        curto[n] = "_".join(sem_ia) if descricao else b     # sem descricao, a IA e o proprio nome
+    repetidos = {c for c in curto.values() if list(curto.values()).count(c) > 1}
+    return {n: (base[n] if curto[n] in repetidos else curto[n]) for n in nomes}
 
 
 def imprimir_distribuicao(dist: dict) -> None:
@@ -119,15 +137,16 @@ def imprimir(linhas: list[dict], titulo: str = "") -> None:
         print(f"\n===== {titulo} =====")
     rotulos = {"abertura": "abertura", "fim_de_tarde": "fim_tarde", "volatil": "volatil",
                "esticado": "esticado", "tendencia": "tendencia", "lateral": "lateral",
-               cenario.INDEFINIDO: "indefinido"}
+               cenario.INDEFINIDO: "indef."}
     for tipo in ("entrada", "saida"):
         sub = [l for l in linhas if l["tipo"] == tipo]
         if not sub:
             continue
         nomes = sorted({l["estrategia"] for l in sub})
+        curtos = nomes_curtos(nomes)
         cols = list(cenario.NOMES)
-        print(f"\n-- {tipo.upper()}: R$ (ops) por cenario; * = menos de {MIN_OPS_CONFIAVEL} ops --")
-        print(f"{'estrategia':{LARGURA_NOME}s}" + "".join(f"{rotulos[c]:>{LARGURA_CEL}s}" for c in cols))
+        print(f"\n-- {tipo.upper()}: R$/ops por cenario; * = menos de {MIN_OPS_CONFIAVEL} ops --")
+        print(f"{'':{LARGURA_NOME}s}" + "".join(f"{rotulos[c]:>{LARGURA_CEL}s}" for c in cols))
         for n in nomes:
             partes = []
             for c in cols:
@@ -136,8 +155,8 @@ def imprimir(linhas: list[dict], titulo: str = "") -> None:
                     partes.append(f"{'-':>{LARGURA_CEL}s}")
                 else:
                     marca = "*" if cel["ops"] < MIN_OPS_CONFIAVEL else " "
-                    partes.append(f"{cel['resultado']:>{LARGURA_CEL - 1}.0f}({cel['ops']})".rjust(LARGURA_CEL - 1) + marca)
-            print(f"{n[:LARGURA_NOME]:{LARGURA_NOME}s}" + "".join(partes))
+                    partes.append(f"{cel['resultado']:.0f}/{cel['ops']}{marca}".rjust(LARGURA_CEL))
+            print(f"{curtos[n][:LARGURA_NOME]:{LARGURA_NOME}s}" + "".join(partes))
 
 
 MIN_OPS_METADE = 10        # operações mínimas por metade para a célula contar
@@ -229,10 +248,14 @@ def main(argv=None):
         l1 = diagnosticar(candles, rows, d1, entradas, saidas, et, st)
         l2 = diagnosticar(candles, rows, d2, entradas, saidas, et, st)
         rep = consistencia(l1, l2, et.nome, st.nome)
-        print(f"\n-- REPETE NAS DUAS METADES ({dias[0]}..{dias[meio-1]} | {dias[meio]}..{dias[-1]}) "
-              f"vs titular; min {MIN_OPS_METADE} ops por metade --")
+        print("\n-- REPETE NAS DUAS METADES, em R$ vs a titular (min "
+              f"{MIN_OPS_METADE} ops por metade) --")
+        print(f"metade 1: {dias[0]} a {dias[meio-1]}")
+        print(f"metade 2: {dias[meio]} a {dias[-1]}")
+        curtos = nomes_curtos({r["estrategia"] for r in rep})
+        print(f"{'':8s}{'':26s}{'cenario':13s}{'metade 1':>10s}{'metade 2':>10s}")
         for r in rep[:25]:
-            print(f"{r['tipo']:8s}{r['estrategia'][:40]:42s}{r['cenario']:14s}"
+            print(f"{r['tipo']:8s}{curtos[r['estrategia']][:24]:26s}{r['cenario']:13s}"
                   f"{r['delta_metade_1']:>10.0f}{r['delta_metade_2']:>10.0f}")
         if not rep:
             print("nenhuma célula se repete nas duas metades")
