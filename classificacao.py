@@ -12,6 +12,12 @@ perde dias e não deixa um único dia grande decidir o ranking. O acumulado
 (resultado + drawdown, com drawdown negativo) continua exibido e desempata.
 As métricas multitemporais continuam sendo calculadas para auditoria, mas
 não definem a posição no ranking.
+
+Período e fonte: o ranking pode ser apurado sobre QUALQUER período do
+histórico (datas, 'ultimos N', 'mes aaaa-mm') ou sobre um mercado FICTÍCIO
+gerado por simulador_mercado.py (reamostragem de pregões reais ou regimes
+sintéticos, com semente). Sem argumentos o script pergunta; também aceita
+--modo, --periodo, --simular, --dias-sim, --semente (ver --help).
 """
 
 from __future__ import annotations
@@ -24,7 +30,7 @@ import re
 import subprocess
 import contextlib
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from statistics import median
 from typing import Callable, Iterable, Optional
@@ -397,15 +403,85 @@ def descobrir_cartucho_saida():
 
 
 
-def preparar_rows(candles: list[Candle]) -> list[Optional[dict]]:
+def preparar_rows(candles: list[Candle], dias_avaliacao: Optional[set] = None) -> list[Optional[dict]]:
+    """Indicadores por candle. Com dias_avaliacao, só calcula os candles desses
+    dias (os anteriores continuam servindo de aquecimento, sem serem pontuados)."""
     rows = [None] * len(candles)
-    total = max(0, len(candles) - 65)
-    for indice in range(65, len(candles)):
+    alvo = [i for i in range(65, len(candles))
+            if dias_avaliacao is None or candles[i].horario.date() in dias_avaliacao]
+    total = len(alvo)
+    for concluido, indice in enumerate(alvo, 1):
         rows[indice] = construir_row(candles[:indice + 1])
-        concluido = indice - 64
         if concluido % 250 == 0 or concluido == total:
             _progresso("INDICADORES", concluido, total)
     return rows
+
+
+_RE_DATA = re.compile(r"(\d{2})/(\d{2})/(\d{4})|(\d{4})-(\d{2})-(\d{2})")
+
+
+def _datas_do_texto(texto: str) -> list:
+    achadas = []
+    for m in _RE_DATA.finditer(texto):
+        if m.group(1):
+            achadas.append(date(int(m.group(3)), int(m.group(2)), int(m.group(1))))
+        else:
+            achadas.append(date(int(m.group(4)), int(m.group(5)), int(m.group(6))))
+    return achadas
+
+
+def interpretar_periodo(texto: Optional[str], dias: list) -> tuple[list, str]:
+    """Converte o texto do período em (dias selecionados, rótulo).
+
+    Aceita (vazio ou 'tudo' = todo o histórico):
+      01/03/2026 31/03/2026   intervalo de datas (também aaaa-mm-dd, ou com ':' / 'a' / 'ate')
+      01/03/2026              deste dia até o fim do histórico
+      ultimos 40              os 40 últimos pregões
+      mes 2026-03             um mês (também 03/2026)
+    Levanta ValueError com mensagem clara se o texto não for entendido ou o
+    período não tiver nenhum pregão.
+    """
+    bruto = (texto or "").strip()
+    t = bruto.lower().replace("é", "e").replace("ú", "u").replace("ê", "e")
+    if t in ("", "tudo", "todo", "todos"):
+        return list(dias), "tudo"
+
+    m = re.fullmatch(r"(?:ultimos|ultimo|u)\s*(\d+)", t)
+    if m:
+        n = int(m.group(1))
+        if n < 1:
+            raise ValueError("'ultimos N' precisa de N >= 1")
+        sel = list(dias)[-n:]
+        return sel, f"ultimos {len(sel)} pregoes"
+
+    m = re.fullmatch(r"(?:mes\s*)?(\d{4})-(\d{2})", t) or re.fullmatch(r"(?:mes\s*)?(\d{2})/(\d{4})", t)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        ano, mes = (a, b) if a > 31 else (b, a)
+        if not 1 <= mes <= 12:
+            raise ValueError(f"mês inválido em '{bruto}'")
+        sel = [d for d in dias if d.year == ano and d.month == mes]
+        if not sel:
+            raise ValueError(f"nenhum pregão em {mes:02d}/{ano} no histórico "
+                             f"({dias[0].strftime('%d/%m/%Y')} a {dias[-1].strftime('%d/%m/%Y')})")
+        return sel, f"{ano}-{mes:02d}"
+
+    try:
+        datas = _datas_do_texto(t)
+    except ValueError as erro:
+        raise ValueError(f"data inválida em '{bruto}': {erro}") from erro
+    if len(datas) in (1, 2):
+        ini = datas[0]
+        fim = datas[1] if len(datas) == 2 else dias[-1]
+        if fim < ini:
+            ini, fim = fim, ini
+        sel = [d for d in dias if ini <= d <= fim]
+        if not sel:
+            raise ValueError(f"nenhum pregão entre {ini.strftime('%d/%m/%Y')} e {fim.strftime('%d/%m/%Y')} "
+                             f"(histórico: {dias[0].strftime('%d/%m/%Y')} a {dias[-1].strftime('%d/%m/%Y')})")
+        return sel, f"{sel[0].isoformat()}_{sel[-1].isoformat()}"
+    raise ValueError(
+        f"não entendi o período '{bruto}'. Exemplos: 01/03/2026 31/03/2026 | ultimos 40 | mes 2026-03 | Enter = tudo")
 
 
 def validar_contrato_saida(cartucho: CartuchoSaida, rows: list[Optional[dict]]) -> tuple[bool, str]:
@@ -954,7 +1030,44 @@ def _perguntar_modo_ranking() -> str:
         print(f"Resposta '{resp}' não reconhecida — digite exatamente E, S ou C.")
 
 
-def executar(caminho_csv: Optional[str] = None):
+def _perguntar_periodo(dias: list) -> tuple[list, str]:
+    while True:
+        texto = input(
+            "Período de apuração [Enter = tudo | 01/03/2026 31/03/2026 | ultimos 40 | mes 2026-03]: "
+        )
+        try:
+            return interpretar_periodo(texto, dias)
+        except ValueError as erro:
+            print(f"Período inválido: {erro}")
+
+
+def _perguntar_simulacao() -> Optional[dict]:
+    """None = usar o histórico real; dict = parâmetros do simulador."""
+    resp = input("Fonte dos dados: Real (R) ou Simulada (S)? [Enter = R]: ").strip().upper()
+    if resp not in ("S", "SIM", "SIMULADA"):
+        return None
+    modo = input("Simulação: Reamostragem de pregões reais (R) ou Regimes sintéticos (G)? [Enter = R]: "
+                 ).strip().upper()
+    n = input("Quantos pregões simular? [Enter = 120]: ").strip()
+    sem = input("Semente (número) [Enter = aleatória]: ").strip()
+    return {
+        "modo": "regimes" if modo == "G" else "reamostragem",
+        "dias": int(n) if n.isdigit() else 120,
+        "semente": int(sem) if sem.isdigit() else None,
+    }
+
+
+def executar(
+    caminho_csv: Optional[str] = None,
+    *,
+    modo: Optional[str] = None,
+    periodo: Optional[str] = None,
+    simulacao: Optional[dict] = None,
+):
+    """modo: 'E'/'S'/'C' (None = pergunta). periodo: texto aceito por
+    interpretar_periodo (None = pergunta; '' = tudo). simulacao: dict do
+    simulador (modo/dias/semente/escala_vol/espelhar); None = pergunta a fonte;
+    False = força o histórico real sem perguntar."""
     caminho = Path(caminho_csv or cfg.CAMINHO_HISTORICO_INICIAL)
     if not caminho.exists():
         # V462: o Profit passou a gravar o export com datas no nome
@@ -974,7 +1087,11 @@ def executar(caminho_csv: Optional[str] = None):
     inventario = listar_cartuchos_disco()
     imprimir_inventario_cartuchos(inventario)
 
-    modo = _perguntar_modo_ranking()
+    if modo is None:
+        modo = _perguntar_modo_ranking()
+    modo = modo.upper()
+    if modo not in ("E", "S", "C"):
+        raise ValueError(f"modo '{modo}' inválido; use E, S ou C")
     rotulos_modo = {
         "E": "ENTRADA (pareado com saída titular)",
         "S": "SAÍDA (pareado com entrada titular)",
@@ -982,10 +1099,46 @@ def executar(caminho_csv: Optional[str] = None):
     }
     print(f"[MODO] Ranking escolhido: {modo} — {rotulos_modo[modo]}")
 
-    candles_avaliacao = carregar_csv(caminho)
-    dias = sorted({c.horario.date() for c in candles_avaliacao})
-    dias_avaliacao = set(dias)
-    candles, quantidade_aquecimento = preparar_aquecimento(candles_avaliacao)
+    candles_reais = carregar_csv(caminho)
+    if simulacao is None:
+        simulacao = _perguntar_simulacao()
+    fonte_rotulo = ""      # aparece no título do ranking e no nome do relatório
+    fonte_arquivo = ""
+    if simulacao:
+        import simulador_mercado as sim
+        candles_avaliacao, rotulos_sim, semente_usada = sim.gerar_candles(
+            candles_reais,
+            n_dias=int(simulacao.get("dias", 120)),
+            semente=simulacao.get("semente"),
+            modo=simulacao.get("modo", "reamostragem"),
+            escala_vol=float(simulacao.get("escala_vol", 1.0)),
+            espelhar=bool(simulacao.get("espelhar", True)),
+        )
+        tag = f"{simulacao.get('modo', 'reamostragem')}_s{semente_usada}_{simulacao.get('dias', 120)}d"
+        pasta_sim = Path(cfg.PASTA_LOGS_AUDITORIA)
+        csv_sim = sim.salvar_csv(candles_avaliacao, pasta_sim / f"simulacao_{tag}.csv")
+        sim.salvar_rotulos(rotulos_sim, pasta_sim / f"simulacao_{tag}_rotulos.csv")
+        print(f"[SIMULADOR] {simulacao.get('modo', 'reamostragem')} | semente {semente_usada} | "
+              f"{simulacao.get('dias', 120)} pregões FICTÍCIOS | gravado em {csv_sim.resolve()}")
+        print("[SIMULADOR] Dados fictícios: servem para estressar e comparar, não para estimar lucro.")
+        fonte_rotulo = f" | SIMULADO {tag}"
+        fonte_arquivo = f"_sim_{tag}"
+        dias = sorted({c.horario.date() for c in candles_avaliacao})
+        dias_avaliacao = set(dias)
+        candles, quantidade_aquecimento = candles_avaliacao, 0
+    else:
+        todos_dias = sorted({c.horario.date() for c in candles_reais})
+        if periodo is None:
+            dias, rotulo_periodo = _perguntar_periodo(todos_dias)
+        else:
+            dias, rotulo_periodo = interpretar_periodo(periodo, todos_dias)
+        dias_avaliacao = set(dias)
+        if rotulo_periodo != "tudo":
+            fonte_rotulo = f" | período {rotulo_periodo}"
+            fonte_arquivo = f"_{rotulo_periodo}"
+        candles_avaliacao = [c for c in candles_reais if c.horario.date() in dias_avaliacao]
+        # Os candles fora do período continuam disponíveis só como aquecimento.
+        candles, quantidade_aquecimento = preparar_aquecimento(candles_reais)
 
     entradas, falhas_e = descobrir_entradas()
     saidas, falhas_s = descobrir_saidas()
@@ -1015,7 +1168,7 @@ def executar(caminho_csv: Optional[str] = None):
     print("=" * 100)
 
     print("[ETAPA 1/2] Calculando indicadores com o motor oficial...")
-    rows = preparar_rows(candles)
+    rows = preparar_rows(candles, dias_avaliacao)
 
     incompatíveis = list(falhas_e) + list(falhas_s)
     saidas_compativeis = []
@@ -1113,7 +1266,7 @@ def executar(caminho_csv: Optional[str] = None):
             r["pos"] = i
         titulo_entrada = (
             f"RANKING ENTRADA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
-            f"saída titular: {saida_titular.nome})"
+            f"saída titular: {saida_titular.nome}){fonte_rotulo}"
         )
         with _capturar_e_imprimir() as _buf_entrada:
             _imprimir_ranking_simples(
@@ -1153,7 +1306,7 @@ def executar(caminho_csv: Optional[str] = None):
             r["pos"] = i
         titulo_saida = (
             f"RANKING SAÍDA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
-            f"entrada titular: {entrada_titular.nome})"
+            f"entrada titular: {entrada_titular.nome}){fonte_rotulo}"
         )
         with _capturar_e_imprimir() as _buf_saida:
             _imprimir_ranking_simples(
@@ -1180,7 +1333,7 @@ def executar(caminho_csv: Optional[str] = None):
         )
         for i, r in enumerate(rank_cruzado, 1):
             r["pos"] = i
-        titulo_cruzado = f"RANKING CRUZADO {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO})"
+        titulo_cruzado = f"RANKING CRUZADO {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}){fonte_rotulo}"
         with _capturar_e_imprimir() as _buf_cruzado:
             _imprimir_ranking_cruzado(rank_cruzado, total_pregoes=len(dias))
         _registrar_historico(titulo_cruzado, _buf_cruzado.getvalue())
@@ -1200,7 +1353,7 @@ def executar(caminho_csv: Optional[str] = None):
         if not linhas:
             return None
         saida = pasta_logs / (
-            f"{nome}_{VERSAO_CLASSIFICACAO.lower()}_motor_{cfg.VERSAO.lower()}.csv"
+            f"{nome}_{VERSAO_CLASSIFICACAO.lower()}_motor_{cfg.VERSAO.lower()}{fonte_arquivo}.csv"
         )
         campos = [k for k in linhas[0].keys() if not k.startswith("_")]
         with saida.open("w", newline="", encoding="utf-8-sig") as f:
@@ -1233,5 +1386,29 @@ def executar(caminho_csv: Optional[str] = None):
     }
 
 
+def _ler_argumentos(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Classificação de estratégias. Sem argumentos, pergunta tudo (comportamento original).")
+    ap.add_argument("csv", nargs="?", help="histórico CSV (padrão: o configurado/mais recente)")
+    ap.add_argument("--modo", choices=["E", "S", "C", "e", "s", "c"], help="ranking: Entrada, Saída ou Cruzado")
+    ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
+    ap.add_argument("--simular", choices=["reamostragem", "regimes"],
+                    help="usa dados FICTÍCIOS em vez do histórico real")
+    ap.add_argument("--dias-sim", type=int, default=120, help="pregões simulados (padrão 120)")
+    ap.add_argument("--semente", type=int, help="semente do simulador (padrão: aleatória, impressa na tela)")
+    ap.add_argument("--escala-vol", type=float, default=1.0, help="multiplica a volatilidade simulada")
+    ap.add_argument("--sem-espelhar", action="store_true", help="reamostragem sem espelhar pregões")
+    return ap.parse_args(argv)
+
+
 if __name__ == "__main__":
-    executar()
+    args = _ler_argumentos()
+    if args.simular:
+        simulacao = {"modo": args.simular, "dias": args.dias_sim, "semente": args.semente,
+                     "escala_vol": args.escala_vol, "espelhar": not args.sem_espelhar}
+    elif args.periodo is not None or args.modo:
+        simulacao = False       # pediu período/modo na linha de comando: não pergunta a fonte
+    else:
+        simulacao = None
+    executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao)
