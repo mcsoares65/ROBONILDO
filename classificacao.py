@@ -823,7 +823,12 @@ def _marcar_elegiveis(resultados: list[dict]) -> None:
     titular = next((r for r in resultados if r.get("titular")), None)
     teto_dd = titular["drawdown"] if titular is not None else -math.inf
     for r in resultados:
-        r["elegivel_lider"] = int(r["resultado"] > 0 and r["drawdown"] >= teto_dd)
+        # Compara em centavos: dois drawdowns "iguais" diferem em ruido de ponto
+        # flutuante (-448.36800000000494 x -448.3680000000054) e o >= puro
+        # rebaixava linhas elegiveis.
+        r["elegivel_lider"] = int(
+            r["resultado"] > 0 and round(r["drawdown"], 2) >= round(teto_dd, 2)
+        )
 
 
 def _rodape_pontos(resultados: list[dict]) -> None:
@@ -831,11 +836,17 @@ def _rodape_pontos(resultados: list[dict]) -> None:
     faz parte da competicao (decisao do dono)."""
     print("pts = dias positivos - dias negativos (dia sem operacao vale 0). "
           "Desempate: acumulado = resultado - abs(drawdown).")
-    fora = [str(r.get("estrategia") or r.get("entrada")) for r in resultados
-            if not r.get("elegivel_lider", 1)]
+    def _nome(r: dict) -> str:
+        if r.get("entrada") and r.get("saida"):
+            return f"{r['entrada']} x {r['saida']}"
+        return str(r.get("estrategia") or r.get("entrada"))
+
+    fora = [_nome(r) for r in resultados if not r.get("elegivel_lider", 1)]
     if fora:
-        print("Nao lideram (resultado <= 0 ou drawdown pior que o da titular): "
-              + ", ".join(fora))
+        mostrar = fora[:6]
+        resto = f" (+{len(fora) - len(mostrar)} outras)" if len(fora) > len(mostrar) else ""
+        print(f"Nao lideram ({len(fora)}; resultado <= 0 ou drawdown pior que o da "
+              f"titular): " + ", ".join(mostrar) + resto)
 
 
 def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) -> None:
