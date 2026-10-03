@@ -93,28 +93,51 @@ def acerto_geral(matriz: dict) -> float:
     return ok / tot if tot else float("nan")
 
 
+LARGURA_NOME = 36
+LARGURA_CEL = 11           # 36 + 7*11 = 113 colunas: cabe no console do Windows (120)
+
+
+def imprimir_distribuicao(dist: dict) -> None:
+    total = sum(dist.values()) or 1
+    print("\nCandles por cenario:")
+    for nome in cenario.NOMES:
+        n = dist.get(nome, 0)
+        print(f"  {nome:14s}{n:>7d}  {100 * n / total:>4.0f}%")
+
+
+def imprimir_confusao(matriz: dict) -> None:
+    cols = list(cenario.NOMES)
+    print("\nGabarito do simulador (linhas) x cenario reconhecido (colunas), % da linha:")
+    print(f"  {'gabarito':17s}" + "".join(f"{c[:9]:>10s}" for c in cols))
+    for regime, v in matriz.items():
+        tot = sum(v.values()) or 1
+        print(f"  {regime:17s}" + "".join(f"{100 * v.get(c, 0) / tot:>9.0f}%" for c in cols))
+
+
 def imprimir(linhas: list[dict], titulo: str = "") -> None:
     if titulo:
         print(f"\n===== {titulo} =====")
+    rotulos = {"abertura": "abertura", "fim_de_tarde": "fim_tarde", "volatil": "volatil",
+               "esticado": "esticado", "tendencia": "tendencia", "lateral": "lateral",
+               cenario.INDEFINIDO: "indefinido"}
     for tipo in ("entrada", "saida"):
         sub = [l for l in linhas if l["tipo"] == tipo]
         if not sub:
             continue
         nomes = sorted({l["estrategia"] for l in sub})
         cols = list(cenario.NOMES)
-        print(f"\n-- {tipo.upper()}: resultado R$ (ops) por cenario; * = menos de {MIN_OPS_CONFIAVEL} ops --")
-        cab = f"{'estrategia':42s}" + "".join(f"{c[:11]:>15s}" for c in cols)
-        print(cab)
+        print(f"\n-- {tipo.upper()}: R$ (ops) por cenario; * = menos de {MIN_OPS_CONFIAVEL} ops --")
+        print(f"{'estrategia':{LARGURA_NOME}s}" + "".join(f"{rotulos[c]:>{LARGURA_CEL}s}" for c in cols))
         for n in nomes:
             partes = []
             for c in cols:
                 cel = next((l for l in sub if l["estrategia"] == n and l["cenario"] == c), None)
                 if cel is None:
-                    partes.append(f"{'-':>15s}")
+                    partes.append(f"{'-':>{LARGURA_CEL}s}")
                 else:
                     marca = "*" if cel["ops"] < MIN_OPS_CONFIAVEL else " "
-                    partes.append(f"{cel['resultado']:>9.0f}({cel['ops']:>3d}){marca}")
-            print(f"{n[:42]:42s}" + "".join(partes))
+                    partes.append(f"{cel['resultado']:>{LARGURA_CEL - 1}.0f}({cel['ops']})".rjust(LARGURA_CEL - 1) + marca)
+            print(f"{n[:LARGURA_NOME]:{LARGURA_NOME}s}" + "".join(partes))
 
 
 MIN_OPS_METADE = 10        # operações mínimas por metade para a célula contar
@@ -193,10 +216,10 @@ def main(argv=None):
     et = next(e for e in entradas if e.titular)
     st = next(s for s in saidas if s.titular)
 
-    print("\nCandles por cenario:", distribuicao(rows))
+    imprimir_distribuicao(distribuicao(rows))
     if rotulos:
         mc = matriz_confusao(candles, rows, rotulos)
-        print("Gabarito x reconhecido:", {k: v for k, v in mc.items()})
+        imprimir_confusao(mc)
         print(f"Acerto (fora abertura/fim de tarde): {acerto_geral(mc):.1%}")
     linhas = diagnosticar(candles, rows, dias_av, entradas, saidas, et, st)
     imprimir(linhas, titulo)
