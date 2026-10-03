@@ -4,6 +4,38 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V464 — bloqueios de horário explícitos no radar
+
+Quando a estratégia priorizada está fora de sua janela operacional, o radar
+deixa de mostrar a expressão ambígua `Falta horário permitido` e informa a
+situação diretamente, por exemplo:
+
+`Radar Retomada MA21 | 0/3 | BLOQUEADA ATÉ 13:30 | 0% ■`
+
+Os horários exibidos são horários do relógio. Como o candle rotulado 13:15
+fecha às 13:30, um bloqueio inclusivo até esse rótulo aparece como
+`BLOQUEADA ATÉ 13:30`. A Retomada MA21 também diferencia a quinta-feira e a
+janela da tarde; MACD + Estocástico e Saída de Extremo mostram o fim de suas
+respectivas janelas bloqueadas.
+
+A mudança é exclusivamente visual. Nenhum horário, limiar, prioridade, sinal,
+ordem, stop, alvo, motor ou cálculo da classificação foi alterado. O percentual
+e o quadrado colorido continuam no final da linha.
+
+O número V463 já aparece no `classificacao.py` da `main` para o critério de
+pontos diários incorporado anteriormente. Por isso, esta entrega avança para
+V464 e evita uma nova colisão de versões.
+
+### Arquivos alterados
+
+- `principal.py`
+- `estrategia/entrada/entrada_grok_3_v1.py`
+- `estrategia/entrada/titular/entrada_grok_3_v1.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V457 — a narração de expectativa passa a dizer a que horas a ordem sai
 
 No pregão de 29/09 o log imprimiu, em sequência, "Nenhum sinal de entrada foi
