@@ -1,13 +1,17 @@
 """Classificação oficial dos cartuchos executados pelo console motor.py.
 
-Critério único de ordenação para entrada, saída e cruzado:
+Critério único de ordenação para entrada, saída e cruzado (V463):
 
-  acumulado = resultado - abs(drawdown)
+  0º) so lidera quem tem resultado > 0 e drawdown nao pior que o do titular;
+  1º) pontos = dias positivos - dias negativos (dia sem operacao vale 0);
+  2º) desempate: acumulado = resultado - abs(drawdown).
 
-Como o drawdown é armazenado com sinal negativo, a mesma fórmula também
-pode ser escrita como ``resultado + drawdown``. Quanto maior o lucro e menor
-o drawdown, maior o acumulado. As métricas multitemporais continuam sendo
-calculadas para auditoria, mas não definem a posição no ranking.
+Dia positivo = resultado líquido do dia (soma das operações, já com custos)
+maior que zero; negativo = menor que zero. Premia a regularidade, pune quem
+perde dias e não deixa um único dia grande decidir o ranking. O acumulado
+(resultado + drawdown, com drawdown negativo) continua exibido e desempata.
+As métricas multitemporais continuam sendo calculadas para auditoria, mas
+não definem a posição no ranking.
 """
 
 from __future__ import annotations
@@ -558,6 +562,11 @@ def _erro_padrao_total(trades: list[dict]) -> float:
 def _resumo(trades: list[dict], dias_periodo: int) -> dict:
     resultado = sum(t["resultado_reais"] for t in trades)
     dias_operados = len({t["horario_rotulo"].date() for t in trades})
+    por_dia: dict = {}
+    for t in trades:
+        d = t["horario_rotulo"].date()
+        por_dia[d] = por_dia.get(d, 0.0) + t["resultado_reais"]
+    dias_pos = frozenset(d for d, v in por_dia.items() if v > 0)
     acumulado = pico = drawdown = 0.0
     for trade in trades:
         acumulado += trade["resultado_reais"]
@@ -573,6 +582,10 @@ def _resumo(trades: list[dict], dias_periodo: int) -> dict:
         "resultado": resultado,
         "diaria": resultado / dias_periodo if dias_periodo else 0.0,
         "dias_operados": dias_operados,
+        "dias_positivos": len(dias_pos),
+        "dias_negativos": sum(1 for v in por_dia.values() if v < 0),
+        "pontos_dia": len(dias_pos) - sum(1 for v in por_dia.values() if v < 0),
+        "_dias_pos_set": dias_pos,   # uso interno (rodape); nao vai para o CSV
         "aproveitamento": resultado / dias_operados if dias_operados else 0.0,
         "drawdown": drawdown,
         "capital_minimo": cfg.MARGEM_WIN_LABORATORIO + abs(drawdown),
@@ -759,10 +772,9 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
     if not resultados:
         print(f"\n{titulo}: nenhuma combinação produziu resultado.")
         return
-    ruido = _marcar_empates_estatisticos(resultados, chave="resultado")
     colunas = (
         ("pos", "pos", False, 3),
-        ("emp", "emp", False, 3),
+        ("pontos_dia", "pts", False, 4),
         (chave_nome, "estratégia", False, 34),
         ("resultado", "resultado", True, 10),
         ("diaria", "diária", True, 7),
@@ -799,74 +811,31 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
         print(f"{cor}{texto}{RESET}")
     print(
         f"{VERDE}Verde{RESET}=1º | {VERMELHO}Vermelho{RESET}=último | "
-        f"{AZUL_CELESTE}Azul{RESET}=titular do slot | "
-        f"coluna 'emp': '=' empata estatisticamente com o 1º"
+        f"{AZUL_CELESTE}Azul{RESET}=titular do slot"
     )
-    print("Acumulado = resultado - abs(drawdown). Maior acumulado vence.")
-    _rodape_portao_estatistico(resultados, ruido, chave="resultado")
+    _rodape_pontos(resultados)
 
 
-def _marcar_empates_estatisticos(resultados: list[dict], chave: str = "resultado") -> float:
-    """Portão estatístico (Regra 14) — marca quem empata com o 1º lugar.
-
-    Escreve o campo "emp" em cada linha: "=" quando a diferença de `chave`
-    para o 1º colocado é MENOR que a faixa de ruído, "" caso contrário.
-    O 1º colocado recebe "1º".
-
-    A faixa de ruído usada é o maior erro padrão entre o do 1º colocado e o da
-    linha comparada — a leitura conservadora: só declara vantagem quem a
-    sustenta contra a incerteza dos DOIS lados.
-
-    Devolve a faixa de ruído do 1º colocado (para o rodapé).
-    """
-    if not resultados:
-        return float("nan")
-    lider = resultados[0]
-    ruido_lider = lider.get("erro_padrao_total", float("nan"))
-    for indice, linha in enumerate(resultados):
-        if indice == 0:
-            linha["emp"] = "1º"
-            continue
-        ruido_linha = linha.get("erro_padrao_total", float("nan"))
-        candidatos = [r for r in (ruido_lider, ruido_linha) if not math.isnan(r)]
-        if not candidatos:
-            linha["emp"] = "?"
-            continue
-        faixa = max(candidatos)
-        diferenca = abs(lider.get(chave, 0.0) - linha.get(chave, 0.0))
-        linha["emp"] = "=" if diferenca < faixa else ""
-    return ruido_lider
+def _marcar_elegiveis(resultados: list[dict]) -> None:
+    """V463: so lidera quem tem resultado total positivo E drawdown nao pior
+    que o do titular da lista (decisao do dono, 03/10/2026). Os demais seguem no
+    ranking, abaixo dos elegiveis. Sem titular na lista, vale so o resultado > 0."""
+    titular = next((r for r in resultados if r.get("titular")), None)
+    teto_dd = titular["drawdown"] if titular is not None else -math.inf
+    for r in resultados:
+        r["elegivel_lider"] = int(r["resultado"] > 0 and r["drawdown"] >= teto_dd)
 
 
-def _rodape_portao_estatistico(resultados: list[dict], ruido: float, chave: str = "resultado") -> None:
-    """Imprime a explicação da coluna `emp` e quantos empataram no topo."""
-    if math.isnan(ruido):
-        print("Portão estatístico: amostra insuficiente para estimar a faixa de ruído.")
-        return
-    empatados = sum(1 for linha in resultados[1:] if linha.get("emp") == "=")
-    lider = resultados[0]
-    sd = lider.get("sd_operacao", float("nan"))
-    total = lider.get(chave, 0.0)
-    pct = (100 * ruido / abs(total)) if total else float("nan")
-    print(
-        f"Portão estatístico (Regra 14): desvio-padrão por operação "
-        f"{_moeda(sd)} | faixa de ruído do período (erro padrão do total) "
-        f"{_moeda(ruido)}"
-        + (f" = {pct:.1f}% do resultado do 1º lugar." if not math.isnan(pct) else ".")
-    )
-    if empatados:
-        print(
-            f"ATENÇÃO: {empatados} posição(ões) marcada(s) com '=' estão "
-            f"ESTATISTICAMENTE EMPATADAS com o 1º lugar — a diferença é menor "
-            f"que o ruído da própria amostra. Escolher entre elas por este "
-            f"ranking é sorteio, não decisão. Uma promoção só se justifica com "
-            f"vantagem acima de {_moeda(ruido)}."
-        )
-    else:
-        print(
-            f"Nenhuma posição empata com o 1º lugar: a vantagem dele excede a "
-            f"faixa de ruído de {_moeda(ruido)}."
-        )
+def _rodape_pontos(resultados: list[dict]) -> None:
+    """Rodape do ranking por pontos diarios (V463). Sem faixa de ruido: o ruido
+    faz parte da competicao (decisao do dono)."""
+    print("pts = dias positivos - dias negativos (dia sem operacao vale 0). "
+          "Desempate: acumulado = resultado - abs(drawdown).")
+    fora = [str(r.get("estrategia") or r.get("entrada")) for r in resultados
+            if not r.get("elegivel_lider", 1)]
+    if fora:
+        print("Nao lideram (resultado <= 0 ou drawdown pior que o da titular): "
+              + ", ".join(fora))
 
 
 def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) -> None:
@@ -874,10 +843,9 @@ def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) ->
         print("\n========== RANKING PRINCIPAL (ENTRADA × SAÍDA) ==========")
         print("Nenhuma combinação produziu resultado.")
         return
-    ruido = _marcar_empates_estatisticos(resultados, chave="resultado")
     colunas = (
         ("pos", "pos", False, 3),
-        ("emp", "emp", False, 3),
+        ("pontos_dia", "pts", False, 4),
         ("entrada", "entrada", False, 24),
         ("saida", "saída", False, 18),
         ("resultado", "resultado", True, 10),
@@ -912,8 +880,7 @@ def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) ->
             for chave, _, moeda, largura in colunas
         )
         print(f"{cor}{texto}{RESET}")
-    print("Acumulado = resultado - abs(drawdown). Maior acumulado vence.")
-    _rodape_portao_estatistico(resultados, ruido, chave="resultado")
+    _rodape_pontos(resultados)
 
 
 def _montar_resultado_par(
@@ -1118,8 +1085,11 @@ def executar(caminho_csv: Optional[str] = None):
                 r["nota_longo"] = float("nan")
             if not disponibilidade["mensal"]:
                 r["nota_mensal"] = float("nan")
+        _marcar_elegiveis(rank_entrada)
         rank_entrada.sort(
             key=lambda r: (
+                r["elegivel_lider"],
+                r["pontos_dia"],
                 r["acumulado"],
                 r["resultado"],
                 r["drawdown"],
@@ -1155,8 +1125,11 @@ def executar(caminho_csv: Optional[str] = None):
                 r["nota_longo"] = float("nan")
             if not disponibilidade["mensal"]:
                 r["nota_mensal"] = float("nan")
+        _marcar_elegiveis(rank_saida)
         rank_saida.sort(
             key=lambda r: (
+                r["elegivel_lider"],
+                r["pontos_dia"],
                 r["acumulado"],
                 r["resultado"],
                 r["drawdown"],
@@ -1182,8 +1155,11 @@ def executar(caminho_csv: Optional[str] = None):
     # ----- Ranking CRUZADO (modo C) -----
     if modo == "C":
         rank_cruzado = [dict(r) for r in pares_ok]
+        _marcar_elegiveis(rank_cruzado)
         rank_cruzado.sort(
             key=lambda r: (
+                r["elegivel_lider"],
+                r["pontos_dia"],
                 r["acumulado"],
                 r["resultado"],
                 r["drawdown"],
@@ -1215,9 +1191,9 @@ def executar(caminho_csv: Optional[str] = None):
         saida = pasta_logs / (
             f"{nome}_{VERSAO_CLASSIFICACAO.lower()}_motor_{cfg.VERSAO.lower()}.csv"
         )
-        campos = list(linhas[0].keys())
+        campos = [k for k in linhas[0].keys() if not k.startswith("_")]
         with saida.open("w", newline="", encoding="utf-8-sig") as f:
-            w = csv.DictWriter(f, fieldnames=campos, delimiter=";")
+            w = csv.DictWriter(f, fieldnames=campos, delimiter=";", extrasaction="ignore")
             w.writeheader()
             w.writerows(linhas)
         return saida
