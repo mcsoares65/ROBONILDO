@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V467"
+VERSAO = "V468"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1231,3 +1231,31 @@ VERSAO = "V467"
 # Arquivos: tests/ (removida), 17 arquivos _test_*.py em estrategia/entrada e
 # estrategia/saida, .github/workflows/robonildo-v2-ci.yml, historico_csv.py,
 # versionamento.py e changelog.md.
+
+# ---------------------------------------------------------------------------
+# V468 - Candidatas compostas de laboratorio (entrada e saida)
+# ---------------------------------------------------------------------------
+# Pedido do dono: reunir o "supra sumo" em uma entrada e uma saida. Metodo:
+# desenho em jan-jun/2026, holdout jul-out/2026 (66 pregoes) rodado uma unica
+# vez, nenhum limiar novo (todos copiados dos cartuchos de origem).
+#
+# saida_composta_stop_atr_alvo_ma21_claude_v1: stop estrutural limitado a 1,80
+# ATR (stop_atr) + alvo na MA21 com 1R de distancia, senao 1,55R (alvo_media) +
+# corte das 18h (corte_18h). Acumulado com entrada grok_3: desenho 11.773
+# (chatgpt_v4: 10.273); holdout 3.189 (titular: 4.057) - NAO supera o titular;
+# 2023-24: -2.136 (titular -2.418). Obs.: saida_stop_atr, 1a do ranking de
+# 2026, tambem fica abaixo do titular no holdout (3.220).
+#
+# entrada_composta_grok_fim_tarde_claude_v1: as 3 portas da grok_3 (copia
+# literal) + rompimento de fim de tarde como 4a porta. Nenhuma outra entrada
+# positiva acrescenta sinal a grok_3 (uniao = grok_3). Acumulado com saida
+# titular: desenho 10.394 (grok_3: 10.273); holdout 4.016 (4.057); 2023-24
+# -660 (grok_3 -2.418).
+#
+# Nenhum titular alterado; ambas ficam como candidatas (Regra 12 antes de
+# qualquer promocao). Testes: _test_composta_grok_fim_tarde.py e
+# _test_composta_stop_atr_alvo_ma21.py (96 testes no total).
+#
+# Arquivos: estrategia/entrada/entrada_composta_grok_fim_tarde_claude_v1.py,
+# estrategia/saida/saida_composta_stop_atr_alvo_ma21_claude_v1.py, dois
+# _test_*.py, versionamento.py e changelog.md.

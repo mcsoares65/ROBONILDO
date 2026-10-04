@@ -4,6 +4,43 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V468 — candidatas compostas (entrada e saída) com holdout
+
+Pedido: reunir as melhores regras em uma entrada e uma saída. Método: desenho em
+janeiro–junho/2026; holdout em julho–outubro/2026 rodado uma única vez; nenhum
+limiar novo (todos copiados dos cartuchos de origem).
+
+- `saida_composta_stop_atr_alvo_ma21_claude_v1`: stop estrutural limitado a
+  1,80 ATR + alvo na MA21 (com 1R de distância, senão 1,55R) + corte das 18h.
+- `entrada_composta_grok_fim_tarde_claude_v1`: as três portas da `grok_3` (cópia
+  literal) + rompimento de fim de tarde como 4ª porta.
+
+Acumulado (resultado − |drawdown|), pareado com o titular da outra ponta:
+
+| | desenho jan–jun | holdout jul–out | 2023–24 (já visto) |
+|---|---|---|---|
+| saída composta | 11.773 | 3.189 | −2.136 |
+| `saida_chatgpt_v4` (titular) | 10.273 | 4.057 | −2.418 |
+| `saida_stop_atr` (1ª do ranking) | 11.670 | 3.220 | −2.619 |
+| entrada composta | 10.394 | 4.016 | −660 |
+| `entrada_grok_3_v1` (titular) | 10.273 | 4.057 | −2.418 |
+
+Nenhuma supera o titular no holdout de 2026. Nas demais entradas positivas
+(chatgpt_v19/v21, deepseek_v5, gemini_V20, grok_32/4/v6, manus_v1/v2,
+claude_v1) a união com a `grok_3` é idêntica à `grok_3`: não há sinal a somar. A
+única que acrescenta é a de fim de tarde. Ficam como candidatas de laboratório;
+promoção só pelo conselho (Regra 12). Nenhum titular alterado.
+
+### Arquivos alterados
+- `estrategia/entrada/entrada_composta_grok_fim_tarde_claude_v1.py`
+- `estrategia/saida/saida_composta_stop_atr_alvo_ma21_claude_v1.py`
+- `estrategia/entrada/_test_composta_grok_fim_tarde.py`
+- `estrategia/saida/_test_composta_stop_atr_alvo_ma21.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V467 — pasta `tests/` extinta; testes passam para o laboratório
 
 `estrategia/entrada` e `estrategia/saida` são o laboratório: a grande maioria das
