@@ -106,3 +106,26 @@ class Simulador(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FiltroPorCenario(unittest.TestCase):
+    """classificacao.executar_jogo(cenario=...) so deixa a entrada disparar naquele cenario."""
+
+    def test_entrada_so_dispara_no_cenario(self):
+        import cenario
+        import contextlib, io
+        candles, _, _ = sim.gerar_candles(historico(8), 12, semente=4, modo="regimes")
+        with contextlib.redirect_stdout(io.StringIO()):
+            rows = cl.preparar_rows(candles)
+            saidas, _ = cl.descobrir_saidas()
+        saida = next(s for s in saidas if s.titular)
+        dias = {c.horario.date() for c in candles}
+        por_hora = {c.horario: r for c, r in zip(candles, rows)}
+        sempre_compra = cl.CartuchoEntrada("fake", Path("fake.py"), lambda row: 1)
+        for alvo in ("abertura", "fim_de_tarde", "lateral"):
+            trades = cl.executar_jogo(candles, rows, sempre_compra, dias,
+                                      avaliar_saida=saida.avaliar_saida, cenario=alvo)
+            for t in trades:
+                self.assertEqual(cenario.classificar(por_hora[t["horario_rotulo"]]), alvo)
+        livre = cl.executar_jogo(candles, rows, sempre_compra, dias, avaliar_saida=saida.avaliar_saida)
+        self.assertGreater(len(livre), 0)

@@ -29,12 +29,13 @@ import math
 import re
 import subprocess
 import contextlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from pathlib import Path
 from statistics import median
 from typing import Callable, Iterable, Optional
 
+import cenario as cen_mod
 import configuracao as cfg
 from motor import Candle, MotorRobonildo, construir_row
 
@@ -573,8 +574,13 @@ def executar_jogo(
     estrategia,  # CartuchoEntrada
     dias_avaliacao: set,
     avaliar_saida=None,
+    cenario: Optional[str] = None,
 ) -> list[dict]:
     """Executa o histórico diretamente no mesmo motor usado por principal.py.
+
+    cenario: se informado (nome de cenario.py), a entrada só pode disparar em
+    candles desse cenário - é o jogador escalado só para aquela situação. O
+    resto (motor, saída, limites) é idêntico.
 
     avaliar_saida: cartucho de saída titular (estrategia/saida/) - pareado
     com TODA estratégia de entrada candidata, para que a classificação
@@ -582,8 +588,15 @@ def executar_jogo(
     if len(candles) <= 65:
         return []
 
+    gerar_sinal = estrategia.gerar_sinal
+    if cenario:
+        sinal_livre = gerar_sinal
+
+        def gerar_sinal(row, _livre=sinal_livre, _alvo=cenario):
+            return _livre(row) if cen_mod.classificar(row) == _alvo else 0
+
     motor = MotorRobonildo(
-        gerar_sinal=estrategia.gerar_sinal,
+        gerar_sinal=gerar_sinal,
         arquivo_estado=None,
         horario_mercado_inicial=candles[65].horario,
         avaliar_saida=avaliar_saida,
@@ -1041,6 +1054,19 @@ def _perguntar_periodo(dias: list) -> tuple[list, str]:
             print(f"Período inválido: {erro}")
 
 
+def _perguntar_cenario() -> str:
+    """'' = todos os cenários; senão, o nome de um cenário de cenario.py."""
+    while True:
+        resp = input(
+            "Cenário [Enter = todos | " + " | ".join(cen_mod.NOMES) + "]: "
+        ).strip().lower()
+        if resp in ("", "todos", "tudo"):
+            return ""
+        if resp in cen_mod.NOMES:
+            return resp
+        print(f"Cenário '{resp}' não existe. Opções: {', '.join(cen_mod.NOMES)}")
+
+
 def _perguntar_simulacao() -> Optional[dict]:
     """None = usar o histórico real; dict = parâmetros do simulador."""
     resp = input("Fonte dos dados: Real (R) ou Simulada (S)? [Enter = R]: ").strip().upper()
@@ -1063,11 +1089,14 @@ def executar(
     modo: Optional[str] = None,
     periodo: Optional[str] = None,
     simulacao: Optional[dict] = None,
+    cenario: Optional[str] = None,
 ):
     """modo: 'E'/'S'/'C' (None = pergunta). periodo: texto aceito por
     interpretar_periodo (None = pergunta; '' = tudo). simulacao: dict do
     simulador (modo/dias/semente/escala_vol/espelhar); None = pergunta a fonte;
-    False = força o histórico real sem perguntar."""
+    False = força o histórico real sem perguntar. cenario: nome de um cenário
+    (cenario.py) para apurar o campeonato SÓ naquela situação; '' = todos;
+    None = pergunta."""
     caminho = Path(caminho_csv or cfg.CAMINHO_HISTORICO_INICIAL)
     if not caminho.exists():
         # V462: o Profit passou a gravar o export com datas no nome
@@ -1139,6 +1168,19 @@ def executar(
         candles_avaliacao = [c for c in candles_reais if c.horario.date() in dias_avaliacao]
         # Os candles fora do período continuam disponíveis só como aquecimento.
         candles, quantidade_aquecimento = preparar_aquecimento(candles_reais)
+
+    if cenario is None:
+        cenario = _perguntar_cenario()
+    cenario = (cenario or "").strip().lower()
+    if cenario in ("todos", "tudo"):
+        cenario = ""
+    if cenario and cenario not in cen_mod.NOMES:
+        raise ValueError(f"cenário '{cenario}' não existe; opções: {', '.join(cen_mod.NOMES)}")
+    if cenario:
+        fonte_rotulo += f" | cenário {cenario}"
+        fonte_arquivo += f"_cen_{cenario}"
+        print(f"[CENÁRIO] Campeonato só no cenário '{cenario}': cada entrada só pode disparar "
+              "em candles desse cenário.")
 
     entradas, falhas_e = descobrir_entradas()
     saidas, falhas_s = descobrir_saidas()
@@ -1218,7 +1260,8 @@ def executar(
         print(f"  [{n}/{total}] {rotulo}...", end="", flush=True)
         try:
             trades = executar_jogo(
-                candles, rows, ent, dias_avaliacao, avaliar_saida=sai.avaliar_saida
+                candles, rows, ent, dias_avaliacao, avaliar_saida=sai.avaliar_saida,
+                cenario=cenario or None,
             )
         except (KeyError, TypeError, ValueError, AttributeError) as erro:
             incompatíveis.append((rotulo, f"{type(erro).__name__}: {erro}"))
@@ -1393,6 +1436,8 @@ def _ler_argumentos(argv=None):
     ap.add_argument("csv", nargs="?", help="histórico CSV (padrão: o configurado/mais recente)")
     ap.add_argument("--modo", choices=["E", "S", "C", "e", "s", "c"], help="ranking: Entrada, Saída ou Cruzado")
     ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
+    ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
+                    + ", ".join(cen_mod.NOMES))
     ap.add_argument("--simular", choices=["reamostragem", "regimes"],
                     help="usa dados FICTÍCIOS em vez do histórico real")
     ap.add_argument("--dias-sim", type=int, default=120, help="pregões simulados (padrão 120)")
@@ -1411,4 +1456,7 @@ if __name__ == "__main__":
         simulacao = False       # pediu período/modo na linha de comando: não pergunta a fonte
     else:
         simulacao = None
-    executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao)
+    cenario = args.cenario
+    if cenario is None and (args.modo or args.periodo is not None or args.simular):
+        cenario = ""        # rodou por linha de comando: não pergunta, vale todos os cenários
+    executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao, cenario=cenario)
