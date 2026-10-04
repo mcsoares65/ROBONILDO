@@ -4,6 +4,79 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V465 — pacote `strategies` separado em entradas e saída
+
+O pacote recebido continha 24 estratégias de outro framework. Nove delas usam
+somente OHLC e foram convertidas em cartuchos candidatos de entrada: quatro
+reversões de canal, um pullback de média e quatro falsos rompimentos. O estado
+interno usado pelo framework original foi substituído por uma comparação
+determinística entre o candle atual e o anterior.
+
+As nove regras traziam a mesma proteção embutida. Ela agora é o cartucho de
+saída candidato `saida_daytrader_rr2_v1.py`: stop de 1,25 vez a amplitude média
+dos 20 candles anteriores, com piso de 20 pontos, e alvo de 2R. Dessa forma,
+entrada e saída podem ser classificadas e cruzadas separadamente.
+
+O motor passa a entregar 22 candles em `ohlc_recentes`, suficientes para a
+regra de 20 períodos e a supressão do sinal consecutivo. O reconhecedor de
+cenários foi explicitamente mantido em seus 12 candles originais, evitando
+alteração indireta de comportamento.
+
+A conversão foi confrontada com os arquivos originais em 9.394 candles reais:
+zero divergências nas nove estratégias. Quatorze estratégias dependentes de
+volume não foram ativadas porque o DDE e o laboratório ainda não fornecem esse
+campo pelo mesmo contrato. A estratégia SMC v3 também ficou pendente, pois
+exige uma máquina de estados com ciclo de vida ainda inexistente nos cartuchos.
+
+Nenhum titular foi alterado. O inventário completo e os motivos técnicos estão
+em `estrategia/IMPORTACAO_STRATEGIES.md`.
+
+### Arquivos alterados
+
+- `motor.py`
+- `cenario.py`
+- `estrategia/entrada/_daytrader_ohlc.py`
+- nove cartuchos `estrategia/entrada/entrada_daytrader_*.py`
+- `estrategia/saida/saida_daytrader_rr2_v1.py`
+- `estrategia/IMPORTACAO_STRATEGIES.md`
+- `tests/test_v465_strategias_importadas.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
+## V464 — bloqueios de horário explícitos no radar
+
+Quando a estratégia priorizada está fora de sua janela operacional, o radar
+deixa de mostrar a expressão ambígua `Falta horário permitido` e informa a
+situação diretamente, por exemplo:
+
+`Radar Retomada MA21 | 0/3 | BLOQUEADA ATÉ 13:30 | 0% ■`
+
+Os horários exibidos são horários do relógio. Como o candle rotulado 13:15
+fecha às 13:30, um bloqueio inclusivo até esse rótulo aparece como
+`BLOQUEADA ATÉ 13:30`. A Retomada MA21 também diferencia a quinta-feira e a
+janela da tarde; MACD + Estocástico e Saída de Extremo mostram o fim de suas
+respectivas janelas bloqueadas.
+
+A mudança é exclusivamente visual. Nenhum horário, limiar, prioridade, sinal,
+ordem, stop, alvo, motor ou cálculo da classificação foi alterado. O percentual
+e o quadrado colorido continuam no final da linha.
+
+O número V463 já aparece no `classificacao.py` da `main` para o critério de
+pontos diários incorporado anteriormente. Por isso, esta entrega avança para
+V464 e evita uma nova colisão de versões.
+
+### Arquivos alterados
+
+- `principal.py`
+- `estrategia/entrada/entrada_grok_3_v1.py`
+- `estrategia/entrada/titular/entrada_grok_3_v1.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V457 — a narração de expectativa passa a dizer a que horas a ordem sai
 
 No pregão de 29/09 o log imprimiu, em sequência, "Nenhum sinal de entrada foi

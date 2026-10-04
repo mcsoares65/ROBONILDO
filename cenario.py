@@ -50,7 +50,10 @@ def caracteristicas(row: dict) -> Optional[dict]:
     janela = row.get("ohlc_recentes") or ()
     if None in (atr, ma21, fech) or not atr or atr <= 0 or len(janela) < 12:
         return None
-    fechamentos = [c["Fechamento"] for c in janela]
+    # O motor pode oferecer uma janela maior para outros cartuchos. Este
+    # reconhecedor foi definido e calibrado para exatamente 12 fechamentos;
+    # explicitar o recorte impede que uma ampliação do contrato mude o cenário.
+    fechamentos = [c["Fechamento"] for c in janela[-12:]]
     percurso = sum(abs(b - a) for a, b in zip(fechamentos, fechamentos[1:]))
     atr_rel = row.get("atr_relativo")
     return {

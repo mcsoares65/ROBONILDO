@@ -290,6 +290,9 @@ def construir_row(candles: List[Candle]) -> Optional[dict]:
     # candles. Somente candles já fechados entram aqui; portanto não há
     # vazamento de informação futura. Tupla imutável e campos primitivos
     # preservam o isolamento entre o console e o cartucho.
+    # V465: 22 candles permitem que cartuchos stateless reproduzam uma regra
+    # de 20 candles e ainda comparem o sinal atual com o candle anterior.
+    # As saídas existentes continuam usando apenas a própria janela final.
     ohlc_recentes = tuple(
         {
             "dt": candle.horario,
@@ -298,7 +301,7 @@ def construir_row(candles: List[Candle]) -> Optional[dict]:
             "Minimo": candle.minima,
             "Fechamento": candle.fechamento,
         }
-        for candle in candles[-12:]
+        for candle in candles[-22:]
     )
 
     return {
