@@ -27,12 +27,23 @@ def ler_csv_candles(caminho: Path) -> List[Candle]:
                 continue
             _, data_str, hora_str, abertura, maxima, minima, fechamento = linha[:7]
             horario = datetime.strptime(f"{data_str} {hora_str}", "%d/%m/%Y %H:%M:%S")
+            quantidade = None
+            if len(linha) > 8 and linha[8].strip():
+                try:
+                    quantidade = float(linha[8].replace(".", "").replace(",", "."))
+                    # CSVs persistidos antigos preenchiam esta coluna com
+                    # zero sem leitura de volume. Zero não comprova coleta.
+                    if not 0 < quantidade < float("inf"):
+                        quantidade = None
+                except ValueError:
+                    pass
             candles.append(Candle(
                 horario=horario,
                 abertura=float(abertura.replace(",", ".")),
                 maxima=float(maxima.replace(",", ".")),
                 minima=float(minima.replace(",", ".")),
                 fechamento=float(fechamento.replace(",", ".")),
+                quantidade=quantidade,
             ))
     # remove duplicatas por horario (mantem a ULTIMA ocorrencia - normalmente a
     # mais recente/confiavel, ja que candles ao vivo sao gravados depois dos de

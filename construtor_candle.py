@@ -11,6 +11,7 @@ igual a convencao que usamos em toda a analise manual e no backtest.
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
+from math import isfinite
 
 from motor import Candle
 
@@ -28,6 +29,7 @@ class _CandleEmFormacao:
     maxima: float
     minima: float
     fechamento: float
+    quantidade: Optional[float] = None
 
 
 class ConstrutorCandle:
@@ -35,16 +37,22 @@ class ConstrutorCandle:
         self.minutos = minutos
         self._atual: Optional[_CandleEmFormacao] = None
 
-    def nova_leitura(self, preco: float, horario: datetime) -> Optional[Candle]:
+    def nova_leitura(self, preco: float, horario: datetime,
+                    quantidade_incremento: Optional[float] = None) -> Optional[Candle]:
         """
         Registra uma leitura de preco. Se essa leitura pertence a um novo periodo
         de 15 min (o periodo anterior encerrou), devolve o Candle fechado do
-        periodo anterior. Caso contrario, devolve None.
+        periodo anterior. Caso contrario, devolve None. Quantidade é opcional:
+        somente incrementos válidos em TODAS as leituras compõem o candle.
+        A origem DDE e a unidade ainda exigem confirmação; não inferir zero.
         """
         periodo = inicio_do_periodo(horario, self.minutos)
+        q = (float(quantidade_incremento)
+             if quantidade_incremento is not None and isfinite(quantidade_incremento)
+             and quantidade_incremento >= 0 else None)
 
         if self._atual is None:
-            self._atual = _CandleEmFormacao(periodo, preco, preco, preco, preco)
+            self._atual = _CandleEmFormacao(periodo, preco, preco, preco, preco, q)
             return None
 
         if periodo == self._atual.inicio:
@@ -52,6 +60,9 @@ class ConstrutorCandle:
             self._atual.maxima = max(self._atual.maxima, preco)
             self._atual.minima = min(self._atual.minima, preco)
             self._atual.fechamento = preco
+            self._atual.quantidade = (self._atual.quantidade + q
+                                      if self._atual.quantidade is not None and q is not None
+                                      else None)
             return None
 
         # periodo novo comecou -> a vela anterior fechou
@@ -61,8 +72,9 @@ class ConstrutorCandle:
             maxima=self._atual.maxima,
             minima=self._atual.minima,
             fechamento=self._atual.fechamento,
+            quantidade=self._atual.quantidade,
         )
-        self._atual = _CandleEmFormacao(periodo, preco, preco, preco, preco)
+        self._atual = _CandleEmFormacao(periodo, preco, preco, preco, preco, q)
         return candle_fechado
 
     def candle_em_formacao(self) -> Optional[Candle]:
@@ -75,6 +87,7 @@ class ConstrutorCandle:
             maxima=self._atual.maxima,
             minima=self._atual.minima,
             fechamento=self._atual.fechamento,
+            quantidade=self._atual.quantidade,
         )
 
 

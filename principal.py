@@ -441,9 +441,10 @@ def _salvar_historico_persistente(candles: List[Candle], sobrescrever: bool = Fa
     try:
         with open(temporario, "w", encoding="latin1") as f:
             for c in consolidados:
+                quantidade = "" if c.quantidade is None else f"{c.quantidade:.12g}"
                 f.write(f"{cfg.ATIVO};{c.horario.strftime('%d/%m/%Y')};"
                         f"{c.horario.strftime('%H:%M:%S')};{c.abertura:.2f};"
-                        f"{c.maxima:.2f};{c.minima:.2f};{c.fechamento:.2f};0;0\n")
+                        f"{c.maxima:.2f};{c.minima:.2f};{c.fechamento:.2f};0;{quantidade}\n")
             f.flush()
         temporario.replace(caminho)
     finally:
@@ -992,6 +993,9 @@ def rodar():
                 # nao decide sozinho o que fazer - so alerta, dado o risco de piorar
                 # a situacao agindo automaticamente sobre uma divergencia nao explicada
 
+        # Nenhuma coluna DDE de Quantidade incremental foi confirmada ainda.
+        # Sem fonte auditada, os candles ao vivo mantêm quantidade=None;
+        # nunca usar preço ou zero como substituto para volume Gabriel.
         candle_fechado = construtor.nova_leitura(preco, agora)
         if coleta is not None:
             coleta.processar(agora, leitor.ler_extras(), candle_fechado)

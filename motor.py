@@ -22,6 +22,7 @@ class Candle:
     maxima: float
     minima: float
     fechamento: float
+    quantidade: Optional[float] = None  # contratos por candle; None = indisponível
 
 
 @dataclass
@@ -304,6 +305,20 @@ def construir_row(candles: List[Candle]) -> Optional[dict]:
         for candle in candles[-22:]
     )
 
+    # Janela isolada Gabriel: não modifica o contrato V465 de 22 candles
+    # de ohlc_recentes nem fornece volume quando o dado não está disponível.
+    gabriel_barras = tuple(
+        {
+            "dt": candle.horario,
+            "Abertura": candle.abertura,
+            "Maximo": candle.maxima,
+            "Minimo": candle.minima,
+            "Fechamento": candle.fechamento,
+            "Quantidade": candle.quantidade,
+        }
+        for candle in candles[-96:]
+    )
+
     return {
         "dt": atual.horario,
         "Abertura": atual.abertura, "Maximo": atual.maxima,
@@ -319,6 +334,7 @@ def construir_row(candles: List[Candle]) -> Optional[dict]:
         "rsi": rsi, "rsi_prev": rsi_prev,
         "rsi_subindo": rsi_subindo, "rsi_descendo": rsi_descendo,
         "ohlc_recentes": ohlc_recentes,
+        "gabriel_barras": gabriel_barras,
     }
 
 
