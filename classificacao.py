@@ -964,17 +964,6 @@ def _perguntar_modo_ranking() -> str:
         print(f"Resposta '{resp}' não reconhecida — digite exatamente E, S, C ou A.")
 
 
-def _perguntar_periodo(dias: list) -> tuple[list, str]:
-    while True:
-        texto = input(
-            "Período de apuração [Enter = tudo | 01/03/2026 31/03/2026 | ultimos 40 | mes 2026-03]: "
-        )
-        try:
-            return interpretar_periodo(texto, dias)
-        except ValueError as erro:
-            print(f"Período inválido: {erro}")
-
-
 def _perguntar_cenario() -> str:
     """'' = todos os cenários; senão, o nome de um cenário de cenario.py."""
     while True:
@@ -1285,7 +1274,7 @@ def executar(
 ):
     """modo: 'E'/'S'/'C'/'A' (None = pergunta; A = análise: cruzado completo +
     planilha .xlsx em saida_dir, padrão D:\\DAYTRADE\\ANALISES). periodo: texto aceito por
-    interpretar_periodo (None = pergunta; '' = tudo). simulacao: dict do
+    interpretar_periodo (None ou '' = tudo, o conteúdo do arquivo). simulacao: dict do
     simulador (modo/dias/semente/escala_vol/espelhar); None = pergunta a fonte;
     False = força o histórico real sem perguntar. cenario: nome de um cenário
     (cenario.py) para apurar o campeonato SÓ naquela situação; '' = todos;
@@ -1351,10 +1340,9 @@ def executar(
         candles, quantidade_aquecimento = candles_avaliacao, 0
     else:
         todos_dias = sorted({c.horario.date() for c in candles_reais})
-        if periodo is None:
-            dias, rotulo_periodo = _perguntar_periodo(todos_dias)
-        else:
-            dias, rotulo_periodo = interpretar_periodo(periodo, todos_dias)
+        # O período apurado é o do conteúdo do arquivo. Só um --periodo explícito
+        # na linha de comando recorta; nunca há pergunta.
+        dias, rotulo_periodo = interpretar_periodo(periodo or "", todos_dias)
         dias_avaliacao = set(dias)
         if rotulo_periodo != "tudo":
             fonte_rotulo = f" | período {rotulo_periodo}"
