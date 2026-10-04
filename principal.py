@@ -948,18 +948,28 @@ def rodar():
                         detalhe_radar = str(
                             oportunidade_prioritaria.get("detalhe") or faltante
                         )
+                        bloqueio_horario_radar = bool(
+                            oportunidade_prioritaria.get("bloqueio_horario", False)
+                        )
                     else:
                         faltante = "aguardando oportunidade"
                         detalhe_radar = faltante
-                    if len(detalhe_radar) > 29:
-                        detalhe_radar = detalhe_radar[:28] + "…"
+                        bloqueio_horario_radar = False
+                    largura_detalhe = 35 if bloqueio_horario_radar else 29
+                    if len(detalhe_radar) > largura_detalhe:
+                        detalhe_radar = detalhe_radar[:largura_detalhe - 1] + "…"
+                    campo_detalhe = (
+                        f"{detalhe_radar:<35}"
+                        if bloqueio_horario_radar
+                        else f"Falta {detalhe_radar:<29}"
+                    )
                     sustentacao = ""
                     if radar_100_desde is not None and progresso_radar >= 1.0:
                         segundos_100 = max(0, int((agora_real - radar_100_desde).total_seconds()))
                         sustentacao = f" | há {segundos_100}s"
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
                           f"{tendencia_colorida} | Radar {status_sinal} | "
-                          f"{confirmacoes_radar:^3} | Falta {detalhe_radar:<29}"
+                          f"{confirmacoes_radar:^3} | {campo_detalhe}"
                           f"{sustentacao}"
                           f" | {progresso_radar_pct:3.0f}% {quadro}")
                 else:

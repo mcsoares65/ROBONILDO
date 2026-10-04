@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V462"
+VERSAO = "V465"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1127,3 +1127,69 @@ VERSAO = "V462"
 # Arquivos alterados: motor.py, principal.py, configuracao.py, historico_csv.py
 # (novo), tests/test_v461_risco.py e tests/test_v461_historico.py (novos),
 # versionamento.py.
+
+# ---------------------------------------------------------------------------
+# V464 - Bloqueios de horario explicitos no radar
+# ---------------------------------------------------------------------------
+# O numero V463 ja identifica no classificacao.py o criterio de pontos diarios
+# incorporado a main pelos PRs #50 e #51. Esta entrega usa V464 para evitar
+# uma nova colisao de versoes, embora versionamento.py ainda estivesse em V462.
+#
+# Quando a oportunidade prioritaria esta fora de sua janela operacional, o
+# radar deixa de mostrar a expressao ambigua "Falta horario permitido" e passa
+# a informar objetivamente ate quando permanece bloqueada. Os horarios exibidos
+# sao os do relogio: o candle rotulado 13:15 fecha as 13:30, portanto o bloqueio
+# inclusivo ate o rotulo 13:15 aparece como "BLOQUEADA ATE 13:30".
+#
+# Mensagens cobertas: Retomada MA21 (almoco, tarde e quinta-feira), MACD +
+# Estocastico (ate 12:45) e Saida de Extremo (ate 13:30). A grade conserva o
+# percentual e o quadrado colorido no final da linha.
+#
+# Mudanca exclusivamente de telemetria. Nenhum horario, limiar, prioridade,
+# sinal, ordem, stop, alvo, motor ou calculo da classificacao foi alterado.
+# A copia candidata e a titular de entrada_grok_3_v1 permanecem identicas.
+#
+# Arquivos alterados: principal.py,
+# estrategia/entrada/entrada_grok_3_v1.py,
+# estrategia/entrada/titular/entrada_grok_3_v1.py, versionamento.py e
+# changelog.md.
+
+# ---------------------------------------------------------------------------
+# V465 - Importacao separada do pacote strategies (entrada x saida)
+# ---------------------------------------------------------------------------
+# O ZIP recebido contem 24 estrategias registradas em outro framework, cujo
+# on_bar() devolve OrderIntent com sinal, stop e alvo no mesmo objeto.
+#
+# NOVE regras exclusivamente OHLC foram convertidas em cartuchos independentes
+# de entrada (channel/reversion, EMA pullback e failed break, v1/v2). A memoria
+# _last_direction do framework externo foi eliminada: o mesmo efeito e obtido
+# comparando a condicao atual com a condicao do candle anterior, portanto as
+# chamadas permanecem deterministicas e seguras em classificacoes repetidas.
+#
+# As nove embutiam a mesma protecao, agora separada em uma unica candidata de
+# saida: saida_daytrader_rr2_v1. Stop = max(20 pts, 1,25 x amplitude media dos
+# 20 candles anteriores); alvo = max(stop + 5 pts, 2R); sem fechamento
+# antecipado adicional.
+#
+# motor.py passa a fornecer os ultimos 22 candles em ohlc_recentes (eram 12):
+# 20 anteriores + candle atual + candle necessario para reproduzir a supressao
+# consecutiva. Auditoria dos consumidores confirmou recortes finais explicitos;
+# cenario.py foi fixado em [-12:] para preservar exatamente sua calibracao.
+#
+# NAO ATIVADAS:
+# - 14 estrategias dependentes de volume: o volume ainda nao integra de forma
+#   pareada o Candle/row do laboratorio e o DDE ao vivo;
+# - smc_structure_retest_v3: maquina de estados sem contrato oficial de reset e
+#   isolamento por execucao.
+# Decoradores e infraestrutura do framework tambem nao viraram cartuchos.
+# Nenhum titular foi alterado.
+#
+# VALIDACAO: nove adaptacoes comparadas candle a candle em 9.394 candles reais,
+# com zero divergencias; 7 testes unitarios novos; contrato de saida validado
+# para COMPRA e VENDA; suite completa, py_compile e diff-check executados.
+# Inventario e motivos: estrategia/IMPORTACAO_STRATEGIES.md.
+#
+# Arquivos alterados: motor.py, cenario.py, nove entradas candidatas,
+# _daytrader_ohlc.py, saida_daytrader_rr2_v1.py,
+# tests/test_v465_strategias_importadas.py, estrategia/IMPORTACAO_STRATEGIES.md,
+# versionamento.py e changelog.md.
