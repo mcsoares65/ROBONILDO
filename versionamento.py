@@ -1208,6 +1208,6 @@ VERSAO = "V466"
 # anterior. Nenhum titular foi alterado.
 #
 # Arquivos: motor.py, estrategia/PAULINHO_JUST.md, _paulinho_just.py, duas
-# entradas Paulinho, uma saida Paulinho, tests/test_v466_estrategias_paulinho.py,
+# entradas Paulinho, uma saida Paulinho, tests/test_v466_cartuchos_paulinho.py,
 # tests/test_v465_strategias_importadas.py, tests/test_gabriel_compatibilidade.py,
 # versionamento.py e changelog.md.
