@@ -37,7 +37,7 @@ def candle_dict(indice, abertura=100.0, maxima=105.0, minima=95.0, fechamento=10
 
 
 class EstrategiasImportadas(unittest.TestCase):
-    def test_motor_fornece_22_candles_fechados(self):
+    def test_motor_fornece_janela_ohlc_ampliada_sem_mudar_o_candle_atual(self):
         inicio = datetime(2026, 1, 2, 9, 0)
         candles = [
             Candle(
@@ -47,11 +47,11 @@ class EstrategiasImportadas(unittest.TestCase):
                 minima=99_980.0 + i,
                 fechamento=100_005.0 + i,
             )
-            for i in range(80)
+            for i in range(120)
         ]
         row = construir_row(candles)
         self.assertIsNotNone(row)
-        self.assertEqual(len(row["ohlc_recentes"]), 22)
+        self.assertEqual(len(row["ohlc_recentes"]), 96)
         self.assertEqual(row["ohlc_recentes"][-1]["dt"], candles[-1].horario)
 
     def test_nove_cartuchos_publicos_respeitam_dominio_do_contrato(self):

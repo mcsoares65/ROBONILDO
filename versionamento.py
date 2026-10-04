@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V465"
+VERSAO = "V466"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1192,4 +1192,22 @@ VERSAO = "V465"
 # Arquivos alterados: motor.py, cenario.py, nove entradas candidatas,
 # _daytrader_ohlc.py, saida_daytrader_rr2_v1.py,
 # tests/test_v465_strategias_importadas.py, estrategia/IMPORTACAO_STRATEGIES.md,
+# versionamento.py e changelog.md.
+
+# ---------------------------------------------------------------------------
+# V466 - Candidatas Paulinho / metodo Just adaptadas ao WIN de 15 minutos
+# ---------------------------------------------------------------------------
+# Duas origens percentuais descritas na entrevista viraram entradas separadas:
+# fechamento anterior e origem intradiaria, ambas a +/-0,60% para o indice.
+# Como o motor decide em candle fechado, o sinal exige rejeicao confirmada da
+# faixa em vez de simular a ordem limite intrabar exibida no video.
+#
+# saida_paulinho_just_rr2_V01 usa stop de 0,20% e alvo de 0,40% do preco de
+# entrada, arredondados para fora ao tick de 5 pontos do WIN.
+# ohlc_recentes passou de 22 para 96 candles para cobrir a sessao atual e a
+# anterior. Nenhum titular foi alterado.
+#
+# Arquivos: motor.py, estrategia/PAULINHO_JUST.md, _paulinho_just.py, duas
+# entradas Paulinho, uma saida Paulinho, tests/test_v466_cartuchos_paulinho.py,
+# tests/test_v465_strategias_importadas.py, tests/test_gabriel_compatibilidade.py,
 # versionamento.py e changelog.md.

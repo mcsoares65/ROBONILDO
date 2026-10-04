@@ -4,6 +4,41 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V466 — método Just de Paulinho convertido em candidatas auditáveis
+
+A entrevista fornecida descreve regressão à média depois de um deslocamento
+até uma região de exaustão. Para o índice, Paulinho informa faixas começando
+em 0,60%; para a proteção, stop de 0,20% e alvo de 0,40%.
+
+Foram criadas duas entradas independentes:
+
+- `entrada_paulinho_just_fechamento_V01.py`: ±0,60% do fechamento anterior;
+- `entrada_paulinho_just_origem_V01.py`: ±0,60% da origem intradiária.
+
+Como o Robonildo decide no fechamento do candle de 15 minutos, o sinal exige
+que o preço alcance a faixa, volte para dentro e feche na direção da regressão.
+A proteção está em `saida_paulinho_just_rr2_V01.py`, arredondada ao tick do WIN.
+
+O motor agora entrega 96 candles em `ohlc_recentes`, suficientes para localizar
+a sessão anterior. Não foram inventados critérios não quantificados no vídeo,
+como escolha visual da origem, faixas adicionais, notícias ou parciais. Nenhum
+titular foi alterado. Detalhes em `estrategia/PAULINHO_JUST.md`.
+
+### Arquivos alterados
+
+- `motor.py`
+- `estrategia/PAULINHO_JUST.md`
+- `estrategia/entrada/_paulinho_just.py`
+- dois cartuchos `estrategia/entrada/entrada_paulinho_*_V01.py`
+- `estrategia/saida/saida_paulinho_just_rr2_V01.py`
+- `tests/test_v466_cartuchos_paulinho.py` (somente validação; não é candidata)
+- `tests/test_v465_strategias_importadas.py`
+- `tests/test_gabriel_compatibilidade.py`
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V465 — pacote `strategies` separado em entradas e saída
 
 O pacote recebido continha 24 estratégias de outro framework. Nove delas usam
