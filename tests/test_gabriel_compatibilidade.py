@@ -14,12 +14,12 @@ from motor import Candle, construir_row
 
 
 class CompatibilidadeGabriel(unittest.TestCase):
-    def test_contexto_adicional_nao_muda_janela_antiga(self):
+    def test_janelas_ohlc_e_gabriel_preservam_seus_contratos(self):
         inicio = datetime(2026, 10, 1, 9)
         candles = [Candle(inicio + timedelta(minutes=15*i), 100+i, 110+i,
                           90+i, 105+i, float(i)) for i in range(110)]
         row = construir_row(candles)
-        self.assertEqual(len(row["ohlc_recentes"]), 22)
+        self.assertEqual(len(row["ohlc_recentes"]), 96)
         self.assertNotIn("Quantidade", row["ohlc_recentes"][-1])
         self.assertEqual(len(row["gabriel_barras"]), 96)
         self.assertEqual(row["gabriel_barras"][-1]["Quantidade"], 109.0)
