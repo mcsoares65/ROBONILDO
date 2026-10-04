@@ -1,23 +1,18 @@
 """Classificação oficial dos cartuchos executados pelo console motor.py.
 
-Critério único de ordenação para entrada, saída e cruzado (V463):
+Critério único de ordenação para entrada, saída e cruzado:
 
-  0º) so lidera quem tem resultado > 0 e drawdown nao pior que o do titular;
-  1º) pontos = dias positivos - dias negativos (dia sem operacao vale 0);
-  2º) desempate: acumulado = resultado - abs(drawdown).
+  acumulado = resultado - abs(drawdown)
 
-Dia positivo = resultado líquido do dia (soma das operações, já com custos)
-maior que zero; negativo = menor que zero. Premia a regularidade, pune quem
-perde dias e não deixa um único dia grande decidir o ranking. O acumulado
-(resultado + drawdown, com drawdown negativo) continua exibido e desempata.
-As métricas multitemporais continuam sendo calculadas para auditoria, mas
-não definem a posição no ranking.
+Como o drawdown é armazenado com sinal negativo, a mesma fórmula também
+pode ser escrita como ``resultado + drawdown``. Quanto maior o lucro e menor
+o drawdown, maior o acumulado. Não há filtro de elegibilidade, pontos por dia
+nem portão estatístico: a posição é só o acumulado. As métricas multitemporais
+continuam sendo calculadas para auditoria, mas não definem a posição.
 
-Período e fonte: o ranking pode ser apurado sobre QUALQUER período do
-histórico (datas, 'ultimos N', 'mes aaaa-mm') ou sobre um mercado FICTÍCIO
-gerado por simulador_mercado.py (reamostragem de pregões reais ou regimes
-sintéticos, com semente). Sem argumentos o script pergunta; também aceita
---modo, --periodo, --simular, --dias-sim, --semente (ver --help).
+Modos: E (entradas × saída titular), S (saídas × entrada titular),
+C (todas as combinações) e A (Análise: roda o cruzado completo e grava uma
+planilha .xlsx com rankings e apuração dia/mês/ano por estratégia).
 """
 
 from __future__ import annotations
@@ -30,7 +25,7 @@ import re
 import subprocess
 import contextlib
 from dataclasses import dataclass, replace
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from statistics import median
 from typing import Callable, Iterable, Optional
@@ -625,65 +620,24 @@ def _profit_factor(trades: Iterable[dict]) -> float:
     return ganhos / perdas
 
 
-def _erro_padrao_total(trades: list[dict]) -> float:
-    """Erro padrão do RESULTADO TOTAL do período — a "faixa de ruído".
-
-    Por que isto existe (Regra 14, portão estatístico): duas estratégias cujo
-    resultado difere por menos que este valor são indistinguíveis com a
-    amostra disponível. Ordená-las no ranking é ordenar ruído, e promover a
-    primeira é sortear.
-
-    Cálculo: o resultado total é a soma de n operações independentes. O erro
-    padrão da soma é sd * sqrt(n), onde sd é o desvio-padrão do resultado por
-    operação. Com n=181 e sd=R$160,71 (titular de 28/09/2026), isso dá
-    ~R$2.162 sobre um resultado de R$17.100 — 12,7%.
-
-    Devolve nan com menos de 2 operações (sem desvio-padrão definido).
-    """
-    if len(trades) < 2:
-        return float("nan")
-    valores = [t["resultado_reais"] for t in trades]
-    media = sum(valores) / len(valores)
-    variancia = sum((v - media) ** 2 for v in valores) / (len(valores) - 1)
-    return (variancia ** 0.5) * (len(valores) ** 0.5)
-
-
 def _resumo(trades: list[dict], dias_periodo: int) -> dict:
     resultado = sum(t["resultado_reais"] for t in trades)
     dias_operados = len({t["horario_rotulo"].date() for t in trades})
-    por_dia: dict = {}
-    for t in trades:
-        d = t["horario_rotulo"].date()
-        por_dia[d] = por_dia.get(d, 0.0) + t["resultado_reais"]
-    dias_pos = frozenset(d for d, v in por_dia.items() if v > 0)
     acumulado = pico = drawdown = 0.0
     for trade in trades:
         acumulado += trade["resultado_reais"]
         pico = max(pico, acumulado)
         drawdown = min(drawdown, acumulado - pico)
-    valores = [t["resultado_reais"] for t in trades]
-    if len(valores) >= 2:
-        media_op = sum(valores) / len(valores)
-        sd_op = (sum((v - media_op) ** 2 for v in valores) / (len(valores) - 1)) ** 0.5
-    else:
-        sd_op = float("nan")
     return {
         "resultado": resultado,
         "diaria": resultado / dias_periodo if dias_periodo else 0.0,
         "dias_operados": dias_operados,
-        "dias_positivos": len(dias_pos),
-        "dias_negativos": sum(1 for v in por_dia.values() if v < 0),
-        "pontos_dia": len(dias_pos) - sum(1 for v in por_dia.values() if v < 0),
-        "_dias_pos_set": dias_pos,   # uso interno (rodape); nao vai para o CSV
         "aproveitamento": resultado / dias_operados if dias_operados else 0.0,
         "drawdown": drawdown,
         "capital_minimo": cfg.MARGEM_WIN_LABORATORIO + abs(drawdown),
         "pf": _profit_factor(trades),
         "operacoes": len(trades),
         "ambiguidades": sum(1 for t in trades if t["intrabar_ambiguo"]),
-        # Portão estatístico (Regra 14)
-        "sd_operacao": sd_op,
-        "erro_padrao_total": _erro_padrao_total(trades),
     }
 
 
@@ -863,7 +817,6 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
         return
     colunas = (
         ("pos", "pos", False, 3),
-        ("pontos_dia", "pts", False, 4),
         (chave_nome, "estratégia", False, 34),
         ("resultado", "resultado", True, 10),
         ("diaria", "diária", True, 7),
@@ -902,40 +855,7 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
         f"{VERDE}Verde{RESET}=1º | {VERMELHO}Vermelho{RESET}=último | "
         f"{AZUL_CELESTE}Azul{RESET}=titular do slot"
     )
-    _rodape_pontos(resultados)
-
-
-def _marcar_elegiveis(resultados: list[dict]) -> None:
-    """V463: so lidera quem tem resultado total positivo E drawdown nao pior
-    que o do titular da lista (decisao do dono, 03/10/2026). Os demais seguem no
-    ranking, abaixo dos elegiveis. Sem titular na lista, vale so o resultado > 0."""
-    titular = next((r for r in resultados if r.get("titular")), None)
-    teto_dd = titular["drawdown"] if titular is not None else -math.inf
-    for r in resultados:
-        # Compara em centavos: dois drawdowns "iguais" diferem em ruido de ponto
-        # flutuante (-448.36800000000494 x -448.3680000000054) e o >= puro
-        # rebaixava linhas elegiveis.
-        r["elegivel_lider"] = int(
-            r["resultado"] > 0 and round(r["drawdown"], 2) >= round(teto_dd, 2)
-        )
-
-
-def _rodape_pontos(resultados: list[dict]) -> None:
-    """Rodape do ranking por pontos diarios (V463). Sem faixa de ruido: o ruido
-    faz parte da competicao (decisao do dono)."""
-    print("pts = dias positivos - dias negativos (dia sem operacao vale 0). "
-          "Desempate: acumulado = resultado - abs(drawdown).")
-    def _nome(r: dict) -> str:
-        if r.get("entrada") and r.get("saida"):
-            return f"{r['entrada']} x {r['saida']}"
-        return str(r.get("estrategia") or r.get("entrada"))
-
-    fora = [_nome(r) for r in resultados if not r.get("elegivel_lider", 1)]
-    if fora:
-        mostrar = fora[:6]
-        resto = f" (+{len(fora) - len(mostrar)} outras)" if len(fora) > len(mostrar) else ""
-        print(f"Nao lideram ({len(fora)}; resultado <= 0 ou drawdown pior que o da "
-              f"titular): " + ", ".join(mostrar) + resto)
+    print("Acumulado = resultado - abs(drawdown). Maior acumulado vence.")
 
 
 def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) -> None:
@@ -945,7 +865,6 @@ def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) ->
         return
     colunas = (
         ("pos", "pos", False, 3),
-        ("pontos_dia", "pts", False, 4),
         ("entrada", "entrada", False, 24),
         ("saida", "saída", False, 18),
         ("resultado", "resultado", True, 10),
@@ -980,7 +899,7 @@ def _imprimir_ranking_cruzado(resultados: list[dict], total_pregoes: int = 0) ->
             for chave, _, moeda, largura in colunas
         )
         print(f"{cor}{texto}{RESET}")
-    _rodape_pontos(resultados)
+    print("Acumulado = resultado - abs(drawdown). Maior acumulado vence.")
 
 
 def _montar_resultado_par(
@@ -1033,14 +952,16 @@ def _perguntar_modo_ranking() -> str:
       E = só entradas (pareadas com saída titular)
       S = só saídas   (pareadas com entrada titular)
       C = cruzado     (todas as combinações — ranking principal)
+      A = análise     (cruzado completo + planilha .xlsx: rankings e apuração
+                       diária/mensal/anual por estratégia)
     """
     while True:
         resp = input(
-            "Qual ranking deseja? Entradas (E), Saídas (S) ou Cruzada (C): "
+            "Qual ranking deseja? Entradas (E), Saídas (S), Cruzada (C) ou Análise (A): "
         ).strip().upper()
-        if resp in ("E", "S", "C"):
+        if resp in ("E", "S", "C", "A"):
             return resp
-        print(f"Resposta '{resp}' não reconhecida — digite exatamente E, S ou C.")
+        print(f"Resposta '{resp}' não reconhecida — digite exatamente E, S, C ou A.")
 
 
 def _perguntar_periodo(dias: list) -> tuple[list, str]:
@@ -1083,6 +1004,276 @@ def _perguntar_simulacao() -> Optional[dict]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Modo A (Análise) — planilha .xlsx. Incorpora o antigo analise.py: mesma engine
+# (executar_jogo), nenhuma lógica de backtest duplicada.
+# ---------------------------------------------------------------------------
+PASTA_ANALISES_PADRAO = r"D:\DAYTRADE\ANALISES"
+_DIAS_SEMANA = ("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")
+_FORMATO_MOEDA_XLSX = '"R$ "#,##0.00;[Red]"(R$ "#,##0.00\\);\\-'
+
+
+def _resultado_por_dia(trades: list[dict]) -> dict:
+    """{data: resultado líquido do dia} — a data é a do candle de sinal."""
+    por_dia: dict = {}
+    for t in trades:
+        d = t["horario_rotulo"].date()
+        por_dia[d] = por_dia.get(d, 0.0) + t["resultado_reais"]
+    return por_dia
+
+
+def _colunas_apuracao(rank_entrada: list[dict], rank_saida: list[dict],
+                      rank_cruzado: list[dict]) -> list[tuple[str, str, dict]]:
+    """Colunas das abas de apuração: (bloco, rótulo, {dia: resultado}).
+
+    Entradas (pareadas com a saída titular) e Saídas (pareadas com a entrada
+    titular) aparecem inteiras; o par titular×titular está nos dois blocos. O
+    bloco Cruzadas traz só os pares sem titular, que não estão nos outros dois.
+    Dentro de cada bloco, a ordem é a do ranking (maior acumulado primeiro)."""
+    colunas = []
+    for r in rank_entrada:
+        colunas.append(("Entradas", r["entrada"] + (" (titular)" if r["titular"] else ""), r["_por_dia"]))
+    for r in rank_saida:
+        colunas.append(("Saídas", r["saida"] + (" (titular)" if r["titular"] else ""), r["_por_dia"]))
+    for r in rank_cruzado:
+        if r["titular_entrada"] or r["titular_saida"]:
+            continue
+        colunas.append(("Cruzadas", f"{r['entrada']} × {r['saida']}", r["_por_dia"]))
+    return colunas
+
+
+def _agrupar_periodo(por_dia: dict, chave) -> dict:
+    agrupado: dict = {}
+    for d, v in por_dia.items():
+        k = chave(d)
+        agrupado[k] = agrupado.get(k, 0.0) + v
+    return agrupado
+
+
+def _estilos_xlsx():
+    from openpyxl.styles import Alignment, Font, PatternFill
+    return {
+        "Alignment": Alignment,
+        "titulo": Font(name="Arial", bold=True, size=14),
+        "cab_fonte": Font(name="Arial", bold=True, color="FFFFFFFF"),
+        "cab_fill": PatternFill(start_color="FF17365D", end_color="FF17365D", fill_type="solid"),
+        "bloco_fill": {
+            "Entradas": PatternFill(start_color="FF2E75B6", end_color="FF2E75B6", fill_type="solid"),
+            "Saídas": PatternFill(start_color="FF548235", end_color="FF548235", fill_type="solid"),
+            "Cruzadas": PatternFill(start_color="FF7F6000", end_color="FF7F6000", fill_type="solid"),
+        },
+        "titular_fill": PatternFill(start_color="FFDDEBF7", end_color="FFDDEBF7", fill_type="solid"),
+        "fonte": Font(name="Arial", size=10),
+        "negrito": Font(name="Arial", size=10, bold=True),
+    }
+
+
+def _aba_ranking(wb, nome_aba: str, titulo: str, linhas: list[dict], par: bool) -> None:
+    from openpyxl.utils import get_column_letter
+    est = _estilos_xlsx()
+    ws = wb.create_sheet(nome_aba)
+    ws.cell(row=1, column=1, value=titulo).font = est["titulo"]
+    ws.cell(row=2, column=1,
+            value="Ordem: acumulado = resultado − |drawdown| (maior vence). Linha azul = titular.").font = est["fonte"]
+    colunas = [("pos", "Pos", 6)]
+    if par:
+        colunas += [("entrada", "Entrada", 36), ("saida", "Saída", 30)]
+    else:
+        colunas += [("estrategia", "Estratégia", 38)]
+    colunas += [
+        ("resultado", "Resultado (R$)", 15), ("diaria", "Diária (R$)", 12),
+        ("dias_operados", "Dias operados", 10), ("aproveitamento", "Aproveit. (R$/dia op.)", 14),
+        ("drawdown", "Drawdown (R$)", 14), ("capital_minimo", "Capital mín. (R$)", 15),
+        ("acumulado", "Acumulado (R$)", 15), ("operacoes", "Operações", 10), ("pf", "Profit factor", 10),
+    ]
+    moeda = {"resultado", "diaria", "aproveitamento", "drawdown", "capital_minimo", "acumulado"}
+    for c, (_, rotulo, largura) in enumerate(colunas, 1):
+        cel = ws.cell(row=4, column=c, value=rotulo)
+        cel.font, cel.fill = est["cab_fonte"], est["cab_fill"]
+        cel.alignment = est["Alignment"](horizontal="center", vertical="center", wrap_text=True)
+        ws.column_dimensions[get_column_letter(c)].width = largura
+    ws.row_dimensions[4].height = 32
+    for i, linha in enumerate(linhas):
+        for c, (chave, _, _) in enumerate(colunas, 1):
+            valor = linha.get(chave)
+            if isinstance(valor, float):
+                valor = None if math.isnan(valor) or math.isinf(valor) else round(valor, 2)
+            cel = ws.cell(row=5 + i, column=c, value=valor)
+            cel.font = est["fonte"]
+            if chave in moeda:
+                cel.number_format = _FORMATO_MOEDA_XLSX
+            if linha.get("titular"):
+                cel.fill = est["titular_fill"]
+    ws.freeze_panes = "A5"
+
+
+def _aba_apuracao(wb, nome_aba: str, titulo: str, colunas: list, chaves: list,
+                  rotulo_chave: str, chave_fn, rotulo_fn, formato_chave,
+                  semana: bool = False) -> None:
+    """Linhas = períodos (dia/mês/ano); colunas = estratégias. Última linha = total.
+
+    chaves: períodos já ordenados; chave_fn(data) -> chave do período;
+    rotulo_fn(chave) -> valor exibido na primeira coluna."""
+    from openpyxl.utils import get_column_letter
+    est = _estilos_xlsx()
+    ws = wb.create_sheet(nome_aba)
+    ws.cell(row=1, column=1, value=titulo).font = est["titulo"]
+    ws.cell(row=2, column=1,
+            value="Resultado líquido (R$, 1 contrato) por período; célula '-' = sem operação/zero.").font = est["fonte"]
+    deslocamento = 2 if semana else 1
+    cab = ws.cell(row=4, column=1, value=rotulo_chave)
+    cab.font, cab.fill = est["cab_fonte"], est["cab_fill"]
+    cab.alignment = est["Alignment"](horizontal="center", vertical="center")
+    ws.column_dimensions["A"].width = 12
+    if semana:
+        c2 = ws.cell(row=4, column=2, value="Dia")
+        c2.font, c2.fill = est["cab_fonte"], est["cab_fill"]
+        c2.alignment = est["Alignment"](horizontal="center", vertical="center")
+        ws.column_dimensions["B"].width = 9
+    agrupados = []
+    for c, (bloco, rotulo, por_dia) in enumerate(colunas, deslocamento + 1):
+        bl = ws.cell(row=3, column=c, value=bloco)
+        bl.font, bl.fill = est["cab_fonte"], est["bloco_fill"][bloco]
+        bl.alignment = est["Alignment"](horizontal="center")
+        cel = ws.cell(row=4, column=c, value=rotulo)
+        cel.font, cel.fill = est["cab_fonte"], est["cab_fill"]
+        cel.alignment = est["Alignment"](horizontal="center", vertical="center", wrap_text=True)
+        ws.column_dimensions[get_column_letter(c)].width = 18
+        agrupados.append(_agrupar_periodo(por_dia, chave_fn))
+    ws.row_dimensions[4].height = 78
+    totais = [0.0] * len(colunas)
+    for i, chave in enumerate(chaves):
+        linha = 5 + i
+        k = ws.cell(row=linha, column=1, value=rotulo_fn(chave))
+        k.font = est["fonte"]
+        k.number_format = formato_chave
+        if semana:
+            ws.cell(row=linha, column=2, value=_DIAS_SEMANA[chave.weekday()]).font = est["fonte"]
+        for j, agr in enumerate(agrupados):
+            bruto = agr.get(chave, 0.0)
+            totais[j] += bruto
+            cel = ws.cell(row=linha, column=deslocamento + 1 + j, value=round(bruto, 2))
+            cel.font = est["fonte"]
+            cel.number_format = _FORMATO_MOEDA_XLSX
+    linha_total = 5 + len(chaves)
+    ws.cell(row=linha_total, column=1, value="Total").font = est["negrito"]
+    for j, total in enumerate(totais):
+        cel = ws.cell(row=linha_total, column=deslocamento + 1 + j, value=round(total, 2))
+        cel.font = est["negrito"]
+        cel.number_format = _FORMATO_MOEDA_XLSX
+    ws.freeze_panes = ws.cell(row=5, column=deslocamento + 1)
+
+
+def _aba_operacoes_titulares(wb, trades: list[dict], meta: dict) -> None:
+    from openpyxl.utils import get_column_letter
+    est = _estilos_xlsx()
+    ws = wb.create_sheet("Operações titulares")
+    ws.cell(row=1, column=1,
+            value=f"Operações dos titulares ({meta['entrada_titular']} × {meta['saida_titular']})"
+            ).font = est["titulo"]
+    ws.cell(row=2, column=1, value=f"{len(trades)} operações | resultado líquido R$ "
+            f"{sum(t['resultado_reais'] for t in trades):,.2f}").font = est["fonte"]
+    cabecalho = ["Dia", "Data", "Hora de entrada", "Hora de saída", "Tipo da operação",
+                 "Resultado (R$)", "Total acumulado (R$)", "Motivo"]
+    for c, rotulo in enumerate(cabecalho, 1):
+        cel = ws.cell(row=4, column=c, value=rotulo)
+        cel.font, cel.fill = est["cab_fonte"], est["cab_fill"]
+        cel.alignment = est["Alignment"](horizontal="center", vertical="center")
+    acumulado = 0.0
+    for i, t in enumerate(trades):
+        linha = 5 + i
+        data_op = t["horario_rotulo"].date()
+        saida_fim = t["saida_dt"]
+        saida_ini = saida_fim - timedelta(minutes=cfg.TIMEFRAME_MINUTOS)
+        acumulado += t["resultado_reais"]
+        motivo = t["motivo"] + (" (ambíguo)" if t.get("intrabar_ambiguo") else "")
+        valores = [_DIAS_SEMANA[data_op.weekday()], data_op, t["horario_execucao"].strftime("%H:%M"),
+                   f"{saida_ini:%H:%M}-{saida_fim:%H:%M}", t["lado"],
+                   round(t["resultado_reais"], 2), round(acumulado, 2), motivo]
+        for c, v in enumerate(valores, 1):
+            cel = ws.cell(row=linha, column=c, value=v)
+            cel.font = est["fonte"]
+            if c == 2:
+                cel.number_format = "dd/mm/yyyy"
+            if c in (6, 7):
+                cel.number_format = _FORMATO_MOEDA_XLSX
+    for c, w in enumerate((10, 12, 15, 15, 17, 16, 20, 24), 1):
+        ws.column_dimensions[get_column_letter(c)].width = w
+    ws.freeze_panes = "A5"
+
+
+def _aba_metodologia(wb, meta: dict) -> None:
+    est = _estilos_xlsx()
+    ws = wb.create_sheet("Metodologia")
+    ws.cell(row=1, column=1, value="Metodologia e critérios").font = est["titulo"]
+    for c, rotulo in enumerate(("Item", "Critério aplicado"), 1):
+        cel = ws.cell(row=3, column=c, value=rotulo)
+        cel.font, cel.fill = est["cab_fonte"], est["cab_fill"]
+    janelas = " e ".join(f"{ini}–{fim}" for ini, fim in cfg.JANELAS_BLOQUEADAS)
+    itens = [
+        ("Ordenação dos rankings", "Acumulado = resultado − |drawdown|. Sem filtro de elegibilidade, sem pontos por dia e sem portão estatístico."),
+        ("Entradas", f"Cada entrada pareada com a saída titular ({meta['saida_titular']}.py)."),
+        ("Saídas", f"Cada saída pareada com a entrada titular ({meta['entrada_titular']}.py)."),
+        ("Cruzadas", "Todas as combinações entrada × saída. Nas abas de apuração, o bloco Cruzadas omite os pares que já aparecem nos blocos Entradas/Saídas (os que têm titular)."),
+        ("Apuração diária / mensal / anual", "Soma do resultado líquido por dia do candle de sinal, por mês e por ano. Dias sem operação valem zero."),
+        ("Fonte e período", meta["fonte"]),
+        ("Histórico utilizado",
+         f"{meta['arquivo']}, de {meta['historico_inicio']:%d/%m/%Y} a {meta['historico_fim']:%d/%m/%Y} "
+         f"({meta['n_candles']} candles, timeframe {cfg.TIMEFRAME_MINUTOS} min). Candles fora do período "
+         "só aquecem os indicadores."),
+        ("Motor", f"Motor oficial do laboratório (executar_jogo): stop e alvo vêm da saída desde a abertura; custo de R$ "
+         f"{cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS:.2f} por operação; R$ {cfg.VALOR_PONTO_REAIS:.2f} por ponto de WIN."),
+        ("Limites", f"Máximo de {cfg.MAX_PERDAS_DIA} perdas por dia; janela(s) {janelas} bloqueada(s)."),
+        ("Hora de entrada", f"Fechamento do candle de sinal (rótulo + {cfg.TIMEFRAME_MINUTOS} minutos)."),
+        ("Hora de saída", "Intervalo do candle em que stop, alvo, saída do cartucho ou encerramento ocorreu; o OHLC não informa o segundo exato."),
+        ("Limitação", "Backtest histórico não garante resultado futuro."),
+    ]
+    for i, (campo, valor) in enumerate(itens, start=4):
+        ws.cell(row=i, column=1, value=campo).font = est["negrito"]
+        cel = ws.cell(row=i, column=2, value=valor)
+        cel.font = est["fonte"]
+        cel.alignment = est["Alignment"](wrap_text=True, vertical="top")
+    ws.column_dimensions["A"].width = 30
+    ws.column_dimensions["B"].width = 110
+
+
+def gravar_planilha_analise(
+    caminho: Path, *, rank_entrada: list[dict], rank_saida: list[dict],
+    rank_cruzado: list[dict], dias: list, trades_titular: list[dict], meta: dict,
+) -> Path:
+    """Grava o .xlsx do modo A. Abas: Entradas, Saídas, Cruzadas (rankings),
+    Apuração diária, mensal e anual (período nas linhas, estratégia nas colunas),
+    Operações titulares e Metodologia."""
+    try:
+        from openpyxl import Workbook
+    except ImportError:
+        raise SystemExit("Pacote 'openpyxl' não encontrado. Instale com:\n    pip install openpyxl")
+    wb = Workbook()
+    wb.remove(wb.active)
+    sufixo = f" — {meta['fonte']}" if meta.get("fonte") else ""
+    _aba_ranking(wb, "Entradas", f"Ranking de entradas (saída titular: {meta['saida_titular']}){sufixo}",
+                 rank_entrada, par=False)
+    _aba_ranking(wb, "Saídas", f"Ranking de saídas (entrada titular: {meta['entrada_titular']}){sufixo}",
+                 rank_saida, par=False)
+    _aba_ranking(wb, "Cruzadas", f"Ranking cruzado entrada × saída{sufixo}", rank_cruzado, par=True)
+
+    colunas = _colunas_apuracao(rank_entrada, rank_saida, rank_cruzado)
+    dias = sorted(dias)
+    meses = sorted({(d.year, d.month) for d in dias})
+    anos = sorted({d.year for d in dias})
+    _aba_apuracao(wb, "Apuração diária", f"Apuração diária{sufixo}", colunas, dias,
+                  "Data", lambda d: d, lambda k: k, "dd/mm/yyyy", semana=True)
+    _aba_apuracao(wb, "Apuração mensal", f"Apuração mensal{sufixo}", colunas, meses,
+                  "Mês", lambda d: (d.year, d.month), lambda k: f"{k[1]:02d}/{k[0]}", "@")
+    _aba_apuracao(wb, "Apuração anual", f"Apuração anual{sufixo}", colunas, anos,
+                  "Ano", lambda d: d.year, lambda k: k, "0")
+    _aba_operacoes_titulares(wb, trades_titular, meta)
+    _aba_metodologia(wb, meta)
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    wb.save(caminho)
+    return caminho
+
+
 def executar(
     caminho_csv: Optional[str] = None,
     *,
@@ -1090,8 +1281,10 @@ def executar(
     periodo: Optional[str] = None,
     simulacao: Optional[dict] = None,
     cenario: Optional[str] = None,
+    saida_dir: Optional[str] = None,
 ):
-    """modo: 'E'/'S'/'C' (None = pergunta). periodo: texto aceito por
+    """modo: 'E'/'S'/'C'/'A' (None = pergunta; A = análise: cruzado completo +
+    planilha .xlsx em saida_dir, padrão D:\\DAYTRADE\\ANALISES). periodo: texto aceito por
     interpretar_periodo (None = pergunta; '' = tudo). simulacao: dict do
     simulador (modo/dias/semente/escala_vol/espelhar); None = pergunta a fonte;
     False = força o histórico real sem perguntar. cenario: nome de um cenário
@@ -1119,12 +1312,13 @@ def executar(
     if modo is None:
         modo = _perguntar_modo_ranking()
     modo = modo.upper()
-    if modo not in ("E", "S", "C"):
-        raise ValueError(f"modo '{modo}' inválido; use E, S ou C")
+    if modo not in ("E", "S", "C", "A"):
+        raise ValueError(f"modo '{modo}' inválido; use E, S, C ou A")
     rotulos_modo = {
         "E": "ENTRADA (pareado com saída titular)",
         "S": "SAÍDA (pareado com entrada titular)",
         "C": "CRUZADO (todas as combinações entrada × saída)",
+        "A": "ANÁLISE (cruzado completo + planilha com rankings e apuração diária/mensal/anual)",
     }
     print(f"[MODO] Ranking escolhido: {modo} — {rotulos_modo[modo]}")
 
@@ -1242,7 +1436,7 @@ def executar(
         pares_a_rodar = [(ent, saida_titular) for ent in entradas]
     elif modo == "S":
         pares_a_rodar = [(entrada_titular, sai) for sai in saidas]
-    else:  # C
+    else:  # C e A: todas as combinações (E e S do modo A são fatias do cruzado)
         pares_a_rodar = [(ent, sai) for ent in entradas for sai in saidas]
 
     print(
@@ -1250,6 +1444,7 @@ def executar(
         f"Combinações a executar: {len(pares_a_rodar)}"
     )
     pares_ok = []  # list of dict resultados
+    trades_titular: list[dict] = []
 
     total = len(pares_a_rodar)
     print(f"[ETAPA 2/2] Executando {total} combinação(ões)...")
@@ -1271,6 +1466,9 @@ def executar(
             ent.nome, sai.nome, trades, dias,
             entrada_titular=ent.titular, saida_titular=sai.titular,
         )
+        res["_por_dia"] = _resultado_por_dia(trades)    # modo A; não vai para o CSV
+        if ent.titular and sai.titular:
+            trades_titular = sorted(trades, key=lambda t: t["horario_execucao"])
         pares_ok.append(res)
         print(f" ok | {len(trades)} ops | {_moeda(res['resultado'])}")
 
@@ -1280,8 +1478,10 @@ def executar(
     disponibilidade = {"longo": False, "mensal": False, "diario": False, "confianca": "—"}
 
     # ----- Ranking ENTRADA (modo E) -----
-    if modo == "E":
+    if modo in ("E", "A"):
         for r in pares_ok:
+            if not r["titular_saida"]:
+                continue        # só entradas pareadas com a saída titular
             item = dict(r)
             item["estrategia"] = r["entrada"]
             item["titular"] = r["titular_entrada"]
@@ -1292,11 +1492,8 @@ def executar(
                 r["nota_longo"] = float("nan")
             if not disponibilidade["mensal"]:
                 r["nota_mensal"] = float("nan")
-        _marcar_elegiveis(rank_entrada)
         rank_entrada.sort(
             key=lambda r: (
-                r["elegivel_lider"],
-                r["pontos_dia"],
                 r["acumulado"],
                 r["resultado"],
                 r["drawdown"],
@@ -1320,8 +1517,10 @@ def executar(
         _registrar_historico(titulo_entrada, _buf_entrada.getvalue())
 
     # ----- Ranking SAÍDA (modo S) -----
-    if modo == "S":
+    if modo in ("S", "A"):
         for r in pares_ok:
+            if not r["titular_entrada"]:
+                continue        # só saídas pareadas com a entrada titular
             item = dict(r)
             item["estrategia"] = r["saida"]
             item["titular"] = r["titular_saida"]
@@ -1332,11 +1531,8 @@ def executar(
                 r["nota_longo"] = float("nan")
             if not disponibilidade["mensal"]:
                 r["nota_mensal"] = float("nan")
-        _marcar_elegiveis(rank_saida)
         rank_saida.sort(
             key=lambda r: (
-                r["elegivel_lider"],
-                r["pontos_dia"],
                 r["acumulado"],
                 r["resultado"],
                 r["drawdown"],
@@ -1360,13 +1556,10 @@ def executar(
         _registrar_historico(titulo_saida, _buf_saida.getvalue())
 
     # ----- Ranking CRUZADO (modo C) -----
-    if modo == "C":
+    if modo in ("C", "A"):
         rank_cruzado = [dict(r) for r in pares_ok]
-        _marcar_elegiveis(rank_cruzado)
         rank_cruzado.sort(
             key=lambda r: (
-                r["elegivel_lider"],
-                r["pontos_dia"],
                 r["acumulado"],
                 r["resultado"],
                 r["drawdown"],
@@ -1381,9 +1574,9 @@ def executar(
             _imprimir_ranking_cruzado(rank_cruzado, total_pregoes=len(dias))
         _registrar_historico(titulo_cruzado, _buf_cruzado.getvalue())
 
-    if modo in ("E", "S"):
+    if modo in ("E", "S", "A"):
         ativos = [n for n in ("longo", "mensal", "diario") if disponibilidade.get(n)]
-        rotulo_h = "entrada" if modo == "E" else "saída"
+        rotulo_h = {"E": "entrada", "S": "saída", "A": "análise"}[modo]
         print(f"\nHorizontes (ranking {rotulo_h}): {', '.join(ativos) or '—'} | "
               f"confiança: {disponibilidade['confianca']}")
         if disponibilidade["confianca"] in {"MUITO BAIXA", "BAIXA"}:
@@ -1406,12 +1599,38 @@ def executar(
         return saida
 
     relatorios = []
-    if modo == "E":
+    if modo in ("E", "A"):
         relatorios.append(gravar("classificacao_entrada", rank_entrada))
-    elif modo == "S":
+    if modo in ("S", "A"):
         relatorios.append(gravar("classificacao_saida", rank_saida))
-    else:
+    if modo in ("C", "A"):
         relatorios.append(gravar("classificacao_cruzada", rank_cruzado))
+    planilha = None
+    if modo == "A":
+        pasta_xlsx = Path(saida_dir or PASTA_ANALISES_PADRAO)
+        nome_xlsx = re.sub(r"\s+", "_", f"analise_{dias[0]:%Y%m%d}_{dias[-1]:%Y%m%d}{fonte_arquivo}.xlsx")
+        meta = {
+            "entrada_titular": entrada_titular.nome,
+            "saida_titular": saida_titular.nome,
+            "fonte": (fonte_rotulo.strip(" |") or "histórico completo") ,
+            "arquivo": caminho.name,
+            "historico_inicio": candles_avaliacao[0].horario,
+            "historico_fim": candles_avaliacao[-1].horario,
+            "n_candles": len(candles_avaliacao),
+        }
+        try:
+            planilha = gravar_planilha_analise(
+                pasta_xlsx / nome_xlsx, rank_entrada=rank_entrada, rank_saida=rank_saida,
+                rank_cruzado=rank_cruzado, dias=dias, trades_titular=trades_titular, meta=meta,
+            )
+        except OSError as erro:
+            alternativa = Path(cfg.PASTA_LOGS_AUDITORIA) / nome_xlsx
+            print(f"[AVISO] Não consegui gravar em '{pasta_xlsx}' ({erro}); gravando em '{alternativa.parent}'.")
+            planilha = gravar_planilha_analise(
+                alternativa, rank_entrada=rank_entrada, rank_saida=rank_saida,
+                rank_cruzado=rank_cruzado, dias=dias, trades_titular=trades_titular, meta=meta,
+            )
+        relatorios.append(planilha)
     print("\nRelatórios:")
     for p in relatorios:
         if p:
@@ -1426,6 +1645,7 @@ def executar(
         "entrada": rank_entrada,
         "saida": rank_saida,
         "cruzado": rank_cruzado,
+        "planilha": planilha,
     }
 
 
@@ -1434,7 +1654,9 @@ def _ler_argumentos(argv=None):
     ap = argparse.ArgumentParser(
         description="Classificação de estratégias. Sem argumentos, pergunta tudo (comportamento original).")
     ap.add_argument("csv", nargs="?", help="histórico CSV (padrão: o configurado/mais recente)")
-    ap.add_argument("--modo", choices=["E", "S", "C", "e", "s", "c"], help="ranking: Entrada, Saída ou Cruzado")
+    ap.add_argument("--modo", choices=["E", "S", "C", "A", "e", "s", "c", "a"],
+                    help="ranking: Entrada, Saída, Cruzado ou Análise (cruzado completo + planilha .xlsx)")
+    ap.add_argument("--saida-dir", help="pasta da planilha do modo A (padrão: D:\\DAYTRADE\\ANALISES)")
     ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
     ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
                     + ", ".join(cen_mod.NOMES))
@@ -1459,4 +1681,5 @@ if __name__ == "__main__":
     cenario = args.cenario
     if cenario is None and (args.modo or args.periodo is not None or args.simular):
         cenario = ""        # rodou por linha de comando: não pergunta, vale todos os cenários
-    executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao, cenario=cenario)
+    executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao,
+             cenario=cenario, saida_dir=args.saida_dir)
