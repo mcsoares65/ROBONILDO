@@ -1,10 +1,10 @@
 """V462 - limite de risco por operacao (motor.validar_risco_inicial).
-Rodar: python -m unittest discover -s tests -v   (da raiz do projeto)
+Rodar: python -m unittest discover -s estrategia/saida -p '_test_*.py'  (da raiz do projeto)
 Cobre o achado A do Manus (ata 2026-10-02-Y): stop invalido/ausente nao pode liberar ordem real."""
 import sys, unittest
 from pathlib import Path
 from datetime import datetime
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import configuracao as cfg
 from motor import MotorRobonildo, Sinal
 

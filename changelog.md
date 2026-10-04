@@ -4,6 +4,35 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V467 — pasta `tests/` extinta; testes passam para o laboratório
+
+`estrategia/entrada` e `estrategia/saida` são o laboratório: a grande maioria das
+candidatas é descartada e só quem passa na peneira chega a titular. Os testes de
+verificação agora ficam ao lado delas, em arquivos com prefixo `_test_` (o `_`
+os mantém fora da classificação, Regra 7). A pasta `tests/` foi removida.
+
+- `estrategia/entrada/`: `_test_candidatas_cenario`, `_test_cenario`,
+  `_test_periodo_simulador`, `_test_modo_analise`, `_test_historico_csv`,
+  `_test_daytrader_entradas`, `_test_paulinho_entradas`, `_test_gabriel_entradas`
+  (este último também cobre dados/volume do contrato Gabriel);
+- `estrategia/saida/`: `_test_candidatas_cenario`, `_test_risco_stop`,
+  `_test_daytrader_saida`, `_test_paulinho_saida`, `_test_gabriel_saidas`.
+
+Nenhum teste foi removido (83 antes, 83 depois). Rodar:
+`python -m unittest discover -s estrategia/entrada -p "_test_*.py"` e o mesmo
+para `estrategia/saida`. O CI passa a rodar as duas suites e a checagem da
+Regra 3 ignora `_test_*`. Nenhum cartucho nem titular foi alterado.
+
+### Arquivos alterados
+- `tests/` (removida)
+- 17 arquivos `_test_*.py` em `estrategia/entrada` e `estrategia/saida`
+- `.github/workflows/robonildo-v2-ci.yml`
+- `historico_csv.py` (referência no docstring)
+- `versionamento.py`
+- `changelog.md`
+
+---
+
 ## V466 — método Just de Paulinho convertido em candidatas auditáveis
 
 A entrevista fornecida descreve regressão à média depois de um deslocamento

@@ -1,12 +1,17 @@
-"""Contrato adicional Gabriel: dados ausentes não viram volume fictício."""
+"""Contrato Gabriel (laboratorio, entradas e dados): dados ausentes nao viram volume ficticio; entradas stateless.
+Arquivo com prefixo `_`: o classificador nao o trata como candidata (Regra 7).
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p '_test_*.py'"""
+import sys
 import tempfile
 import unittest
-import importlib.util
 import copy
+import importlib.util
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from classificacao import CartuchoSaida, carregar_csv, validar_contrato_saida
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from classificacao import carregar_csv
 from construtor_candle import ConstrutorCandle
 from historico_csv import ler_csv_candles
 from leitor_dde import LeitorDDE, COLUNAS_EXTRAS_DDE
@@ -73,28 +78,8 @@ class CompatibilidadeGabriel(unittest.TestCase):
         self.assertEqual(leitor.ler_extras(), {"quantidade": 1543327.0})
         self.assertEqual(enderecos, ["L7"])
 
-    def test_saidas_gabriel_passam_s001_ambos_lados(self):
-        raiz = Path(__file__).resolve().parent.parent
-        pasta = raiz / "estrategia" / "saida"
-        inicio = datetime(2026, 10, 1, 9)
-        candles = [Candle(inicio + timedelta(minutes=15 * i), 1000 + i * 0.1,
-                          1010 + i * 0.1, 990 + i * 0.1, 1001 + i * 0.1, 200)
-                   for i in range(100)]
-        row = construir_row(candles)
-        arquivos = list(pasta.glob("saida_gabriel_*.py"))
-        self.assertEqual(len(arquivos), 3)
-        for p in arquivos:
-            with self.subTest(p=p.name):
-                spec = importlib.util.spec_from_file_location(p.stem, p)
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
-                valido, motivo = validar_contrato_saida(
-                    CartuchoSaida(p.stem, p, mod.avaliar_saida, False), [row]
-                )
-                self.assertTrue(valido, motivo)
-
     def test_entradas_gabriel_sao_stateless_e_nao_alteram_row(self):
-        raiz = Path(__file__).resolve().parent.parent
+        raiz = Path(__file__).resolve().parents[2]
         pasta = raiz / "estrategia" / "entrada"
         inicio = datetime(2026, 10, 1, 9)
         candles = [Candle(inicio + timedelta(minutes=15 * i), 1000 + i * 0.1,
