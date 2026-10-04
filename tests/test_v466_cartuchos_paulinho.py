@@ -1,4 +1,4 @@
-"""V466 - regras mensuraveis do metodo Just explicadas por Paulinho."""
+"""V466 - validação dos cartuchos do método Just explicados por Paulinho."""
 
 import unittest
 from datetime import datetime, timedelta

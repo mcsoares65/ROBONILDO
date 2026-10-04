@@ -31,7 +31,7 @@ titular foi alterado. Detalhes em `estrategia/PAULINHO_JUST.md`.
 - `estrategia/entrada/_paulinho_just.py`
 - dois cartuchos `estrategia/entrada/entrada_paulinho_*_V01.py`
 - `estrategia/saida/saida_paulinho_just_rr2_V01.py`
-- `tests/test_v466_estrategias_paulinho.py`
+- `tests/test_v466_cartuchos_paulinho.py` (somente validação; não é candidata)
 - `tests/test_v465_strategias_importadas.py`
 - `tests/test_gabriel_compatibilidade.py`
 - `versionamento.py`
