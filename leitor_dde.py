@@ -48,11 +48,13 @@ LINHA_MAXIMA_BUSCA = 200   # ate onde procurar na coluna A - ajustar se a planil
 PREFIXO_REPLAY = "[R] "    # como o Profit rotula o ativo em modo Replay na coluna A -
                             # ajustar aqui se o Profit usar outro prefixo/formato
 
-# V460 - COLETA PASSIVA (ver coleta_dde.py). Mapeia nome -> coluna da planilha
-# DDE para campos extras do Profit. VAZIO = desligado. Nomes aceitos:
-# "quantidade", "negocios", "volume" (acumulados no dia) e "estoc_profit".
-# So e gravado em log; nenhuma decisao do robo le isso.
-COLUNAS_EXTRAS_DDE = {}   # ex.: {"quantidade": "K", "negocios": "J", "volume": "L", "estoc_profit": "Q"}
+# V460 - COLETA PASSIVA (ver coleta_dde.py). A amostra DDE de 01/10/2026
+# fornecida pelo dono mostra A=Asset, L=Quantidade e M=Volume financeiro.
+# Apenas Quantidade (total do dia) e registrada em log: NAO e quantidade
+# do candle, NAO entra em sinais nem alimenta ConstrutorCandle nesta etapa.
+# Confirmar correspondencia A/L na planilha real e comparar deltas com o
+# export M15 antes de habilitar qualquer decisao dependente de volume.
+COLUNAS_EXTRAS_DDE = {"quantidade": "L"}
 
 CELULA_CONTRATOS_ABERTOS = None   # DESATIVADO: o campo "Cont. Abertos" (CAB) do DDE mostrou
                                    # valores na casa de 1+ milhao em teste real - isso e

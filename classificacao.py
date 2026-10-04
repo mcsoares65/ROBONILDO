@@ -146,7 +146,17 @@ def carregar_csv(caminho: Path) -> list[Candle]:
                 except ValueError:
                     pass
                 else:
-                    candles.append(Candle(horario, *valores))
+                    quantidade = None
+                    if len(linha) > 8 and linha[8].strip():
+                        try:
+                            quantidade = float(linha[8].replace(".", "").replace(",", "."))
+                            # Histórico persistido legado usava zero como
+                            # placeholder, não como quantidade observada.
+                            if not math.isfinite(quantidade) or quantidade <= 0:
+                                quantidade = None
+                        except ValueError:
+                            pass
+                    candles.append(Candle(horario, *valores, quantidade))
             if linhas_lidas % 500 == 0:
                 _progresso("LEITURA", min(bytes_lidos, tamanho_total), tamanho_total,
                            f"{len(candles)} candles válidos")
