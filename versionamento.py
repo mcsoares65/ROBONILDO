@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V466"
+VERSAO = "V467"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1210,4 +1210,24 @@ VERSAO = "V466"
 # Arquivos: motor.py, estrategia/PAULINHO_JUST.md, _paulinho_just.py, duas
 # entradas Paulinho, uma saida Paulinho, tests/test_v466_cartuchos_paulinho.py,
 # tests/test_v465_strategias_importadas.py, tests/test_gabriel_compatibilidade.py,
+# versionamento.py e changelog.md.
+
+# ---------------------------------------------------------------------------
+# V467 - pasta tests/ extinta: testes passam a viver no laboratorio
+# ---------------------------------------------------------------------------
+# estrategia/entrada e estrategia/saida sao o laboratorio (a peneira para
+# chegar a titular); os testes de verificacao ficam ao lado das candidatas, em
+# arquivos com prefixo "_test_" (o prefixo "_" os mantem fora da classificacao,
+# Regra 7). Divisao: entradas e dados/infra em estrategia/entrada; saidas e o
+# limite de risco do stop em estrategia/saida. Nenhum teste foi removido (83
+# antes e depois). Nenhum cartucho nem titular alterado.
+#
+# Rodar: python -m unittest discover -s estrategia/entrada -p "_test_*.py"
+#        python -m unittest discover -s estrategia/saida -p "_test_*.py"
+#
+# CI: a verificacao da Regra 3 passa a ignorar arquivos "_test_*" (testes
+# precisam importar motor/classificacao) e o workflow roda as duas suites.
+#
+# Arquivos: tests/ (removida), 17 arquivos _test_*.py em estrategia/entrada e
+# estrategia/saida, .github/workflows/robonildo-v2-ci.yml, historico_csv.py,
 # versionamento.py e changelog.md.

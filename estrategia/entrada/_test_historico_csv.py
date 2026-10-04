@@ -3,7 +3,7 @@ Cobre os achados B e C do Manus (ata 2026-10-02-Y) e o incidente de 01/10/2026."
 import sys, tempfile, unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from construtor_candle import candles_faltando
 from historico_csv import resolver_csv_historico, ler_csv_candles
 

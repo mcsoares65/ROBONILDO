@@ -1,9 +1,9 @@
 """cenario.py: reconhecimento exclusivo e 'tecnico' com confirmacao.
-Rodar: python -m unittest discover -s tests -v   (da raiz do projeto)"""
+Rodar: python -m unittest discover -s estrategia/entrada -p '_test_*.py'  (da raiz do projeto)"""
 import sys, unittest
 from datetime import datetime
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import cenario
 
 
