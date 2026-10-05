@@ -158,3 +158,106 @@ Acumulado = resultado - |drawdown| (Regra 5). Valores em R$ com 1 contrato.
 Sugestão de leitura para os autores: se a sua estratégia está no ranking, não é
 motivo de promoção a posição de 2026; o critério é manter-se acima do titular
 fora de 2026 e no acompanhamento à frente.
+
+
+===========================================================================
+ADENDO 1 (05/10/2026, 02h) — diagnóstico por cenário (modo D) e simulação de
+estratégia "se cenário X, então Y" (feita só em memória; nada implementado)
+===========================================================================
+
+Autoria: Claude (Anthropic), a pedido do dono. Motor V477. Este adendo complementa
+os achados da ata acima; onde corrige algo, diz.
+
+A) DADOS (modo D, entrada x saída titular; células = R$ / nº de operações)
+
+ Titular de entrada (grok_3_v1), por cenário:
+                 abertura  fim_tarde  volatil  esticado  tendencia  lateral  indef.
+  2020-2025       3701/89    579/315  3141/145 -1472/79   -544/127  -2312/395 125/324
+  2026            2110/10    985/45   2178/16   1543/12   1095/18   3962/42  3193/44
+  Soma: 2020-2025 = R$ 3.218 (1.495 pregões, ~R$ 2/dia, drawdown -6.113);
+        2026 = R$ 15.066 (confere com o ranking: 14.617,70 de acumulado).
+ Entrada composta: igual ao titular em todos os cenários exceto fim_tarde:
+  2020-2025  2709/494 (titular 579/315): +R$ 2.130 com 179 operações a mais
+  2026       1065/63  (titular 985/45):  +R$ 80 com 18 operações a mais
+ Repete nas duas metades de 2020-2025 (2020-22 / 2023-25), em R$ vs titular:
+  entrada composta, fim_tarde        +1.468 / +662
+  saída composta, lateral            +1.172 / +388
+  saída composta, volatil            -638 / -466     (em 2026 foi +645: INVERTEU)
+  saída composta, indefinido         -742 / -552     (em 2026 foi +756: INVERTEU)
+  saída tendencia_trailing, indef.   +1.130 / +1.207 (em 2026 foi -2.095: INVERTEU)
+  entradas macd_estocastico, manus_v2, deepseek_v5 (abertura): negativas nas duas
+ O programa avisa: muitas células são testadas; padrão que repete ainda pode ser
+ acaso. Tratar tudo isto como hipótese.
+
+B) ACHADOS
+
+ 1) PERFIL DIFERENTE EM CADA PERÍODO. Em 2020-2025 o titular ganha em abertura e
+    volatil (+6.842) e perde em lateral, esticado e tendencia (-4.328). Em 2026 esses
+    três viram lucro (lateral +3.962). O lucro de 2026 veio de onde antes havia
+    prejuízo. Cortar cenários que perdem em 2020-2025 ganharia 4.328 ali e jogaria fora
+    ~6.600 em 2026: filtro por cenário NÃO é estável.
+ 2) Em 2023-2024 (dados que eu tenho no ambiente) o par titular fez resultado +464 com
+    drawdown -2.882: acumulado -2.418. Quase zerado em dois anos.
+ 3) ENTRADA COMPOSTA: o ganho é só em fim_tarde (mecânico) e tem o mesmo sinal em
+    2020-22, 2023-25 e 2026. MAS a força estatística é limite, não folgada:
+    diferença diária de resultado composta - titular, t de Student sobre os dias:
+      2026     +80 em 188 dias        (+0,43/dia)  t = 0,31
+      2023-24  +1.067 em 499 dias     (+2,14/dia)  t = 1,70
+    Estimativa para 2020-2025 (+2.130 em 1.495 dias, desvio diário de ~28 como em
+    2023-24): t ~ 2,0 (conta minha, não rodada). CORRIJO a ata acima, item B: "mecânica
+    e de grande amostra" estava forte demais; é consistente em sinal e no limite da
+    significância. O motor desconta R$ 0,50 por operação (só emolumentos, corretagem
+    zero) e NÃO modela slippage; R$ 12 por operação extra em 2020-25 comporta 1-2
+    ticks; R$ 4 em 2026 comporta menos.
+ 4) Faixa de ruído já registrada nas atas (Regra 14, erro padrão do total em 2026:
+    ~R$ 2.170): todas as diferenças de 2026 desta e da ata acima (cruzada +1.292,
+    saída composta +663, entrada composta +80) estão DENTRO dela.
+
+C) SIMULAÇÃO EM MEMÓRIA (script no ambiente de trabalho, fora do repositório)
+
+ Roteador de saída: no candle 0 da posição escolhe o cartucho de saída pelo cenário
+ do candle de entrada e o mantém até fechar. Nada foi criado em estrategia/. A
+ simulação reproduz o ranking do dono ao centavo (titular em 2026: 15.066 / -448 /
+ 14.617,70). Dados disponíveis aqui: 2026 e 2023-24 (os CSV de 2020-22 e 2025 só
+ existem no disco do dono). As regras foram fixadas ANTES de rodar:
+   R0  titular puro (saida_chatgpt_v4)
+   R1  saída composta só em lateral; saída titular nos outros cenários
+   R3  composta em lateral + tendencia_trailing em indefinido e tendencia
+       (as células que "repetem nas duas metades")
+   R2  mapa completo: o melhor R$ por cenário em 2020-2025 (>= 20 operações)
+ Acumulado (resultado - |drawdown|), entrada titular:
+                       2026 (R$)      2023-24 (R$)
+   R0 titular           14.618         -2.418
+   R1 composta lateral  15.574 (+956)  -1.610 (+808)
+   R3 repete 2 metades  12.993 (-1.625) +1.455 (+3.873)
+   R2 mapa completo     13.074 (-1.544) +1.669 (+4.087)
+ Com a entrada composta o padrão é o mesmo (2026: 14.698 / 15.655 / 13.025 / 12.945;
+ 2023-24: -660 / -128 / 2.678 / 2.839).
+ Leitura:
+  - R2 e R3 foram montados só com a tabela 2020-2025; 2026 é o teste fora da amostra
+    DELAS e as duas PERDEM ~R$ 1.500. É sobreajuste: escolher o melhor cartucho em
+    cada cenário "decora" o período. Os ganhos delas em 2023-24 não valem: 2023-24
+    está dentro de 2020-2025, de onde o mapa saiu.
+  - R1 é uma única célula, com razão mecânica (alvo na MA21 em mercado lateral), e
+    ganha nos dois conjuntos, com drawdown menor em 2026 (-334 contra -448). Mas ela
+    foi escolhida depois de eu ver as duas tabelas, inclusive a de 2026: 2026 não é
+    teste cego para R1. Força: diferença diária R1 - R0 em 2026 +4,48/dia (t = 0,91);
+    em 2023-24 +0,95/dia (t = 1,24). Nenhum dos dois é significativo.
+  - R1 + entrada composta contra o titular puro: 2026 +4,91/dia (t = 0,96); 2023-24
+    +3,09/dia (t = 2,11).
+
+D) POSIÇÃO ATUALIZADA
+
+ - Titulares inalterados: entrada_grok_3_v1 e saida_chatgpt_v4.
+ - Entrada composta: candidata (sinal consistente, significância no limite).
+ - Estratégia por cenário NÃO implementada. A hipótese R1 fica REGISTRADA aqui, com
+   a regra exata acima, para ser medida à frente (modo sombra e depois Holdout cego,
+   como exige o Termo de concordância para seleção dinâmica entre estratégias) sem
+   ajuste. Mapas completos como R2/R3 não devem ser propostos: já falharam fora da
+   amostra.
+ - Rodada feita desde a ata: modo D 2020-2025 (entre as pendências do item 5, a
+   cruzada 2020-2025, a entrada por ano, a janela do drawdown e a Regra 10 seguem
+   pendentes).
+ - Para o dono: o resultado recente da conta (+50% em poucos dias) se parece com 2026,
+   não com o conjunto 2020-2025; não é evidência de edge e não justifica aumentar a
+   posição.

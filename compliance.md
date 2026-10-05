@@ -508,6 +508,39 @@ a única fórmula oficial.
 
 ---
 
+## 15. Consulta obrigatória às atas do conselho
+
+**O problema que esta regra resolve:** as conclusões do laboratório não vivem só
+nas regras acima; vivem também nas atas (`conselho/AAAA-MM-DD-X.txt`): o que foi
+medido, o que já foi descartado, o que é hipótese e o que foi consumido (Holdout,
+anos já vistos). Quem propõe sem ler repete um teste já feito, reabre uma decisão
+já tomada ou usa como "dado novo" um período que já foi gasto.
+
+(A numeração salta a Regra 14 de propósito: as atas citam uma "Regra 14" — o
+portão estatístico —, que ainda não foi redigida neste documento. Esta regra não
+a substitui.)
+
+1. **Leitura antes de agir.** Todo participante — humano ou IA — lê as atas
+   ANTES de: submeter ou alterar uma estratégia (Regra 12); rodar um teste
+   oficial em `classificacao.py`; propor promoção, troca de titular ou descarte;
+   ou usar um período do histórico como validação ou Holdout. No mínimo, as atas
+   mais recentes e todas as que mencionarem a estratégia ou o período em questão.
+2. **Citação.** O Pull Request (Regra 12) e a ata que o acompanha dizem quais atas
+   foram consultadas. Uma decisão que contradiz uma ata precisa dizer qual e por
+   quê.
+3. **Registro.** Resultado de ranking, diagnóstico ou simulação que influencie uma
+   decisão é registrado em ata, com data, autoria (Regra 6), motor/versão, período
+   exato (Regra 9) e a ressalva de quais números são medidos e quais são estimados.
+4. **Atas não se reescrevem.** Uma ata publicada não é editada para mudar o que
+   disse; correções e novos dados entram em ata nova ou em adendo datado dentro
+   dela, apontando o que corrige. Isso preserva a ordem em que as coisas foram
+   sabidas — que é o que a Regra 11 protege.
+5. **Períodos consumidos.** A ata registra quando um período deixa de ser cego
+   (por exemplo, ao ser visto num ranking agregado). Um período registrado como
+   consumido não pode mais ser usado como Holdout (Regra 11.1).
+
+---
+
 ## Termo de concordância
 
 ### Estratégias derivadas por desmembramento
@@ -556,7 +589,9 @@ Ao adicionar um arquivo em `estrategia/`, o participante declara:
 >    robustez;
 > 10. se for um arquivo de saída, entende que é o único responsável por
 >    definir o stop e o alvo da posição desde a abertura — o motor não
->    calcula nem garante nenhum piso de segurança (Regra 1)."
+>    calcula nem garante nenhum piso de segurança (Regra 1);
+> 11. leu as atas do conselho pertinentes (`conselho/`) antes de submeter, e
+>    cita quais no Pull Request (Regra 15)."
 
 Sem essa declaração — implícita ou explícita — o arquivo não deve ser
 importado no laboratório.
@@ -565,6 +600,13 @@ importado no laboratório.
 
 ## Histórico de mudanças
 
+- **v8, adendo de 05/10/2026** (por pedido do dono do laboratório): nova Regra 15
+  — as atas do conselho devem ser consultadas sempre, antes de propor, testar,
+  promover ou descartar; citadas no PR; resultados que influenciam decisões são
+  registrados em ata; atas não são reescritas (correção só por ata nova ou
+  adendo datado); e períodos consumidos como Holdout ficam registrados. Item 11
+  acrescentado à declaração do Termo de concordância. A Regra 14 (portão
+  estatístico, citada nas atas) continua sem texto neste documento.
 - **v8** (proposta, pendente de ratificação): reescrita da Regra 1. O
   motor deixa de ter qualquer fórmula própria de stop/alvo —
   `calcular_stop_alvo` foi removida de `motor.py`. O arquivo de saída
