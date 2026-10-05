@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V472"
+VERSAO = "V473"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1329,3 +1329,15 @@ VERSAO = "V472"
 # combinacao. Entra uma unica barra [COMBINACOES] atualizada na mesma linha.
 # Incompativeis continuam listados no fim. _progresso() agora apaga o resto da
 # linha anterior. Nenhuma estrategia alterada.
+
+
+# ---------------------------------------------------------------------------
+# V473 — classificacao.py so grava arquivo no modo A (Analise)
+# ---------------------------------------------------------------------------
+# Removidos: logs/classificacao_historico.md, os CSVs classificacao_entrada/
+# saida/cruzada, o CSV do modo D e os CSVs do simulador. Modos E, S, C e D
+# apenas imprimem. O modo A grava somente o .xlsx, agora em <projeto>/analise
+# (..\DAYTRADE\ROBONILDO\analise), sem o antigo destino D:\DAYTRADE\ANALISES
+# e sem fallback para logs/. --saida-dir continua permitindo outra pasta.
+# Teste do modo D agora confere que nenhum arquivo e criado.
+# Nenhuma estrategia alterada.
