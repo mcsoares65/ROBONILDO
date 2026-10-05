@@ -1,6 +1,6 @@
 """V466 (laboratorio, entradas): cartuchos do metodo Just explicados por Paulinho.
-Arquivo com prefixo `_`: o classificador nao o trata como candidata (Regra 7).
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p '_test_*.py'"""
+Arquivo `test_*`: o classificador nao o trata como candidata.
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
 
 import sys
 import unittest
@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from estrategia.entrada._paulinho_just import (
+from estrategia.entrada.auxiliar.paulinho_just import (
     sinal_fechamento_anterior,
     sinal_origem_intradiaria,
 )

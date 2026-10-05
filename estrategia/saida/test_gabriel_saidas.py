@@ -1,6 +1,6 @@
 """Contrato Gabriel (laboratorio, saidas): saidas Gabriel passam no contrato S-001 nos dois lados.
-Arquivo com prefixo `_`: o classificador nao o trata como candidata (Regra 7).
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/saida -p '_test_*.py'"""
+Arquivo `test_*`: o classificador nao o trata como candidata.
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/saida -p 'test_*.py'"""
 import sys
 import unittest
 import importlib.util

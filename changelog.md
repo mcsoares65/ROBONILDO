@@ -4,6 +4,37 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V469 — descoberta sem depender de sublinhado no nome do arquivo
+
+No disco do dono os arquivos `_*.py` perderam o `_` inicial. `_paulinho_just.py`,
+`_daytrader_ohlc.py` e `_test_*.py` apareceram como candidatos incompatíveis e os
+imports `estrategia.entrada._paulinho_just` / `._daytrader_ohlc` falharam
+(`entrada_paulinho_just_fechamento_V01` deixou de carregar).
+
+Correção que não depende do prefixo:
+
+- auxiliares de cartucho em `estrategia/entrada/auxiliar/` (`daytrader_ohlc.py`,
+  `paulinho_just.py`); a descoberta nunca desce em subpastas;
+- testes renomeados para `test_*.py`, ignorados pelo `classificacao.py` (a regra
+  dos arquivos `_*` reservados, Regra 7, continua valendo);
+- imports dos 11 cartuchos atualizados; CI atualizado (`-p "test_*.py"`).
+
+Rodar: `python -m unittest discover -s estrategia/entrada` (e `estrategia/saida`).
+Merge com a main: mantidas as remoções do dono (daytrader, gabriel,
+paulinho_origem); testes dependentes ajustados; `diagnostico_cenarios.py`, que
+chegou vazio na main, foi restaurado (`test_cenario` depende dele).
+Nenhuma estratégia ou titular alterado. **Ação do dono:** apagar de
+`estrategia/entrada/` os arquivos antigos `daytrader_ohlc.py` e `paulinho_just.py`.
+
+### Arquivos alterados
+- `classificacao.py` (`_listar_py`)
+- `estrategia/entrada/auxiliar/` (2 arquivos movidos) e 11 cartuchos de entrada (import)
+- 16 arquivos `test_*.py` renomeados em `estrategia/entrada` e `estrategia/saida`
+- `.github/workflows/robonildo-v2-ci.yml`, `historico_csv.py`
+- `versionamento.py`, `changelog.md`
+
+---
+
 ## V468 — candidatas compostas (entrada e saída) com holdout
 
 Pedido: reunir as melhores regras em uma entrada e uma saída. Método: desenho em
