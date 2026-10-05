@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V478"
+VERSAO = "V479"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1231,6 +1231,21 @@ VERSAO = "V478"
 # Arquivos: tests/ (removida), 17 arquivos _test_*.py em estrategia/entrada e
 # estrategia/saida, .github/workflows/robonildo-v2-ci.yml, historico_csv.py,
 # versionamento.py e changelog.md.
+
+# ---------------------------------------------------------------------------
+# V479 - novas fontes de retorno para a meta de R$20 mil de acumulado
+# ---------------------------------------------------------------------------
+# Tres entradas independentes, ainda candidatas e sem alteracao de titular:
+# rompimento da faixa de abertura, liberacao de compressao e continuacao de
+# gap. Uma saida candidata preserva o stop/alvo da chatgpt_v4 e encerra apos
+# quatro candles quando a posicao segue negativa e nunca alcancou 0,45 ATR de
+# excursao favoravel. Nenhuma depende de data, evento, preco absoluto, I/O ou
+# dado posterior ao candle fechado.
+#
+# Por compliance Regra 12, nenhum ranking oficial foi executado antes da
+# revisao do PR. Validacao feita somente com seis testes sinteticos mais a
+# suite integral: 109 testes OK, 6 pulados; py_compile e diff-check OK.
+# Nenhum titular, motor, classificacao ou configuracao foi alterado.
 
 # ---------------------------------------------------------------------------
 # V468 - Candidatas compostas de laboratorio (entrada e saida)
