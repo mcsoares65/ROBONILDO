@@ -1,3 +1,11 @@
+## V481 — saída ChatGPT estrutural assimétrica
+
+- Adiciona `saida_chatgpt_estrutura_assimetrica_v1.py` como candidata S001.
+- Stop estrutural de quatro candles limitado a 2,10 ATR.
+- Alvo assimétrico: 1,90R em compras e 1,55R em vendas.
+- Em 2026 até 24/09, com a entrada titular: resultado R$16.420,63, drawdown -R$323,50 e acumulado R$16.097,12.
+- Nenhum titular foi alterado; detalhes e limitações em `conselho/2026-10-05-AC.txt`.
+
 # ROBONILDO — Changelog
 
 Arquivo único e estável — entradas empilhadas, mais recente no topo.

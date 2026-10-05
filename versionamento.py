@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V480"
+VERSAO = "V481"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1442,3 +1442,14 @@ VERSAO = "V480"
 # Nenhuma estrategia alterada.
 # Tambem: removido test_gabriel_saidas.py (as 3 saidas Gabriel foram excluidas da pasta de
 # estrategias no commit 'excluido arquivos desclassificados'; o teste exigia os 3 arquivos).
+
+
+# ---------------------------------------------------------------------------
+# V481 — saida ChatGPT estrutural assimetrica validada
+# ---------------------------------------------------------------------------
+# Nova candidata S001: stop estrutural de quatro candles limitado a 2,10 ATR;
+# alvo de 1,90R em COMPRA e 1,55R em VENDA. Nenhum titular alterado.
+# Em 2026 ate 24/09: R$16.420,63, DD -R$323,50 e acumulado R$16.097,12
+# com entrada_grok_3_v1; primeira colocada no ranking disponivel.
+# Validacao segmentada em 150/50/50 pregoes e controle anterior de 183 pregoes.
+# Suite: 112 testes OK, 6 pulados. Ata: conselho/2026-10-05-AC.txt.
