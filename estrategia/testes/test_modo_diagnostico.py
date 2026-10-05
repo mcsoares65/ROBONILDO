@@ -1,6 +1,6 @@
 """Modo D (Diagnostico de cenarios) de classificacao.py: so leitura, agrega por cenario.
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 import contextlib
 import io
 import sys

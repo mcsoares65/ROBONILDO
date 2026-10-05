@@ -1,6 +1,6 @@
 """V465 (laboratorio, saidas): saida comum do pacote strategies (stop 1,25x e alvo 2R).
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/saida -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 
 import sys
 import unittest

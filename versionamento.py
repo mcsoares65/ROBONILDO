@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V473"
+VERSAO = "V474"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1341,3 +1341,15 @@ VERSAO = "V473"
 # e sem fallback para logs/. --saida-dir continua permitindo outra pasta.
 # Teste do modo D agora confere que nenhum arquivo e criado.
 # Nenhuma estrategia alterada.
+
+
+# ---------------------------------------------------------------------------
+# V474 — estrategia/entrada e estrategia/saida so com estrategias candidatas
+# ---------------------------------------------------------------------------
+# Os 17 arquivos test_*.py foram movidos para estrategia/testes/ (mesma
+# profundidade: parents[2] continua sendo a raiz). O unico nome repetido foi
+# renomeado: test_entrada_candidatas_cenario.py e test_saida_candidatas_cenario.py.
+# Rodar: python -m unittest discover -s estrategia/testes -p 'test_*.py'
+# (99 testes). CI atualizado: Regra 3 varre entrada/ e saida/ sem excecao e os
+# testes rodam de estrategia/testes. _listar_py continua ignorando test_* como
+# rede de seguranca. Nenhuma estrategia alterada.

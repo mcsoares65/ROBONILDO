@@ -1,6 +1,6 @@
 """Contrato Gabriel (laboratorio, entradas e dados): dados ausentes nao viram volume ficticio; entradas stateless.
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 import sys
 import tempfile
 import unittest

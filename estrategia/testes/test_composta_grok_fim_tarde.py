@@ -1,7 +1,7 @@
 """Laboratorio (entrada composta): as portas 1-3 reproduzem a entrada titular grok_3
 e a 4a (fim de tarde) so atua quando as anteriores nao sinalizam.
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 import contextlib
 import io
 import importlib.util

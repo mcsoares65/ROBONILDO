@@ -4,6 +4,20 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V474 — testes fora das pastas de estratégia
+
+`estrategia/entrada/` e `estrategia/saida/` passam a conter só estratégias
+candidatas (mais as subpastas `titular/`, `auxiliar/`, `antigas/`,
+`desclassificada/`). Os 17 `test_*.py` foram para `estrategia/testes/`; os dois
+`test_candidatas_cenario.py` viraram `test_entrada_candidatas_cenario.py` e
+`test_saida_candidatas_cenario.py`.
+
+Rodar: `python -m unittest discover -s estrategia/testes -p "test_*.py"`
+(99 testes). O CI foi ajustado e a checagem da Regra 3 agora varre as pastas de
+estratégia sem exceção.
+
+---
+
 ## V473 — `classificacao.py` só grava arquivo no modo A
 
 Os modos E, S, C e D agora só imprimem na tela. Deixaram de ser gravados: o

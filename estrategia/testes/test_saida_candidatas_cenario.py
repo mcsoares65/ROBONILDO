@@ -1,7 +1,7 @@
 """LABORATORIO (saidas): cada candidata abre stop/alvo coerentes em compra e em venda
 e administra a posicao depois da abertura. Linhas montadas a mao, sem dados reais.
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/saida -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 import importlib.util
 import sys
 import unittest

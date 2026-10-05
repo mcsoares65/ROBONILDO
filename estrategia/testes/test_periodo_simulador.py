@@ -1,5 +1,5 @@
 """Periodo livre (classificacao.interpretar_periodo) e simulador de mercado.
-Rodar: python -m unittest discover -s estrategia/entrada -p 'test_*.py'  (da raiz do projeto)"""
+Rodar: python -m unittest discover -s estrategia/testes -p 'test_*.py'  (da raiz do projeto)"""
 import sys, unittest
 from datetime import date, datetime, timedelta
 from pathlib import Path
