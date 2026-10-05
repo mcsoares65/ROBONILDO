@@ -295,17 +295,19 @@ travados publicamente antes de qualquer novo ciclo de propostas:
 
 ---
 
-## 12. Aprovação prévia do conselho via GitHub, antes do teste manual em `classificacao.py`
+## 12. Pull Request como portão de entrada, aprovado pelo dono do laboratório
 
-**O problema que esta regra resolve:** hoje, qualquer participante pode
-colocar um arquivo em `estrategia/entrada/` ou `estrategia/saida/` e rodar
-`classificacao.py` diretamente — o conselho só vê o resultado depois, já
-pronto. Isso significa que a única revisão que uma estratégia recebe
-**antes** de consumir tempo de teste é a do próprio autor. Não há hoje
-nenhum portão em que outra IA (ou o dono do laboratório) confirme, antes
-da rodada, que a estratégia respeita as Regras 1–11 acima.
+**O problema que esta regra resolve:** qualquer participante poderia colocar um
+arquivo em `estrategia/entrada/` ou `estrategia/saida/` e rodar `classificacao.py`
+diretamente, sem que ninguém além do autor conferisse, antes da rodada, se a
+estratégia respeita as Regras 1–11.
 
-Novo fluxo, obrigatório a partir da ratificação desta versão:
+**Quem aprova:** somente o **dono do laboratório** faz o merge de Pull Requests
+(CODEOWNERS), e o merge dele **é** a aprovação. Não há aprovação obrigatória do
+conselho (IAs): outros participantes podem comentar ou revisar, mas isso é
+consultivo e não bloqueia nada.
+
+Fluxo, obrigatório a partir desta versão:
 
 1. **Proposta (Pull Request)** — toda nova estratégia (ou alteração de uma
    já existente) é submetida como um Pull Request num repositório Git do
@@ -318,25 +320,13 @@ Novo fluxo, obrigatório a partir da ratificação desta versão:
      (Regra 11.3).
    - Se já houver algum teste preliminar rodado no bloco de
      Desenvolvimento (11.1), o resultado dele — nunca um resultado do
-     bloco de Validação ou do Holdout, que só existem depois da aprovação.
-2. **Revisão do conselho** — antes de qualquer teste oficial em
-   `classificacao.py` contra o bloco de Validação, ao menos um outro
-   participante do conselho (idealmente mais de um, quando disponíveis)
-   revisa o PR e confirma, por escrito no próprio PR, que:
-   - O contrato (Regra 1) está correto.
-   - Não há violação de I/O ou escopo (Regra 3).
-   - Não há sinal de garimpagem ou dependência de dataset específico
-     (Regra 11).
-   - A autoria está clara (Regra 6).
-   Essa revisão é sobre **conformidade com as regras**, não sobre "se a
-   estratégia é boa" — isso é decidido depois, pelo resultado real em
-   `classificacao.py`. O conselho não aprova nem rejeita estratégias por
-   achar que vão ganhar ou perder; aprova ou rejeita por estarem dentro ou
-   fora das regras do jogo.
-3. **Merge e teste oficial** — só depois do PR aprovado por ao menos um
-   revisor, o dono do laboratório faz o merge (movendo o arquivo para
-   `estrategia/entrada/` ou `estrategia/saida/`) e roda `classificacao.py`
-   contra o bloco de Validação. O resultado entra no ranking normalmente.
+     bloco de Validação ou do Holdout, que só existem depois do merge.
+2. **Revisão e merge pelo dono** — o dono confere o PR (contrato da Regra 1, escopo
+   da Regra 3, sinais de garimpagem da Regra 11, autoria da Regra 6) e, se aprovar,
+   faz o merge, movendo o arquivo para `estrategia/entrada/` ou `estrategia/saida/`.
+   Não se espera nenhuma outra aprovação.
+3. **Teste oficial** — depois do merge, o dono roda `classificacao.py` contra o
+   bloco de Validação. O resultado entra no ranking normalmente.
 4. **Promoção a titular** — segue exigindo, adicionalmente a este fluxo,
    o teste de robustez (Regra 10) e, quando for de fato uma troca de
    titular (não apenas uma posição no ranking geral), a rodada única e
@@ -553,7 +543,7 @@ contribuição isolada. Isso não é considerado duplicação indevida se o arqu
 - preservar os limiares originais ou documentar toda alteração;
 - usar o contrato oficial `gerar_sinal(row) -> int`;
 - não alegar resultado próprio antes de ser testado pelo motor oficial;
-- entrar pelo mesmo fluxo de Pull Request e revisão do conselho;
+- entrar pelo mesmo fluxo de Pull Request, aprovado pelo dono (Regra 12);
 - não substituir automaticamente a titular apenas por vencer um recorte.
 
 Um agregador pode preservar a ordem histórica dessas estratégias para fins de
@@ -581,9 +571,9 @@ Ao adicionar um arquivo em `estrategia/`, o participante declara:
 > 7. declara quantas variações relevantes foram testadas antes desta
 >    versão (Regra 11.2), e não depende de nenhuma data ou estrutura
 >    específica do dataset (Regra 11.3);
-> 8. foi submetida como Pull Request e aguarda (ou já obteve) revisão do
->    conselho antes de qualquer teste oficial contra o bloco de Validação
->    (Regra 12);
+> 8. foi submetida como Pull Request e aguarda (ou já obteve) a aprovação do
+>    dono do laboratório (o merge) antes de qualquer teste oficial contra o
+>    bloco de Validação (Regra 12);
 > 9. reconhece o Acumulado da Regra 5 como critério único de ordenação dos
 >    rankings de entrada, saída e cruzado, sem dispensar os demais testes de
 >    robustez;
@@ -600,6 +590,11 @@ importado no laboratório.
 
 ## Histórico de mudanças
 
+- **v8, adendo 2 de 05/10/2026** (por pedido do dono do laboratório): a Regra 12
+  deixa de exigir aprovação do conselho. Só o dono faz o merge de PRs e o merge é a
+  aprovação; a revisão por outros participantes passa a ser consultiva. O resto do
+  fluxo (PR com autoria, declaração de variações, teste oficial só depois do merge,
+  Regra 10 e Holdout na promoção) não muda.
 - **v8, adendo de 05/10/2026** (por pedido do dono do laboratório): nova Regra 15
   — as atas do conselho devem ser consultadas sempre, antes de propor, testar,
   promover ou descartar; citadas no PR; resultados que influenciam decisões são
