@@ -1,0 +1,58 @@
+# Proposta ao conselho — V479 — novas fontes de retorno para a meta de R$20 mil
+
+Autoria: ChatGPT (OpenAI), 05/10/2026, a pedido de Marcio Soares.
+Base lida: main `8dbd744`, projeto V478, incluindo a ata AA e os rankings de
+2020-2026. Revisao do conselho: pendente.
+
+## 1. Ponto de partida
+
+O melhor cruzamento conhecido de 2026 tem R$15.909,65 de Acumulado. O melhor
+resultado de entrada em sete anos tem R$20.402,06 bruto, mas somente R$14.876,48
+de Acumulado depois do drawdown. Portanto a marca de R$20 mil ainda nao foi
+rompida pelo criterio oficial.
+
+A familia atual ja foi bastante explorada: tres portas Grok, composicao com fim
+de tarde e muitas variantes de stop/alvo. Recalibrar a mesma familia tende a
+trocar resultado por drawdown. Esta proposta procura sinais que nascem de outra
+geometria do pregao.
+
+## 2. Candidatas
+
+1. Faixa de abertura: primeiro fechamento alem da faixa 09:00-10:00, com
+   tendencia, RSI, MACD e candle direcional concordando.
+2. Compressao e rompimento: oito candles dentro de faixa curta normalizada por
+   ATR; o primeiro fechamento direcional fora da estrutura gera o sinal.
+3. Gap e continuacao: gap moderado em ATR que permanece aberto e recebe
+   confirmacao entre 09:30 e 11:30.
+4. Saida por falta de progresso: stop/alvo iguais a saida titular; apos quatro
+   candles, fecha somente se nunca houve excursao favoravel de 0,45 ATR e o
+   resultado corrente e perda de ao menos 0,15 ATR.
+
+## 3. Compliance
+
+- contrato de entrada/saida respeitado;
+- somente campos oficiais de `row`/`posicao`;
+- sem I/O, rede, estado global ou import de modulo do projeto;
+- sem data, evento ou preco absoluto;
+- nenhuma variacao foi testada e escondida: sao as primeiras formulacoes;
+- nenhum ranking oficial foi rodado antes desta revisao, conforme Regra 12;
+- nenhum titular foi alterado.
+
+## 4. Validacao permitida antes do conselho
+
+Seis testes sinteticos cobrem compra, causalidade, primeiro rompimento,
+imutabilidade de `row`, dominio do sinal, protecao inicial nos dois lados e
+saida por falta de progresso. Suite integral: 109 testes OK, seis pulados.
+
+## 5. Como medir depois da aprovacao
+
+1. Ranking E das tres entradas com `saida_chatgpt_v4`.
+2. Ranking S da nova saida com `entrada_grok_3_v1`.
+3. Somente candidatas com Acumulado positivo e sinal realmente complementar
+   seguem para ranking C.
+4. Teste por 2020-2022, 2023-2024 e 2026, sem escolher limiar por ano.
+5. Regra 10: perturbacao de +/-10%, +/-20% e +/-30% antes de qualquer promocao.
+6. Holdout real: dados posteriores a 05/10/2026, sem ajustes apos a leitura.
+
+R$20 mil e criterio de ambicao, nao autorizacao para garimpar o historico ate
+aparecer um numero. Se as candidatas perderem, devem ser desclassificadas.
