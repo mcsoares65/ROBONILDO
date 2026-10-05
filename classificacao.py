@@ -278,40 +278,6 @@ def listar_cartuchos_disco() -> dict:
     }
 
 
-def imprimir_inventario_cartuchos(inv: dict) -> None:
-    """Lista no terminal titulares e candidatas de entrada/saída."""
-    print("-" * 100)
-    print("CARTUCHOS NO DISCO (entrada/saída — sem laboratório)")
-    print(f"  estrategia/entrada/titular/  → {inv['pasta_entrada_titular']}")
-    if inv["entrada_titular"]:
-        for p in inv["entrada_titular"]:
-            print(f"    • {p.name} [TITULAR]")
-    else:
-        print("    (vazia — obrigatório 1 arquivo)")
-
-    print(f"  estrategia/entrada/ (candidatas) → {inv['pasta_entrada']}")
-    if inv["entrada_candidatas"]:
-        for p in inv["entrada_candidatas"]:
-            print(f"    • {p.name}")
-    else:
-        print("    (nenhuma candidata)")
-
-    print(f"  estrategia/saida/titular/    → {inv['pasta_saida_titular']}")
-    if inv["saida_titular"]:
-        for p in inv["saida_titular"]:
-            print(f"    • {p.name} [TITULAR]")
-    else:
-        print("    (vazia — obrigatório 1 arquivo)")
-
-    print(f"  estrategia/saida/ (candidatas)   → {inv['pasta_saida']}")
-    if inv["saida_candidatas"]:
-        for p in inv["saida_candidatas"]:
-            print(f"    • {p.name}")
-    else:
-        print("    (nenhuma candidata)")
-    print("-" * 100)
-
-
 def descobrir_entradas() -> tuple[list[CartuchoEntrada], list[tuple[str, str]]]:
     """Todas as entradas: titular + candidatas na raiz de entrada/."""
     inv = listar_cartuchos_disco()
@@ -1552,9 +1518,6 @@ def executar(
             f"CSV não encontrado em '{caminho}'. Informe o caminho completo: "
         ).strip().strip('"')
         caminho = Path(informado)
-
-    inventario = listar_cartuchos_disco()
-    imprimir_inventario_cartuchos(inventario)
 
     if modo is None:
         modo = _perguntar_modo_ranking()
