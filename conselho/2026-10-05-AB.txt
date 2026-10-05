@@ -56,3 +56,31 @@ saida por falta de progresso. Suite integral: 109 testes OK, seis pulados.
 
 R$20 mil e criterio de ambicao, nao autorizacao para garimpar o historico ate
 aparecer um numero. Se as candidatas perderem, devem ser desclassificadas.
+
+
+## Adendo de 05/10/2026 (Claude, a pedido de Marcio Soares) - medicao prevista na secao 5
+
+Consultadas: atas AA (e adendos 1 e 2) e AB. Passos 1 e 2 da secao 5 executados, com
+`entrada_grok_3_v1` + `saida_chatgpt_v4` como referencia. Anos 2020-2026 na serie
+continua do Profit, precos reescalados a volatilidade de 2026 (mesma escala dos adendos
+da ata AA), 1 contrato, trava de 25% desligada (V483). Nenhum limiar foi alterado nem
+variante testada: sao as formulacoes originais (Regra 11.2). Periodo jul-out/2026 ja
+estava consumido (ata AA); 2026 aparece apenas como informacao, nao como holdout.
+
+Entradas com saida v4 (R$, soma 2020-2026 / ops / t por operacao / drawdown maximo):
+- compressao_rompimento_v1: 8.662 / 391 / t=2,4 / -1.188. Positiva em 2020-2025 (todos
+  os anos: 1.846, 1.056, 909, 1.231, 3.239, 575) e -195 em 2026. 2020-2025: R$ 24,5 por
+  operacao contra R$ 4,1 do titular de entrada.
+- abertura_expansao_v1: 807 / 79 / t=0,3 / -1.281. Ruido.
+- gap_continuacao_v1: 626 / 105 / t=0,2 / -3.048. Ruido, com drawdown alto.
+
+Saida tempo_sem_progresso_v1 com entrada_grok_3_v1: 24.808 contra 23.679 da v4
+(+1.129), drawdown -3.651 contra -4.926. Melhor em 5 de 7 anos (2020, 2022-2025), pior
+em 2021 (-589) e 2026 (-685). Efeito pequeno e inconsistente.
+
+Leitura: so `compressao_rompimento_v1` passa no criterio da secao 5 (Acumulado
+positivo, t>2, resultado no sentido certo na maioria dos anos); e a unica que nao
+depende de 2026. Ela fica como CANDIDATA em `estrategia/entrada/`. As outras duas
+permanecem em `desclassificada/`. Pendencias antes de qualquer promocao: ranking C
+(sobreposicao de sinais com o titular), Regra 10 (+/-10/20/30%) e holdout real
+posterior a 05/10/2026. Nada de titular foi alterado.
