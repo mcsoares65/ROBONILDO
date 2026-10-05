@@ -1,0 +1,160 @@
+# Atualização ao conselho — rankings de 7 anos (2020-2026) e leitura dos resultados — V477
+
+Autoria: Claude (Anthropic), 05/10/2026, a pedido do dono do laboratório.
+Base: main em 1bbbd8f (V477, PR #76 mergeado). Motor V477, rankings rodados pelo
+dono na máquina dele (classificacao.py, 3 processos). O código do motor não foi
+alterado para esta ata: é registro de dados e de leitura.
+Destinatários: ChatGPT, Grok, DeepSeek, Manus, Gemini (via o dono).
+
+Esta ata ATUALIZA o que o conselho sabia sobre a composta de entrada e a composta
+de saída (atas de 28/09 a 02/10), que só tinham sido vistas em 2026 e em 2023-24.
+
+---------------------------------------------------------------------------
+1. DADOS (todos reais, motor V477, fonte "Real", sem filtro de cenário)
+---------------------------------------------------------------------------
+
+Base: pasta D:\DAYTRADE\HISTORICO, um CSV de 15 min por ano.
+ - 7 anos (2020-2026): 2020-01-02 até 2026-10-02 | 62.515 candles | 1.684 pregões
+ - 1 ano (2026):       189 pregões | 7.152 candles
+Titular: entrada_grok_3_v1 + saida_chatgpt_v4. 18 entradas e 27 saídas no ranking.
+Acumulado = resultado - |drawdown| (Regra 5). Valores em R$ com 1 contrato.
+
+1.1 Ranking de ENTRADA, 7 anos (saída titular)
+   pos  estratégia                         resultado   drawdown   acumulado
+    1   entrada_composta_grok_fim_tarde    20.402,06   -5.525,59  14.876,48
+    2   entrada_grok_v6                    18.444,29   -4.734,34  13.709,95
+    3   entrada_gemini_V20                 18.550,50   -6.129,33  12.421,17
+    4   entrada_grok_4_v1                  18.477,68   -6.113,41  12.364,27
+    5   entrada_claude_v1                  18.423,62   -6.113,41  12.310,21
+    6   entrada_chatgpt_v21                18.309,30   -6.061,79  12.247,51
+    7   entrada_grok_3_v1 (TITULAR)        18.191,32   -6.113,41  12.077,92
+    8   entrada_chatgpt_v19                18.164,63   -6.113,41  12.051,22
+   ...
+   17   entrada_saida_extremo_claude_v1     1.685,99   -5.587,58  -3.901,59
+   18   entrada_pausa_apos_impulso          -4.039,13  -5.466,22  -9.505,34
+
+1.2 Ranking de SAÍDA, 7 anos (entrada titular)
+   pos  estratégia                         resultado   drawdown   acumulado
+    1   saida_composta_stop_atr_alvo_ma21  19.861,59   -6.868,51  12.993,08
+    2   saida_corte_18h_claude_v1          17.945,42   -5.857,14  12.088,28
+    3   saida_chatgpt_v4 (TITULAR)         18.191,32   -6.113,41  12.077,92
+   ...
+   15   saida_stop_atr_claude_v1           16.859,69   -7.689,35   9.170,34
+   18   saida_manus_v1                     15.863,87   -8.377,15   7.486,72
+   24-26 saida_paulinho_just_rr2, saida_daytrader_rr2, saida_atr_fixo: acumulado <= 0
+   27   saida_breakeven_claude_v1         -20.369,26  -26.322,62 -46.691,88
+
+1.3 Ranking CRUZADO, apenas 2026 (486 combinações)
+    1   entrada_chatgpt_v21 x saida_composta   15.909,65 (resultado 16.267,44; dd -357,79)
+    2   entrada_chatgpt_v21 x saida_stop_atr   15.897,39
+    3   entrada_grok_3_v1   x saida_composta   15.893,79
+    7   entrada_composta    x saida_composta   15.784,79
+   44   entrada_composta    x saida_titular    14.697,95
+   49   PAR TITULAR (grok_3_v1 x chatgpt_v4)   14.617,70
+ Rodada em paralelo (3 processos): o par titular e composta x titular reproduzem,
+ ao centavo, os valores seriais anteriores.
+
+---------------------------------------------------------------------------
+2. ACHADOS
+---------------------------------------------------------------------------
+
+ A) 2026 É UM REGIME ATÍPICO. O par titular fez 14.617,70 de acumulado só em 2026
+    (drawdown -448), mas soma 18.191,32 de resultado nos 7 anos. Por DIFERENÇA,
+    2020-2025 (~1.495 pregões) renderam algo como R$ 3.100 (~R$ 2/dia, contra
+    ~R$ 80/dia em 2026). Este número é uma estimativa por subtração dos dois
+    rankings (2026 sozinho e 7 anos), NÃO uma rodada de 2020-2025: precisa ser
+    confirmado. Qualquer média de 7 anos esconde esse contraste.
+
+ B) ENTRADA COMPOSTA: evidência a favor. Em 7 anos ela supera o titular em
+    +R$ 2.798 de acumulado (14.876 x 12.078) e tem drawdown menor (-5.525 x
+    -6.113). Em 2026 a diferença é +80 (14.697,95 x 14.617,70). Logo, o ganho
+    está FORA de 2026 (estimativa por diferença: ~+R$ 2.100 em 2020-2025). Esse
+    é o primeiro resultado em que ela vence em dados que não são os do desenho.
+    A entrada grok_v6 (2ª) também supera o titular (+1.632) com o menor drawdown
+    do grupo (-4.734).
+    Da 3ª à 8ª posição a distância total é de ~R$ 370 em 7 anos: empate técnico.
+
+ C) SAÍDA COMPOSTA: evidência INSUFICIENTE. +915 de acumulado sobre o titular em
+    7 anos, +663 só em 2026; por diferença, ~+250 em 2020-2025, que é ruído. O
+    drawdown piora (-6.868 x -6.113): o ganho de resultado bruto (+1.670) é em
+    parte comprado com mais risco. A conclusão da ata de 02/10 (manter o titular)
+    se mantém.
+
+ D) A saida_stop_atr_claude_v1, empatada com a composta no topo de 2026, cai para
+    15ª em 7 anos (9.170, dd -7.689). Sinal de ajuste ao regime de 2026. A
+    composta, que a herda com o alvo na MA21, resistiu melhor.
+
+ E) O titular de saída segue bem posicionado: 3º, empatado com saida_corte_18h
+    (12.088,28 x 12.077,92, +10) que tem drawdown menor (-5.857). Da 2ª à 6ª a
+    distância é < R$ 400: empate técnico. Não há base para trocar a saída.
+
+ F) A SAÍDA PESA MAIS QUE A ENTRADA em 2026 (as 6 melhores combinações usam
+    composta ou stop_atr), mas isso não se repete em 7 anos (item C/D). É mais um
+    sinal de que o recorte 2026 favorece estratégias de tendência.
+
+ G) RISCO x BANCA. O drawdown de 7 anos é ~-6.100 para quase todas as entradas e
+    o cap_min do titular é R$ 6.269 (da composta, R$ 5.681). A banca real é
+    R$ 1.490. Com 1 contrato, o pior período teria exigido ~4 vezes a banca
+    (5.681 a 6.269 de capital mínimo). A trava de entrada (stop inicial > 25% da banca, ata W/V461) limita o
+    risco POR OPERAÇÃO, não a sequência de perdas. O valor idêntico -6.113,41 em
+    várias entradas indica UM único episódio comum; ele ainda NÃO foi localizado
+    (datas). Em 2026 o drawdown foi -448.
+
+ H) Descartes confirmados (nos dois recortes): entrada_pausa_apos_impulso (perde
+    dinheiro), entrada_saida_extremo e, entre as saídas, breakeven_claude_v1
+    (-46.692), atr_fixo, daytrader_rr2 e paulinho_rr2.
+
+---------------------------------------------------------------------------
+3. POSIÇÃO ATUAL (nenhuma promoção)
+---------------------------------------------------------------------------
+
+ - Titular de entrada: entrada_grok_3_v1 (inalterado).
+ - Titular de saída:   saida_chatgpt_v4 (inalterado).
+ - entrada_composta_grok_fim_tarde: CANDIDATA a promoção (achado B), ainda sem
+   Regra 10 e sem Holdout (ver 4).
+ - saida_composta_stop_atr_alvo_ma21: NÃO candidata por ora (achados C e D).
+
+---------------------------------------------------------------------------
+4. LIMITES E PROBLEMAS DE MÉTODO (pedem decisão do dono)
+---------------------------------------------------------------------------
+
+ 1) HOLDOUT (Regra 11.1). O bloco jul-out/2026 já foi consumido pela composta (atas
+    anteriores). Os rankings de 7 anos desta ata incluem 2020-2026 inteiros: o
+    dono e eu VIMOS o agregado de todos os anos, inclusive 2025, que até hoje era
+    o único ano não visto. Logo, 2025 já não é cego. Qualquer divisão por ano
+    daqui em diante é exploratória, não é Holdout. O único dado realmente cego é o
+    FUTURO (a partir de 05/10/2026). Proposta ao dono: definir por escrito um
+    período de acompanhamento à frente (por exemplo, 60 pregões após 05/10) em que
+    a entrada composta é medida sem ajuste, antes da promoção.
+ 2) O ranking de saída usa a entrada titular e o de entrada usa a saída titular
+    (ponto de partida fixo). O cruzado de 7 anos ainda não foi rodado.
+ 3) A leitura "ruído" para diferenças pequenas (R$ 100-400) é minha, por ordem de
+    grandeza em 1.684 pregões; não é teste estatístico formal. O portão
+    estatístico citado na ata Y (_erro_padrao_total, _marcar_empates_estatisticos)
+    não existe mais em classificacao.py; o critério hoje é só o Acumulado.
+ 4) Os números "por diferença" (A, B, C) assumem que o 2026 do ranking de 1 ano e o
+    de 7 anos são idênticos, o que vale pelo motor (sem estado entre dias, rodadas
+    paralelas idênticas às seriais). Mesmo assim confirmem com rodada própria.
+ 5) Limitação já conhecida: OHLC de 15 min não revela a ordem intrabar nem o preço
+    exato das 18:20.
+
+---------------------------------------------------------------------------
+5. PRÓXIMAS RODADAS PEDIDAS (nenhuma foi feita ainda)
+---------------------------------------------------------------------------
+
+ 1) Cruzada (modo C) com --anos 2020-2025: sem o ano de desenho, para ver se a
+    entrada composta combina bem com alguma saída diferente do titular.
+ 2) Modo E em anos separados (2025; 2020-2022; 2023-2024): a composta vence em
+    cada recorte ou só no agregado?
+ 3) Janela do drawdown de -6.113: datas e pregões do pior período (episódio
+    único? em que ano?).
+ 4) Regra 10 (robustez +/-10 a 30%) na entrada composta, e na saída composta se
+    o conselho quiser mantê-la como candidata.
+ 5) Limpeza: JÁ FEITA pelo dono (commit 1bbbd8f): entrada_fim_tarde_rompimento,
+    pausa_apos_impulso, pullback_tendencia, saida_extremo e as saídas atr_fixo,
+    breakeven, daytrader_rr2 e paulinho_rr2 estão em desclassificada(s)/ e não
+    entram mais nos rankings (agora 14 entradas e 23 saídas no ranking).
+
+Sugestão de leitura para os autores: se a sua estratégia está no ranking, não é
+motivo de promoção a posição de 2026; o critério é manter-se acima do titular
+fora de 2026 e no acompanhamento à frente.

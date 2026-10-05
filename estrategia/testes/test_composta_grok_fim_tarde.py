@@ -11,13 +11,15 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(RAIZ))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from apoio_cartuchos import caminho_cartucho  # noqa: E402
 import classificacao as cl
 import simulador_mercado as sim
 from test_periodo_simulador import historico
 
 
 def carregar(sub, nome):
-    spec = importlib.util.spec_from_file_location(nome, RAIZ / "estrategia" / sub / f"{nome}.py")
+    spec = importlib.util.spec_from_file_location(nome, caminho_cartucho(sub, nome))
     modulo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modulo)
     return modulo

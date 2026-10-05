@@ -4,6 +4,28 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V478 — ata AA do conselho: rankings de 7 anos (2020-2026)
+
+Documentação (`conselho/2026-10-05-AA.txt`) e ajuste dos testes. Registra os
+rankings de entrada, saída e cruzado rodados no motor V477 e a leitura deles:
+- a entrada composta supera o titular em 7 anos (+R$ 2.798), com o ganho fora de
+  2026: segue candidata, ainda sem Regra 10 nem Holdout;
+- a saída composta não tem evidência fora de 2026 (+915 em 7 anos, +663 só em 2026,
+  drawdown pior): o titular `saida_chatgpt_v4` fica;
+- `saida_stop_atr` cai de 2ª (2026) para 15ª (7 anos);
+- 2026 é um regime atípico; o drawdown de 7 anos exige ~4x a banca real;
+- o agregado de 7 anos queimou o 2025 como ano cego: o único Holdout real é o futuro.
+Lista também as rodadas pendentes (cruzada 2020-2025, entrada por ano, janela do
+drawdown, Regra 10).
+
+**Testes:** 13 testes estavam quebrados na `main` desde o commit que moveu as
+candidatas descartadas para `entrada/desclassificada/` e `saida/desclassificadas/`.
+Novo `estrategia/testes/apoio_cartuchos.py` localiza o cartucho em qualquer das
+duas pastas; os testes de daytrader/paulinho importam do novo caminho. Suíte: 103
+testes OK, 6 pulados.
+
+---
+
 ## V477 — mais rápido: sem cópia do histórico a cada candle e em vários processos
 
 **Motor de simulação:** o `executar_jogo` entregava ao motor uma cópia de todo o
