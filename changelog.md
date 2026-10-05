@@ -4,6 +4,17 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V473 — `classificacao.py` só grava arquivo no modo A
+
+Os modos E, S, C e D agora só imprimem na tela. Deixaram de ser gravados: o
+histórico `logs/classificacao_historico.md`, os CSVs dos rankings, o CSV do
+modo D e os CSVs do simulador. O modo A (Análise) continua gerando o Excel,
+agora em `analise/` dentro da pasta do projeto (`..\DAYTRADE\ROBONILDO\analise`),
+sem o destino antigo `D:\DAYTRADE\ANALISES` e sem cópia de reserva em `logs/`.
+`--saida-dir` ainda permite escolher outra pasta.
+
+---
+
 ## V472 — tela do `classificacao.py` mais enxuta
 
 Saíram do início da execução: a linha "Multi = score ABSOLUTO…", os títulos

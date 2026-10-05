@@ -21,11 +21,8 @@ from __future__ import annotations
 
 import csv
 import importlib.util
-import io
 import math
 import re
-import subprocess
-import contextlib
 from collections import defaultdict
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
@@ -41,62 +38,6 @@ from motor import Candle, MotorRobonildo, construir_row
 # ordenação ou apresentação da classificação incrementam esta constante sem
 # alterar a versão operacional do Robonildo definida em configuracao.py.
 VERSAO_CLASSIFICACAO = "C001"
-
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def _git_sha_atual() -> str:
-    """SHA do commit atual do repositório, ou "sem-git" se não estiver
-    rodando dentro de um clone git (ex: pasta copiada manualmente). Usado só
-    para carimbar `logs/classificacao_historico.md` - nunca falha o
-    programa, silenciosamente vira "sem-git"."""
-    try:
-        return (
-            subprocess.check_output(
-                ["git", "rev-parse", "HEAD"],
-                cwd=Path(__file__).resolve().parent,
-                stderr=subprocess.DEVNULL,
-            )
-            .decode()
-            .strip()
-        )
-    except Exception:
-        return "sem-git"
-
-
-def _registrar_historico(titulo: str, texto: str) -> None:
-    """Acrescenta (NUNCA sobrescreve) o resultado desta rodada em
-    `logs/classificacao_historico.md`, carimbado com data/hora e o SHA do
-    commit atual do repositório.
-
-    Existe para que nenhuma promoção de titular dependa de alguém (humano
-    ou IA) colar manualmente um resultado no chat ou num PR - o próprio
-    `classificacao.py` já deixa a prova gravada, atrelada ao commit exato
-    em que rodou (compliance.md, Regra 4: nenhum resultado vale sem ter
-    sido rodado de novo contra o motor atual - o SHA aqui é o que permite
-    conferir isso depois, sem confiar na palavra de quem rodou).
-    """
-    pasta_logs = Path(cfg.PASTA_LOGS_AUDITORIA)
-    pasta_logs.mkdir(parents=True, exist_ok=True)
-    caminho = pasta_logs / "classificacao_historico.md"
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sha = _git_sha_atual()
-    texto_limpo = _ANSI_RE.sub("", texto).rstrip()
-    bloco = f"\n## {agora} — commit `{sha}`\n\n{titulo}\n\n```\n{texto_limpo}\n```\n"
-    with caminho.open("a", encoding="utf-8") as f:
-        f.write(bloco)
-
-
-@contextlib.contextmanager
-def _capturar_e_imprimir():
-    """Deixa o bloco `with` imprimir normalmente no terminal E devolve o
-    texto capturado (sem códigos ANSI removidos ainda - isso é feito em
-    `_registrar_historico`) para gravar no histórico."""
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        yield buf
-    texto = buf.getvalue()
-    print(texto, end="")
 
 try:
     import colorama
@@ -981,7 +922,7 @@ def _perguntar_simulacao() -> Optional[dict]:
 # Modo A (Análise) — planilha .xlsx. Incorpora o antigo analise.py: mesma engine
 # (executar_jogo), nenhuma lógica de backtest duplicada.
 # ---------------------------------------------------------------------------
-PASTA_ANALISES_PADRAO = r"D:\DAYTRADE\ANALISES"
+PASTA_ANALISES_PADRAO = Path(__file__).resolve().parent / "analise"   # ..\DAYTRADE\ROBONILDO\analise
 _DIAS_SEMANA = ("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")
 _FORMATO_MOEDA_XLSX = '"R$ "#,##0.00;[Red]"(R$ "#,##0.00\\);\\-'
 
@@ -1421,16 +1362,6 @@ def consistencia_metades(linhas_a: list[dict], linhas_b: list[dict], nome_titula
     return sorted(saida, key=lambda x: -abs(x["efeito_minimo"]))
 
 
-def gravar_csv_diagnostico(linhas: list[dict], caminho: Path) -> Path:
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    with caminho.open("w", newline="", encoding="utf-8-sig") as f:
-        w = csv.DictWriter(f, fieldnames=["tipo", "estrategia", "cenario", "ops", "resultado", "vitorias"],
-                           delimiter=";")
-        w.writeheader()
-        w.writerows(linhas)
-    return caminho
-
-
 def _executar_diagnostico(candles, rows, dias, dias_avaliacao, entradas, saidas,
                           entrada_titular, saida_titular, incompativeis, fonte_arquivo,
                           rotulos_sim, metades) -> dict:
@@ -1469,18 +1400,12 @@ def _executar_diagnostico(candles, rows, dias, dias_avaliacao, entradas, saidas,
             print("nenhuma célula se repete nas duas metades")
         print("Muitas células são testadas: um padrão que repete ainda pode ser acaso; trate como hipótese.")
 
-    csv_diag = gravar_csv_diagnostico(
-        linhas,
-        Path(cfg.PASTA_LOGS_AUDITORIA) / f"diagnostico_cenarios_{VERSAO_CLASSIFICACAO.lower()}"
-                                         f"_motor_{cfg.VERSAO.lower()}{fonte_arquivo}.csv",
-    )
-    print(f"\nRelatórios:\n  {csv_diag.resolve()}")
     print("Limitação: OHLC 15min não revela ordem intrabar nem preço exato das 18:20.")
     if incompativeis:
         print("\nCartuchos/combinações INCOMPATIVEIS:")
         for nome, erro in incompativeis:
             print(f"- {nome} (INCOMPATIVEL): {erro}")
-    return {"modo": "D", "diagnostico": linhas, "repetem_nas_metades": repetem, "csv": csv_diag}
+    return {"modo": "D", "diagnostico": linhas, "repetem_nas_metades": repetem}
 
 
 def executar(
@@ -1494,7 +1419,7 @@ def executar(
     metades: Optional[bool] = None,
 ):
     """modo: 'E'/'S'/'C'/'A'/'D' (None = pergunta; A = análise: cruzado completo +
-    planilha .xlsx em saida_dir, padrão D:\\DAYTRADE\\ANALISES; D = diagnóstico por
+    planilha .xlsx em saida_dir, padrão <projeto>\\analise (único modo que grava arquivo); D = diagnóstico por
     cenário, só leitura, com todos os cenários; metades=True mostra o que se repete
     nas duas metades do período, None = pergunta). periodo: texto aceito por
     interpretar_periodo (None ou '' = tudo, o conteúdo do arquivo). simulacao: dict do
@@ -1548,11 +1473,8 @@ def executar(
             espelhar=bool(simulacao.get("espelhar", True)),
         )
         tag = f"{simulacao.get('modo', 'reamostragem')}_s{semente_usada}_{simulacao.get('dias', 120)}d"
-        pasta_sim = Path(cfg.PASTA_LOGS_AUDITORIA)
-        csv_sim = sim.salvar_csv(candles_avaliacao, pasta_sim / f"simulacao_{tag}.csv")
-        sim.salvar_rotulos(rotulos_sim, pasta_sim / f"simulacao_{tag}_rotulos.csv")
         print(f"[SIMULADOR] {simulacao.get('modo', 'reamostragem')} | semente {semente_usada} | "
-              f"{simulacao.get('dias', 120)} pregões FICTÍCIOS | gravado em {csv_sim.resolve()}")
+              f"{simulacao.get('dias', 120)} pregões FICTÍCIOS | nada é gravado em disco")
         print("[SIMULADOR] Dados fictícios: servem para estressar e comparar, não para estimar lucro.")
         fonte_rotulo = f" | SIMULADO {tag}"
         fonte_arquivo = f"_sim_{tag}"
@@ -1715,13 +1637,11 @@ def executar(
             f"RANKING ENTRADA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
             f"saída titular: {saida_titular.nome}){fonte_rotulo}"
         )
-        with _capturar_e_imprimir() as _buf_entrada:
-            _imprimir_ranking_simples(
-                titulo_entrada,
-                rank_entrada,
-                chave_nome="estrategia",
-            )
-        _registrar_historico(titulo_entrada, _buf_entrada.getvalue())
+        _imprimir_ranking_simples(
+            titulo_entrada,
+            rank_entrada,
+            chave_nome="estrategia",
+        )
 
     # ----- Ranking SAÍDA (modo S) -----
     if modo in ("S", "A"):
@@ -1754,13 +1674,11 @@ def executar(
             f"RANKING SAÍDA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
             f"entrada titular: {entrada_titular.nome}){fonte_rotulo}"
         )
-        with _capturar_e_imprimir() as _buf_saida:
-            _imprimir_ranking_simples(
-                titulo_saida,
-                rank_saida,
-                chave_nome="estrategia",
-            )
-        _registrar_historico(titulo_saida, _buf_saida.getvalue())
+        _imprimir_ranking_simples(
+            titulo_saida,
+            rank_saida,
+            chave_nome="estrategia",
+        )
 
     # ----- Ranking CRUZADO (modo C) -----
     if modo in ("C", "A"):
@@ -1776,10 +1694,7 @@ def executar(
         )
         for i, r in enumerate(rank_cruzado, 1):
             r["pos"] = i
-        titulo_cruzado = f"RANKING CRUZADO {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}){fonte_rotulo}"
-        with _capturar_e_imprimir() as _buf_cruzado:
-            _imprimir_ranking_cruzado(rank_cruzado, total_pregoes=len(dias))
-        _registrar_historico(titulo_cruzado, _buf_cruzado.getvalue())
+        _imprimir_ranking_cruzado(rank_cruzado, total_pregoes=len(dias))
 
     if modo in ("E", "S", "A"):
         ativos = [n for n in ("longo", "mensal", "diario") if disponibilidade.get(n)]
@@ -1789,29 +1704,7 @@ def executar(
         if disponibilidade["confianca"] in {"MUITO BAIXA", "BAIXA"}:
             print("Classificação provisória: histórico insuficiente para promover titular.")
 
-    pasta_logs = Path(cfg.PASTA_LOGS_AUDITORIA)
-    pasta_logs.mkdir(parents=True, exist_ok=True)
-
-    def gravar(nome, linhas):
-        if not linhas:
-            return None
-        saida = pasta_logs / (
-            f"{nome}_{VERSAO_CLASSIFICACAO.lower()}_motor_{cfg.VERSAO.lower()}{fonte_arquivo}.csv"
-        )
-        campos = [k for k in linhas[0].keys() if not k.startswith("_")]
-        with saida.open("w", newline="", encoding="utf-8-sig") as f:
-            w = csv.DictWriter(f, fieldnames=campos, delimiter=";", extrasaction="ignore")
-            w.writeheader()
-            w.writerows(linhas)
-        return saida
-
     relatorios = []
-    if modo in ("E", "A"):
-        relatorios.append(gravar("classificacao_entrada", rank_entrada))
-    if modo in ("S", "A"):
-        relatorios.append(gravar("classificacao_saida", rank_saida))
-    if modo in ("C", "A"):
-        relatorios.append(gravar("classificacao_cruzada", rank_cruzado))
     planilha = None
     if modo == "A":
         pasta_xlsx = Path(saida_dir or PASTA_ANALISES_PADRAO)
@@ -1825,23 +1718,16 @@ def executar(
             "historico_fim": candles_avaliacao[-1].horario,
             "n_candles": len(candles_avaliacao),
         }
-        try:
-            planilha = gravar_planilha_analise(
-                pasta_xlsx / nome_xlsx, rank_entrada=rank_entrada, rank_saida=rank_saida,
-                rank_cruzado=rank_cruzado, dias=dias, trades_titular=trades_titular, meta=meta,
-            )
-        except OSError as erro:
-            alternativa = Path(cfg.PASTA_LOGS_AUDITORIA) / nome_xlsx
-            print(f"[AVISO] Não consegui gravar em '{pasta_xlsx}' ({erro}); gravando em '{alternativa.parent}'.")
-            planilha = gravar_planilha_analise(
-                alternativa, rank_entrada=rank_entrada, rank_saida=rank_saida,
-                rank_cruzado=rank_cruzado, dias=dias, trades_titular=trades_titular, meta=meta,
-            )
+        planilha = gravar_planilha_analise(
+            pasta_xlsx / nome_xlsx, rank_entrada=rank_entrada, rank_saida=rank_saida,
+            rank_cruzado=rank_cruzado, dias=dias, trades_titular=trades_titular, meta=meta,
+        )
         relatorios.append(planilha)
-    print("\nRelatórios:")
-    for p in relatorios:
-        if p:
-            print(f"  {p.resolve()}")
+    if relatorios:
+        print("\nRelatórios:")
+        for p in relatorios:
+            if p:
+                print(f"  {p.resolve()}")
     print("Limitação: OHLC 15min não revela ordem intrabar nem preço exato das 18:20.")
     if incompatíveis:
         print("\nCartuchos/combinações INCOMPATIVEIS:")
@@ -1866,7 +1752,7 @@ def _ler_argumentos(argv=None):
                          "ou Diagnóstico de cenários")
     ap.add_argument("--metades", action="store_true",
                     help="modo D: mostra o que se repete nas duas metades do período")
-    ap.add_argument("--saida-dir", help="pasta da planilha do modo A (padrão: D:\\DAYTRADE\\ANALISES)")
+    ap.add_argument("--saida-dir", help="pasta da planilha do modo A (padrão: analise/ ao lado do classificacao.py)")
     ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
     ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
                     + ", ".join(cen_mod.NOMES))

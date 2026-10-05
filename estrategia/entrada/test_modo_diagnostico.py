@@ -2,7 +2,6 @@
 Arquivo `test_*`: o classificador nao o trata como candidata.
 Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
 import contextlib
-import csv
 import io
 import sys
 import tempfile
@@ -52,7 +51,7 @@ class ModoDiagnostico(unittest.TestCase):
         acerto = cl.acerto_geral_cenarios(cl.matriz_confusao_cenarios(self.candles, self.rows, self.rotulos))
         self.assertTrue(0.0 <= acerto <= 1.0)
 
-    def test_execucao_do_modo_grava_csv_e_nao_pergunta_cenario(self):
+    def test_execucao_do_modo_nao_grava_arquivo_e_nao_pergunta_cenario(self):
         with tempfile.TemporaryDirectory() as pasta, \
                 mock.patch.object(cfg, "PASTA_LOGS_AUDITORIA", pasta):
             buf = io.StringIO()
@@ -61,11 +60,8 @@ class ModoDiagnostico(unittest.TestCase):
                     self.candles, self.rows, sorted(self.dias), self.dias, self.entradas[:3],
                     self.saidas[:3], self.et, self.st, [], "_sim_teste", self.rotulos, False)
             self.assertEqual(res["modo"], "D")
-            arq = Path(res["csv"])
-            self.assertTrue(arq.exists())
-            with arq.open(encoding="utf-8-sig") as f:
-                cab = next(csv.reader(f, delimiter=";"))
-            self.assertEqual(cab, ["tipo", "estrategia", "cenario", "ops", "resultado", "vitorias"])
+            self.assertNotIn("csv", res)
+            self.assertEqual(list(Path(pasta).iterdir()), [])     # nenhum arquivo gravado
             self.assertIn("Candles por cenario", buf.getvalue())
             self.assertIn("Acerto", buf.getvalue())
 
