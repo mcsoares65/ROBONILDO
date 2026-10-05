@@ -27,6 +27,10 @@ que 2026 rende R$ 79 por operação contra R$ -17 a +10 nos outros anos:
   17:45 em 2/3 dos dias até 2023.
 Pede ao conselho a revisão do titular de entrada e limiares em ATR em vez de pontos.
 
+**Testes:** `test_chatgpt_meta20k.py` quebrava na `main` desde que as 3 entradas do
+ChatGPT foram movidas para `entrada/desclassificada/`; passa a usar
+`apoio_cartuchos.caminho_cartucho`, como os outros testes de desclassificadas.
+
 ---
 
 ## V480 — Regra 15 (atas sempre consultadas) e adendo da ata AA
