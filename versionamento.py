@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V485"
+VERSAO = "V486"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1472,3 +1472,11 @@ VERSAO = "V485"
 # V485 - pasta estrategia/testes/ removida (decisao do dono, 05/10/2026)
 #   Nada do robo, do motor ou do classificador importa dela. Passo de testes
 #   removido do CI. Nenhuma estrategia alterada.
+
+# ---------------------------------------------------------------------------
+# V486 - avisos de integridade do DDE sem inundar a narracao
+#   principal.py : um aviso por TIPO a cada 120 s (leitor_dde.AVISO_INTEGRIDADE_
+#                  REPETIR_SEGUNDOS); narrar(..., descartavel=True) nao enfileira
+#                  se a voz esta ocupada.
+#   Causa (log de 05/10/2026): 825 avisos em 27 min na abertura, fila do SAPI sem
+#   limite; a voz seguia lendo "Preco parado..." depois das 11:40.
