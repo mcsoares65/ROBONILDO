@@ -12,7 +12,14 @@ RAIZ = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(RAIZ))
 
 
+def existe(pasta, nome):
+    """Candidata removida do disco -> o teste dela e pulado (nao quebra a suite)."""
+    return (RAIZ / "estrategia" / pasta / f"{nome}.py").exists()
+
+
 def carregar(pasta, nome):
+    if not existe(pasta, nome):
+        return None
     spec = importlib.util.spec_from_file_location(nome, RAIZ / "estrategia" / pasta / f"{nome}.py")
     modulo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modulo)
@@ -47,6 +54,7 @@ def sequencia(inicio, ohlcs):
 DIA = datetime(2026, 3, 4, 9, 0)
 
 
+@unittest.skipUnless(existe("entrada", "entrada_abertura_continuacao_claude_v1"), "candidata removida do disco")
 class EntradaAbertura(unittest.TestCase):
     m = carregar("entrada", "entrada_abertura_continuacao_claude_v1")
 
@@ -106,6 +114,7 @@ class EntradaPausa(unittest.TestCase):
         self.assertEqual(self.m.gerar_sinal(linha(devolveu, atr=300.0, atr_relativo=1.4)), 0)   # devolveu > 50%
 
 
+@unittest.skipUnless(existe("entrada", "entrada_retorno_media_claude_v1"), "candidata removida do disco")
 class EntradaRetornoMedia(unittest.TestCase):
     m = carregar("entrada", "entrada_retorno_media_claude_v1")
 
@@ -146,6 +155,7 @@ class EntradaPullback(unittest.TestCase):
         self.assertEqual(self.m.gerar_sinal(linha(ontem, trend=1, atr=300.0)), 0)         # mistura de dias
 
 
+@unittest.skipUnless(existe("entrada", "entrada_reversao_range_claude_v1"), "candidata removida do disco")
 class EntradaRange(unittest.TestCase):
     m = carregar("entrada", "entrada_reversao_range_claude_v1")
 

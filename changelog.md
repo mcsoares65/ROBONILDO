@@ -4,6 +4,17 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V471 — `classificacao.py` sem o inventário de cartuchos no início
+
+Removido o bloco "CARTUCHOS NO DISCO (entrada/saída — sem laboratório)" que
+aparecia no começo de toda execução. A descoberta de cartuchos e o relatório de
+incompatíveis no final continuam como antes.
+
+Também: `estrategia/entrada/test_candidatas_cenario.py` passa a pular (skip) os
+testes de candidatas que foram removidas do disco, em vez de quebrar a suite.
+
+---
+
 ## V470 — modo D (Diagnóstico de cenários) dentro do `classificacao.py`
 
 O diagnóstico de cenários passou a ser uma opção do `classificacao.py`, ao lado

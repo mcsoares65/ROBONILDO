@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V470"
+VERSAO = "V471"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1309,3 +1309,12 @@ VERSAO = "V470"
 #
 # Arquivos: classificacao.py, diagnostico_cenarios.py (removido), dois testes,
 # versionamento.py e changelog.md. Nenhuma estrategia ou titular alterado.
+
+
+# ---------------------------------------------------------------------------
+# V471 — classificacao.py nao imprime mais o inventario de cartuchos
+# ---------------------------------------------------------------------------
+# O bloco "CARTUCHOS NO DISCO (entrada/saida — sem laboratorio)" que abria toda
+# execucao foi removido (chamada e funcao imprimir_inventario_cartuchos).
+# A descoberta de cartuchos (listar_cartuchos_disco) e o aviso de
+# INCOMPATIVEIS no final permanecem iguais. Nenhuma estrategia alterada.
