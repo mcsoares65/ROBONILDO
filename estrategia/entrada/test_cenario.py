@@ -100,21 +100,21 @@ if __name__ == "__main__":
 
 class Consistencia(unittest.TestCase):
     def test_so_conta_mesmo_sentido_e_ops_minimas(self):
-        import diagnostico_cenarios as dg
+        import classificacao as dg
         def l(tipo, nome, cen, ops, res):
             return {"tipo": tipo, "estrategia": nome, "cenario": cen, "ops": ops, "resultado": res, "vitorias": 0}
         a = [l("saida", "T", "x", 20, 100), l("saida", "A", "x", 20, 300), l("saida", "B", "x", 20, 50),
              l("saida", "C", "x", 5, 900), l("saida", "T", "y", 20, 100), l("saida", "A", "y", 20, 400)]
         b = [l("saida", "T", "x", 20, 100), l("saida", "A", "x", 20, 250), l("saida", "B", "x", 20, 200),
              l("saida", "C", "x", 20, 900), l("saida", "T", "y", 20, 100), l("saida", "A", "y", 20, 0)]
-        r = dg.consistencia(a, b, "E", "T")
+        r = dg.consistencia_metades(a, b, "E", "T")
         nomes = {(x["estrategia"], x["cenario"]): x["efeito_minimo"] for x in r}
         self.assertEqual(nomes, {("A", "x"): 150.0})   # B muda de sinal; C tem poucas ops; A em y muda de sinal
 
 
 class NomesCurtos(unittest.TestCase):
     def test_remove_prefixo_e_ia_so_quando_sobra_descricao(self):
-        import diagnostico_cenarios as dg
+        import classificacao as dg
         r = dg.nomes_curtos(["entrada_macd_estocastico_claude_v1", "saida_alvo_tendencia_forte_claude_v1",
                              "entrada_grok_3_v1", "entrada_claude_v1", "saida_baseline",
                              "saida_grok_reverso_v3", "entrada_deepseek_V06"])
@@ -127,7 +127,7 @@ class NomesCurtos(unittest.TestCase):
         self.assertEqual(r["entrada_deepseek_V06"], "deepseek_V06")
 
     def test_colisao_volta_ao_nome_sem_prefixo(self):
-        import diagnostico_cenarios as dg
+        import classificacao as dg
         r = dg.nomes_curtos(["saida_giveback_claude_v1", "saida_giveback_manus_v1"])
         self.assertEqual(r["saida_giveback_claude_v1"], "giveback_claude_v1")
         self.assertEqual(r["saida_giveback_manus_v1"], "giveback_manus_v1")
