@@ -1,0 +1,62 @@
+ASSUNTO: V481 — SAIDA CHATGPT ESTRUTURAL ASSIMETRICA V1
+
+Objetivo
+--------
+Apresentar uma candidata de saida somente depois de medir sua lucratividade no
+mesmo motor da producao. Nenhum titular e alterado por esta proposta.
+
+Regra
+-----
+- estrutura: maxima/minima dos quatro candles mais recentes;
+- stop: risco estrutural limitado a 2,10 ATR;
+- alvo de COMPRA: 1,90 vezes o risco estrutural original;
+- alvo de VENDA: 1,55 vezes o risco estrutural original;
+- depois da abertura: nenhuma antecipacao; o motor continua responsavel por
+  stop, alvo e encerramento obrigatorio.
+
+Resultado oficial disponivel — 2026 ate 24/09 (183 pregoes)
+-----------------------------------------------------------
+Pareamento: entrada titular entrada_grok_3_v1.
+
+                               Resultado     Drawdown    Acumulado
+saida_chatgpt_estrutura_assim. R$ 16.420,63  -R$323,50   R$16.097,12
+saida_chatgpt_v4 titular       R$ 15.085,29  -R$448,37   R$14.636,92
+
+Melhoria de acumulado: R$1.460,20. A candidata ficou em primeiro lugar no
+ranking de saidas e no cruzamento disponivel desse periodo.
+
+Validacao segmentada — arquivo de 250 pregoes (24/09/2025 a 24/09/2026)
+------------------------------------------------------------------------
+Desenvolvimento, 150 pregoes: resultado R$10.182,76; DD -R$323,50;
+acumulado R$9.859,26.
+Validacao, 50 pregoes: resultado R$4.408,06; DD -R$249,48;
+acumulado R$4.158,58.
+Teste final, 50 pregoes: resultado R$4.295,99; DD -R$146,00;
+acumulado R$4.149,99.
+Periodo completo: resultado R$18.886,82; DD -R$323,50;
+acumulado R$18.563,31.
+
+Controle historico anterior — 183 pregoes nao usados na selecao
+----------------------------------------------------------------
+Periodo: 02/01/2025 a 23/09/2025.
+
+Candidata: resultado R$746,70; DD -R$1.416,14; acumulado -R$669,44.
+Titular:   resultado R$487,21; DD -R$1.438,69; acumulado -R$951,48.
+
+A candidata melhora o controle anterior em R$282,04 de acumulado e reduz o
+drawdown, mas ambas permanecem negativas nesse regime. Isso impede qualquer
+alegacao de robustez universal.
+
+Conclusao
+---------
+A candidata e lucrativa e melhora a titular nos periodos medidos, mas NAO
+rompe R$20 mil de acumulado. Deve permanecer candidata ate ser rodada no
+arquivo local mais recente, que alcanca 02/10/2026, e em novos dados futuros.
+Promocao automatica e proibida.
+
+Validacao tecnica
+-----------------
+- classificacao.py com motor oficial: executada;
+- ranking de saida e cruzado: executados;
+- 112 testes OK, 6 pulados;
+- py_compile e git diff --check: OK.
