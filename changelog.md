@@ -4,6 +4,23 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V487 — três entradas candidatas a partir da documentação de indicadores da Nelogica
+
+A documentação (94 indicadores exportáveis pelo DDE do Profit + 85 artigos) foi estudada;
+13 hipóteses de indicadores (9 de preço, 4 de volume) com parâmetros padrão foram
+testadas UMA vez cada, em 2020-2026, com a saída titular v4 (ata `conselho/2026-10-05-AD.txt`).
+- Novas candidatas em `estrategia/entrada/`: `entrada_keltner_rompimento_claude_v1.py`,
+  `entrada_cci_100_claude_v1.py`, `entrada_aroon_forte_claude_v1.py`. Sinais idênticos aos
+  do teste (0 divergências em 16.501 candles).
+- 2020-2025: R$ 12,1 mil (Keltner), 12,8 mil (CCI), 13,5 mil (Aroon) contra 6,2 mil do titular
+  de entrada; em 2026 todas ficam muito abaixo do titular (R$ 17,5 mil, ajustado a 2026).
+- **Evidência fraca**: t de 1,4 a 2,1; nenhuma sobrevive à correção por 13 testes. As 4 de volume
+  (CMF, MFI, Force Index, VWAP) falharam e não viraram cartucho.
+- Campos de fluxo de ordens (agressão, Cumulative Delta, Weis Wave) não têm histórico: só dá para
+  medir à frente; proposta de coleta passiva na ata. Nenhum titular, motor ou configuração alterado.
+
+---
+
 ## V486 — avisos de integridade do DDE deixam de inundar a narração
 
 Log de 05/10/2026: na abertura (09:04–09:31) o DDE chegou em rajadas, com o horário

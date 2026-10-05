@@ -1,0 +1,102 @@
+# Proposta ao conselho — V487 — candidatas a partir da documentação de indicadores da Nelogica
+
+Autoria: Claude (Anthropic), 05/10/2026, a pedido de Marcio Soares.
+Base lida: main (V486), atas AA (e adendos), AB e AC (Regra 15). Revisão do conselho: pendente.
+
+1. ORIGEM
+---------------------------------------------------------------------------
+O dono obteve com a Nelogica (a) a lista de 94 indicadores exportáveis pelo DDE do
+Profit Pro e (b) 85 artigos da Central de Ajuda (508 páginas) sobre os indicadores.
+Os artigos explicam cálculo e uso; NÃO trazem sintaxe do DDE, nome de coluna nem
+parâmetros de exportação. Hoje o robô lê poucos campos do DDE.
+
+Dois grupos de indicadores:
+ A) Calculáveis a partir do histórico existente (OHLC + Quantidade por candle de 15 min,
+    2020-2026): média/oscilador/canal/volume clássicos. Testáveis AGORA em 7 anos.
+ B) Fluxo de ordens (agressão compra/venda/saldo, Cumulative Delta, Weis Wave, tempo
+    de agressão, VWAP calculado pelo Profit com negócio a negócio): exigem dado de
+    negócio que o histórico CSV não tem. NÃO são testáveis em passado; só dá para
+    medir à frente, coletando ao vivo (ver item 6).
+
+2. HIPÓTESES (13, fixadas ANTES de rodar, parâmetros padrão dos artigos/literatura)
+---------------------------------------------------------------------------
+Preço: P1 Didi Index (agulhada SMA 3/8/20 no corpo do candle), P2 ADX(14) cruza 20 com
+DI, P3 Donchian(20) rompimento, P4 CCI(20) cruza ±100, P5 Keltner (SMA20 do preço típico
+± 1 x SMA20 da amplitude; o artigo não dá o multiplicador, usei 1) rompimento, P6 HiLo
+Activator(13) virada, P7 SAR parabólico (0,02/0,02/0,2) virada, P8 Aroon(25) tendência
+forte (Up>70 e Down<30), P9 Bollinger(20,2) reversão ao voltar para dentro da banda.
+Volume: V1 CMF(20) cruza zero, V2 MFI(14) sai de 20/80, V3 Force Index(13) cruza zero
+com EMA22, V4 VWAP do dia cruzada com volume > média de 21.
+Cada uma rodou UMA vez, ambos os lados, sem filtro de horário/dia, sem ajuste de limiar,
+com a saída titular saida_chatgpt_v4 (Regra 11.2: 13 variações; nenhuma outra foi testada).
+
+3. MÉTODO
+---------------------------------------------------------------------------
+2020-2026 (62.515 candles), preços reescalados à volatilidade de 2026 (mesma escala dos
+adendos da ata AA, porque a saída v4 usa pontos absolutos), 1 contrato, custo R$ 0,50 por
+operação, sem slippage, trava de 25% desligada (V483). Sinais calculados em pandas e
+executados pelo MESMO motor (cl.executar_jogo). Os cartuchos finais foram escritos
+só com row["ohlc_recentes"] e conferidos contra a tabela de sinais: 0 divergências em
+16.501 candles (2025 e 2026).
+LIMITES: todos os anos já foram vistos em agregado (ata AA, item 4); portanto nada abaixo
+é Holdout. 2026 aparece só como informação. O único dado cego é o futuro.
+
+4. RESULTADOS (R$, 1 contrato; dev = 2020-23, val = 2024-25; t = por operação)
+---------------------------------------------------------------------------
+Hipótese            dev R$/op (t)   val R$/op (t)   2026 R$ (R$/op)   anos+  2020-25 total
+P1 Didi               8,4 (1,0)     -3,7 (-0,2)       261 (6,2)       4/7
+P2 ADX                4,5 (0,5)      1,7 (0,1)      -717 (-7,6)       3/7
+P3 Donchian          -0,8 (-0,1)     6,8 (0,7)      -298 (-1,5)       3/7
+P4 CCI                7,6 (1,4)      4,3 (0,6)     1.730 (7,3)        6/7       12.776
+P5 Keltner            4,7 (0,9)      9,1 (1,2)     4.506 (19,9)       6/7       12.145
+P6 HiLo               1,9 (0,3)     -9,1 (-1,2)     2.558 (12,9)      3/7
+P7 SAR                7,1 (1,4)     -8,9 (-1,3)      -141 (-0,6)      4/7
+P8 Aroon             10,1 (2,2)      2,8 (0,5)    -2.155 (-10,5)      5/7       13.520
+P9 Bollinger         -2,1 (-0,7)    -0,4 (-0,1)       601 (2,3)       3/7
+V1 CMF               -1,5 (-0,3)    -0,7 (-0,1)       436 (1,8)       3/7
+V2 MFI                0,4 (0,1)     -3,6 (-0,5)    -1.534 (-13,1)      3/7
+V3 Force             -0,7 (-0,1)    -8,7 (-1,1)     1.962 (10,0)      3/7
+V4 VWAP              -1,2 (-0,2)    -3,6 (-0,4)     5.202 (31,0)      5/7
+Referências (mesma escala): titular entrada_grok_3_v1 + v4: 3,5 (0,7) | 5,2 (0,8) |
+17.494 (92,1) | 6/7 | 2020-25 = 6.184. Entrada composta/compressão ChatGPT (V479):
+21,5 (1,8) | 30,3 (2,0) | -195 | 6/7 | 8.857.
+
+Candidatas que superam o titular FORA de 2026 (2020-25) e entram como CANDIDATAS:
+ P5 Keltner   2020-26: 2.212 ops, R$ 16.651, t=1,8; 2020-25 R$ 12.145, t=1,4; DD -5.237;
+              por ano: 4.910 | 2.120 | -2.336 | 1.619 | 4.320 | 1.511 | 4.506
+ P4 CCI       2.204 ops, R$ 14.507, t=1,6; 2020-25 R$ 12.776, t=1,5; DD -4.260;
+              por ano: 5.199 | 1.909 | 3.894 | -1.070 | 1.474 | 1.370 | 1.730
+ P8 Aroon     1.940 ops, R$ 11.365, t=1,7; 2020-25 R$ 13.520, t=2,1 (bootstrap diário
+              p=0,012, que com 13 hipóteses vira ~0,16); DD -7.245; NEGATIVA em 2025 e 2026.
+Em 2026 o titular (R$ 17.494) continua muito acima de todas, o que a ata AA já atribui
+ao ajuste de filtros ao ano; as candidatas não têm filtro nenhum.
+Correlação do P&L diário 2020-25 com o titular: P5 0,16, P4 0,18, P8 0,10, compressão
+0,16 (baixa: potencial de diversificação). Entre si: P5-P4 0,62 (mesma ideia), P8 0,39-0,42.
+
+5. LEITURA HONESTA
+---------------------------------------------------------------------------
+ - Nenhuma das 13 é estatisticamente convincente depois de corrigir por 13 testes (o
+   máximo esperado de 13 t-valores ao acaso já é ~1,7). O melhor t por operação é do P8
+   (2,2 no desenvolvimento) e ele falha em 2025-26. Nenhuma "supera o titular" no
+   sentido de t ou de 2026; superam o resultado dele só em 2020-25, onde o titular rende
+   R$ 4 por operação e é fraco.
+ - Todas as de volume (CMF, MFI, Force, VWAP) falharam em 2024-25. VWAP deu +5.202 em 2026
+   e negativo antes: padrão de 2026, não evidência.
+ - A compressão/rompimento do ChatGPT (ata AB) continua sendo a melhor candidata em t
+   (2,4 nos 7 anos, DD -1.188), com bem menos operações.
+ - Giro alto (~315 operações/ano) e sem slippage: o R$ 7-9 por operação é frágil a custo.
+   P5 e P4 compartilham quase toda a informação.
+ - Saída única (v4): não foi testado cruzamento com outras saídas (modo C).
+
+6. PEDIDOS AO CONSELHO / PRÓXIMOS PASSOS
+---------------------------------------------------------------------------
+ 1) Revisar os 3 cartuchos (Regras 1, 3, 6, 11) e, se aprovados, rodar modo E (entradas
+    com saída v4) e depois C. Regra 10 e Holdout antes de qualquer promoção.
+ 2) Coleta passiva à frente (modo sombra) dos campos do grupo B, hoje inexistentes no
+    histórico: saldo/volume de agressão compra e venda por candle, Cumulative Delta,
+    VWAP do Profit, Weis Wave, tempo de agressão, mais Quantidade/Negócios/Financeiro por
+    candle. A coleta (V460, coleta_dde.py) já grava e não toca em sinal/ordem. Precisa que o
+    dono mapeie as colunas do DDE (leitor_dde.COLUNAS_EXTRAS_DDE) e, para volume entrar em
+    cartucho, uma mudança de motor (row com Quantidade) em PR próprio.
+ 3) Definir por escrito o período de acompanhamento à frente (ata AA, item 4.1) usado como
+    Holdout para estas candidatas e para a compressão ChatGPT.
