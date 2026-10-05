@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V476"
+VERSAO = "V477"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1399,3 +1399,29 @@ VERSAO = "V476"
 # linhas saem identicas bit a bit (conferido: 7.049 linhas de 2026, ~6.200 de
 # 2023-24 e teste_janela_indicadores.py). Ranking de 2026 inalterado
 # (composta 14.697,95 / grok_3 14.617,70), 34 s; 3 pastas de ano (684 pregoes) em 2m27s.
+
+
+# ---------------------------------------------------------------------------
+# V477 — processamento do classificacao.py: fatia O(1) no motor e paralelismo
+# ---------------------------------------------------------------------------
+# 1) executar_jogo passava candles[:indice+1] ao motor a cada candle (copia O(n);
+#    quadratico no historico). Com `row` pronta o motor so le candles[-1]
+#    (processar_candle_historico/avaliar_row), entao passa candles[indice:indice+1].
+#    Resultado identico; metade do tempo de uma combinacao em 2026 e muito mais
+#    com varios anos.
+# 2) Modos E/S/C/A rodam em paralelo (multiprocessing, sempre "spawn" como no
+#    Windows): o historico e cortado em blocos de pregoes consecutivos (4 por
+#    processo); cada processo calcula os indicadores so dos seus dias (janela de
+#    1.500 candles para tras), roda todas as combinacoes neles e devolve as
+#    operacoes, juntadas em ordem. Vale porque o motor nao carrega nada de um
+#    pregao para o outro (posicao, perdas_hoje e operacoes_hoje zeram por dia; a
+#    banca so aparece em log) e nenhuma posicao atravessa o fechamento. Nenhuma
+#    linha de indicadores trafega entre processos. Cartuchos sao importados em
+#    cada processo pelo caminho do arquivo.
+#    Padrao: nucleos logicos - 1 (maximo 8); --processos N, --sem-paralelo (= 1);
+#    abaixo de 2.500 candles avaliados, ou no modo D, roda em serie.
+#    validar_contrato_saida so usa a ultima linha de indicadores: o processo
+#    principal calcula apenas ela (_row_de_validacao).
+# Conferido: as 576 combinacoes de 2026 dao exatamente as mesmas operacoes em
+# serie e em paralelo; teste_paralelo.py repete a conferencia numa serie sintetica.
+# Nenhuma estrategia alterada.
