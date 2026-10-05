@@ -4,6 +4,25 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V480 — Regra 15 (atas sempre consultadas) e adendo da ata AA
+
+Só documentação, nenhum código alterado.
+- `compliance.md`: nova **Regra 15** — as atas do conselho devem ser consultadas
+  antes de propor, testar, promover ou descartar; o PR cita as atas lidas;
+  resultados que influenciam decisões são registrados em ata; atas não são
+  reescritas (correção por ata nova ou adendo datado); períodos consumidos como
+  Holdout ficam registrados. Item 11 na declaração do Termo de concordância.
+  A Regra 14 (portão estatístico das atas) segue sem texto no documento.
+- `conselho/2026-10-05-AA.txt`, adendo 1: diagnóstico por cenário (modo D) de 2026
+  e de 2020-2025 e simulação em memória de "se cenário X, então Y" (roteador de
+  saída). Mapas completos por cenário (melhor cartucho por cenário em 2020-2025)
+  perdem ~R$ 1.500 em 2026: sobreajuste. Só a hipótese R1 (saída composta em
+  lateral, titular no resto) fica registrada para medição à frente; nada foi
+  implementado. Corrige a ata: o ganho da entrada composta é consistente em sinal,
+  mas de significância no limite (t ~ 2).
+
+---
+
 ## V479 — candidatas ChatGPT com novas fontes de retorno
 
 Meta de pesquisa: superar os R$ 15.909,65 de melhor cruzamento conhecido em
