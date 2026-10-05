@@ -31,6 +31,9 @@ from statistics import median
 from typing import Callable, Iterable, Optional
 
 import cenario as cen_mod
+from historico_csv import (
+    csvs_do_ano, dias_pos_buraco, intervalo_minutos, interpretar_anos, listar_anos,
+)
 import configuracao as cfg
 from motor import Candle, MotorRobonildo, construir_row
 
@@ -67,12 +70,15 @@ def _progresso(etapa: str, atual: int, total: int, detalhe: str = "") -> None:
         print()
 
 
-def carregar_csv(caminho: Path) -> list[Candle]:
+def carregar_csv(caminho: Path, silencioso: bool = False) -> list[Candle]:
+    """Lê um CSV do Profit. `silencioso` = sem barra de progresso (usado ao ler vários
+    arquivos, que mostram uma barra só)."""
     candles = []
     tamanho_total = max(caminho.stat().st_size, 1)
     bytes_lidos = 0
     linhas_lidas = 0
-    print(f"[LEITURA] Abrindo {caminho.resolve()}")
+    if not silencioso:
+        print(f"[LEITURA] Abrindo {caminho.resolve()}")
     with caminho.open("rb") as arquivo:
         for linha_bruta in arquivo:
             bytes_lidos += len(linha_bruta)
@@ -100,17 +106,84 @@ def carregar_csv(caminho: Path) -> list[Candle]:
                         except ValueError:
                             pass
                     candles.append(Candle(horario, *valores, quantidade))
-            if linhas_lidas % 500 == 0:
+            if linhas_lidas % 500 == 0 and not silencioso:
                 _progresso("LEITURA", min(bytes_lidos, tamanho_total), tamanho_total,
                            f"{len(candles)} candles válidos")
 
-    _progresso("LEITURA", tamanho_total, tamanho_total, f"{len(candles)} candles válidos")
+    if not silencioso:
+        _progresso("LEITURA", tamanho_total, tamanho_total, f"{len(candles)} candles válidos")
 
     por_horario = {c.horario: c for c in candles}
     ordenados = sorted(por_horario.values(), key=lambda c: c.horario)
     if not ordenados:
         raise ValueError("O histórico não contém candles válidos.")
     return ordenados
+
+
+def _aviso_na_linha(texto: str) -> None:
+    """Imprime um aviso sobre a barra de progresso (que fica numa linha só)."""
+    print("\r" + texto.ljust(110))
+
+
+def carregar_historico_anos(pastas_ano: dict, anos: list[int]) -> tuple[list[Candle], str, int]:
+    """Funde os CSVs das pastas dos `anos` escolhidos numa única série de candles.
+
+    Cada pasta de ano pode ter vários .csv (exports parciais); entram só candles do
+    próprio ano da pasta e só arquivos com o timeframe configurado. Candle repetido:
+    vale o do último arquivo (ordem de nome). Devolve (candles, rótulo dos anos, nº de arquivos usados)."""
+    por_horario: dict = {}
+    n_arquivos = 0
+    todos_arquivos = [(ano, arq) for ano in anos for arq in csvs_do_ano(pastas_ano[ano])]
+    lidos = 0
+    print(f"[LEITURA] Pasta-base: {Path(cfg.PASTA_HISTORICO_BACKTEST).resolve()} | anos: {', '.join(map(str, anos))}")
+    for ano in anos:
+        achou_ano = False
+        for arquivo in csvs_do_ano(pastas_ano[ano]):
+            lidos += 1
+            _progresso("LEITURA", lidos - 1, len(todos_arquivos), f"{ano}\\{arquivo.name}")
+            try:
+                cs = carregar_csv(arquivo, silencioso=True)
+            except ValueError:
+                _aviso_na_linha(f"[HISTÓRICO] '{arquivo.parent.name}\\{arquivo.name}' sem candles válidos; ignorado.")
+                continue
+            iv = intervalo_minutos(cs)
+            if iv is not None and abs(iv - cfg.TIMEFRAME_MINUTOS) > 1e-6:
+                _aviso_na_linha(f"[HISTÓRICO] '{arquivo.parent.name}\\{arquivo.name}' é de {iv:g} min "
+                      f"(esperado {cfg.TIMEFRAME_MINUTOS}); ignorado.")
+                continue
+            do_ano = [c for c in cs if c.horario.year == ano]
+            fora = len(cs) - len(do_ano)
+            if fora:
+                _aviso_na_linha(f"[HISTÓRICO] '{arquivo.parent.name}\\{arquivo.name}': {fora} candles de outro ano "
+                      f"ignorados (a pasta {ano} só usa candles de {ano}).")
+            for c in do_ano:
+                por_horario[c.horario] = c
+            achou_ano = achou_ano or bool(do_ano)
+            n_arquivos += 1 if do_ano else 0
+        if not achou_ano:
+            _aviso_na_linha(f"[HISTÓRICO] Aviso: a pasta {ano} não trouxe candles de {ano}.")
+    _progresso("LEITURA", len(todos_arquivos), len(todos_arquivos), f"{len(por_horario)} candles válidos")
+    if not por_horario:
+        raise ValueError(f"Nenhum candle encontrado nas pastas dos anos {anos}.")
+    candles = sorted(por_horario.values(), key=lambda c: c.horario)
+    seguidos = len(anos) > 1 and anos == list(range(anos[0], anos[-1] + 1))
+    rotulo = f"{anos[0]}–{anos[-1]}" if seguidos else ",".join(map(str, anos))
+    return candles, rotulo, n_arquivos
+
+
+def _perguntar_anos(disponiveis: list[int]) -> str:
+    """Pergunta quais anos do backtest usar; repete até o texto ser entendido."""
+    exemplo = f"{disponiveis[0]}-{disponiveis[-1]}" if len(disponiveis) > 1 else str(disponiveis[0])
+    while True:
+        resp = input(
+            f"Anos do backtest [Enter = todos ({disponiveis[0]}–{disponiveis[-1]}) | {exemplo} | "
+            f"{disponiveis[-1]} | ultimos 2 | 2023,2025]: "
+        ).strip()
+        try:
+            interpretar_anos(resp, disponiveis)
+            return resp
+        except ValueError as erro:
+            print(f"[ANOS] {erro}")
 
 
 def preparar_aquecimento(candles_avaliacao: list[Candle]) -> tuple[list[Candle], int]:
@@ -322,6 +395,14 @@ def descobrir_cartucho_saida():
 
 
 
+# Candles anteriores que cada linha de indicadores enxerga. Os filtros recursivos do
+# motor (RSI de Wilder, EMAs do MACD, ATR) esquecem o passado exponencialmente: com
+# 1.500 candles (~40 pregões) a diferença para ler o histórico inteiro é zero em
+# ponto flutuante (conferido linha a linha em 2026 e em 2023-24, e por teste). Sem
+# o limite o custo cresce com o quadrado do histórico (anos viram dezenas de minutos).
+JANELA_INDICADORES = 1500
+
+
 def preparar_rows(candles: list[Candle], dias_avaliacao: Optional[set] = None) -> list[Optional[dict]]:
     """Indicadores por candle. Com dias_avaliacao, só calcula os candles desses
     dias (os anteriores continuam servindo de aquecimento, sem serem pontuados)."""
@@ -330,7 +411,7 @@ def preparar_rows(candles: list[Candle], dias_avaliacao: Optional[set] = None) -
             if dias_avaliacao is None or candles[i].horario.date() in dias_avaliacao]
     total = len(alvo)
     for concluido, indice in enumerate(alvo, 1):
-        rows[indice] = construir_row(candles[:indice + 1])
+        rows[indice] = construir_row(candles[max(0, indice + 1 - JANELA_INDICADORES):indice + 1])
         if concluido % 250 == 0 or concluido == total:
             _progresso("INDICADORES", concluido, total)
     return rows
@@ -1417,6 +1498,7 @@ def executar(
     cenario: Optional[str] = None,
     saida_dir: Optional[str] = None,
     metades: Optional[bool] = None,
+    anos: Optional[str] = None,
 ):
     """modo: 'E'/'S'/'C'/'A'/'D' (None = pergunta; A = análise: cruzado completo +
     planilha .xlsx em saida_dir, padrão <projeto>\\analise (único modo que grava arquivo); D = diagnóstico por
@@ -1426,9 +1508,13 @@ def executar(
     simulador (modo/dias/semente/escala_vol/espelhar); None = pergunta a fonte;
     False = força o histórico real sem perguntar. cenario: nome de um cenário
     (cenario.py) para apurar o campeonato SÓ naquela situação; '' = todos;
-    None = pergunta."""
+    None = pergunta. anos: texto aceito por historico_csv.interpretar_anos ('' ou 'todos' =
+    todos os anos com pasta; None = pergunta quando há mais de um); só vale sem
+    `caminho_csv` e quando a pasta cfg.PASTA_HISTORICO_BACKTEST tem pastas de ano — senão
+    lê o arquivo único de sempre (cfg.CAMINHO_HISTORICO_INICIAL)."""
+    pastas_ano = {} if caminho_csv else listar_anos(cfg.PASTA_HISTORICO_BACKTEST)
     caminho = Path(caminho_csv or cfg.CAMINHO_HISTORICO_INICIAL)
-    if not caminho.exists():
+    if not pastas_ano and not caminho.exists():
         # V462: o Profit passou a gravar o export com datas no nome
         # (WINFUT_F_0_15min_01-01-2026_02-10-2026.csv). Tenta o CSV mais recente
         # da mesma pasta (mesmo ativo/timeframe) antes de perguntar.
@@ -1437,7 +1523,7 @@ def executar(
         if Path(achado).exists():
             print(f"[HISTÓRICO] '{caminho.name}' não existe; usando '{Path(achado).name}'.")
             caminho = Path(achado)
-    if not caminho.exists():
+    if not pastas_ano and not caminho.exists():
         informado = input(
             f"CSV não encontrado em '{caminho}'. Informe o caminho completo: "
         ).strip().strip('"')
@@ -1457,7 +1543,20 @@ def executar(
     }
     print(f"[MODO] Ranking escolhido: {modo} — {rotulos_modo[modo]}")
 
-    candles_reais = carregar_csv(caminho)
+    anos_escolhidos: list[int] = []
+    rotulo_base = ""
+    if pastas_ano:
+        disponiveis = sorted(pastas_ano)
+        texto_anos = anos
+        if texto_anos is None:
+            texto_anos = _perguntar_anos(disponiveis) if len(disponiveis) > 1 else ""
+        anos_escolhidos = interpretar_anos(texto_anos, disponiveis)
+        candles_reais, rotulo_base, n_arquivos = carregar_historico_anos(pastas_ano, anos_escolhidos)
+        caminho = Path(cfg.PASTA_HISTORICO_BACKTEST)
+        rotulo_base = f"backtest {rotulo_base} ({len(anos_escolhidos)} ano(s), {n_arquivos} arquivo(s))"
+    else:
+        candles_reais = carregar_csv(caminho)
+        rotulo_base = caminho.name
     if simulacao is None:
         simulacao = _perguntar_simulacao()
     fonte_rotulo = ""      # aparece no título do ranking e no nome do relatório
@@ -1486,6 +1585,13 @@ def executar(
         # O período apurado é o do conteúdo do arquivo. Só um --periodo explícito
         # na linha de comando recorta; nunca há pergunta.
         dias, rotulo_periodo = interpretar_periodo(periodo or "", todos_dias)
+        if len(anos_escolhidos) > 1:
+            # anos não consecutivos: os primeiros pregões depois do buraco só aquecem
+            fora_buraco = dias_pos_buraco(todos_dias)
+            if fora_buraco:
+                dias = [d for d in dias if d not in fora_buraco]
+                print(f"[ANOS] Anos não consecutivos: {len(fora_buraco)} pregões após o salto "
+                      "servem só de aquecimento dos indicadores.")
         dias_avaliacao = set(dias)
         if rotulo_periodo != "tudo":
             fonte_rotulo = f" | período {rotulo_periodo}"
@@ -1530,6 +1636,8 @@ def executar(
     )
     if quantidade_aquecimento:
         print(f"Aquecimento externo: {quantidade_aquecimento} candles (fora da pontuação)")
+    if pastas_ano:
+        print(f"Base de dados  : {rotulo_base}")
     print(f"Entrada titular: {entrada_titular.nome}.py")
     print(f"Saída titular  : {saida_titular_carregada.nome}.py")
     print(f"Entradas no ranking: {len(entradas)} | Saídas no ranking: {len(saidas)}")
@@ -1713,7 +1821,7 @@ def executar(
             "entrada_titular": entrada_titular.nome,
             "saida_titular": saida_titular.nome,
             "fonte": (fonte_rotulo.strip(" |") or "histórico completo") ,
-            "arquivo": caminho.name,
+            "arquivo": rotulo_base,
             "historico_inicio": candles_avaliacao[0].horario,
             "historico_fim": candles_avaliacao[-1].horario,
             "n_candles": len(candles_avaliacao),
@@ -1753,6 +1861,7 @@ def _ler_argumentos(argv=None):
     ap.add_argument("--metades", action="store_true",
                     help="modo D: mostra o que se repete nas duas metades do período")
     ap.add_argument("--saida-dir", help="pasta da planilha do modo A (padrão: analise/ ao lado do classificacao.py)")
+    ap.add_argument("--anos", help="anos do backtest (pastas ...\\HISTORICO\\AAAA): 'todos', '2023', '2023-2025', '2022,2024' ou 'ultimos 2'")
     ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
     ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
                     + ", ".join(cen_mod.NOMES))
@@ -1777,6 +1886,9 @@ if __name__ == "__main__":
     cenario = args.cenario
     if cenario is None and (args.modo or args.periodo is not None or args.simular):
         cenario = ""        # rodou por linha de comando: não pergunta, vale todos os cenários
+    anos = args.anos
+    if anos is None and (args.modo or args.periodo is not None or args.simular):
+        anos = ""           # rodou por linha de comando: não pergunta, vale todos os anos
     executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao,
-             cenario=cenario, saida_dir=args.saida_dir,
+             cenario=cenario, saida_dir=args.saida_dir, anos=anos,
              metades=True if args.metades else (False if args.modo else None))

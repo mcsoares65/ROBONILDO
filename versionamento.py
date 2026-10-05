@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V475"
+VERSAO = "V476"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1372,3 +1372,30 @@ VERSAO = "V475"
 # (compliance, changelog, conselho/, diario/), CI, CODEOWNERS e
 # sincronizar_github.bat. Testes: 86 OK (6 pulados). Ranking inalterado
 # (18 entradas, 32 saidas).
+
+
+# ---------------------------------------------------------------------------
+# V476 — historico por ano: uma pasta por ano para o backtest
+# ---------------------------------------------------------------------------
+# Layout: D:\DAYTRADE\HISTORICO\2023, \2024, ... \2026, cada pasta com um ou mais
+# .csv (export do Profit, 15 min). configuracao.py: PASTA_HISTORICO_BACKTEST
+# (a pasta-base) e CAMINHO_HISTORICO_INICIAL agora aponta para a pasta 2026 —
+# e o que o principal.py le (a resolucao do CSV mais recente da pasta, V462,
+# continua valendo). classificacao.py: sem csv na linha de comando, descobre as
+# pastas de ano sob a pasta-base, pergunta os anos (Enter = todos; 2023; 2023-2025;
+# 2022,2024; ultimos 2) ou usa --anos, e funde os csv dos anos escolhidos numa
+# serie unica (so candles do proprio ano da pasta, so timeframe de 15 min,
+# candle repetido vale o do ultimo arquivo por ordem de nome). Anos nao
+# consecutivos: os 3 primeiros pregoes depois do salto so aquecem os indicadores
+# (historico_csv.dias_pos_buraco). Sem pastas de ano, cai no arquivo unico de
+# sempre. Linha de comando (--modo/--periodo/--simular) nao pergunta: vale todos.
+# Funcoes puras em historico_csv.py (listar_anos, csvs_do_ano, interpretar_anos,
+# dias_pos_buraco). Teste: estrategia/testes/test_historico_anos.py.
+# Nenhuma estrategia alterada.
+#
+# Desempenho (mesma versao): classificacao.preparar_rows passa a dar a cada linha
+# so os ultimos JANELA_INDICADORES=1500 candles em vez do historico inteiro. O
+# custo era quadratico no tamanho do historico (anos = dezenas de minutos). As
+# linhas saem identicas bit a bit (conferido: 7.049 linhas de 2026, ~6.200 de
+# 2023-24 e teste_janela_indicadores.py). Ranking de 2026 inalterado
+# (composta 14.697,95 / grok_3 14.617,70), 34 s; 3 pastas de ano (684 pregoes) em 2m27s.

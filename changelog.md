@@ -4,6 +4,30 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V476 — histórico por ano (uma pasta por ano)
+
+O backtest passa a ler uma pasta por ano: `D:\DAYTRADE\HISTORICO\2023`, `\2024`,
+… `\2026`, cada uma com um ou mais `.csv` de 15 min do Profit. O robô
+(`principal.py`) continua lendo só a pasta do ano corrente: `CAMINHO_HISTORICO_INICIAL`
+aponta agora para `...\HISTORICO\2026\WINFUT_F_0_15min.csv` (se o nome do export
+mudar, o CSV mais recente da pasta continua sendo escolhido sozinho).
+
+No `classificacao.py`, depois de escolher o modo, aparece a pergunta
+`Anos do backtest [Enter = todos | 2023-2025 | 2026 | ultimos 2 | 2023,2025]`
+(ou use `--anos 2023-2025`). Os arquivos dos anos escolhidos viram uma série única.
+Pastas com vários `.csv` são fundidas; entram só candles do ano da pasta e só
+arquivos de 15 min (o resto é avisado e ignorado). Se os anos escolhidos não forem
+consecutivos, os 3 primeiros pregões após o salto servem só de aquecimento. Sem
+pastas de ano, tudo funciona como antes (arquivo único).
+
+**Desempenho:** o cálculo dos indicadores relia o histórico inteiro a cada candle
+(custo quadrático). Agora cada linha vê os últimos 1.500 candles (~40 pregões); as
+linhas saem idênticas bit a bit (conferido em 2026 e 2023–24 e por teste), o
+ranking de 2026 não muda e a rodada caiu de ~2 min para 34 s. Três pastas de ano
+(684 pregões) rodam o modo E em ~2,5 min.
+
+---
+
 ## V475 — limpeza do que não é usado por `classificacao.py` nem `principal.py`
 
 Removidos (continuam no histórico do git): `classificacao_teste.py`,

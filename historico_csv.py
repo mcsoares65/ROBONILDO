@@ -4,10 +4,16 @@ ROBONILDO - historico_csv.py (V462)
 Leitura dos CSVs de historico (export do Profit ou arquivo persistente do robo) e
 escolha do arquivo certo para a carga inicial. Isolado de principal.py para ser
 testavel sem Profit/Windows (estrategia/testes/test_historico_csv.py).
+
+V476 - historico por ANO para o backtest: uma pasta por ano sob a pasta-base
+(D:\\DAYTRADE\\HISTORICO\\2023, ...\\2026). listar_anos / interpretar_anos /
+dias_pos_buraco ficam aqui (puros, sem Profit); a leitura dos arquivos e do
+classificacao.py. O principal.py continua lendo so a pasta do ano corrente.
 """
 
 import csv
-from datetime import datetime
+import re
+from datetime import date, datetime
 from pathlib import Path
 from statistics import median
 from typing import List, Optional
@@ -119,3 +125,86 @@ def resolver_csv_historico(caminho_csv: str, timeframe_minutos: int) -> Path:
                   f"'{melhor.name}' ({melhor_fim}) - usando '{p.name}'.")
             melhor, melhor_fim = p, c[-1].horario
     return melhor
+
+
+# ---------------------------------------------------------------------------
+# V476 - historico por ano (backtest)
+# ---------------------------------------------------------------------------
+_ANO_MIN, _ANO_MAX = 1990, 2100
+
+
+def listar_anos(pasta_base) -> dict:
+    """{ano: pasta} das subpastas da `pasta_base` cujo nome e um ano de 4 digitos
+    e que tem pelo menos um .csv. Ordenado por ano. Pasta inexistente -> {}."""
+    base = Path(pasta_base)
+    achados = {}
+    try:
+        filhos = sorted(base.iterdir())
+    except OSError:
+        return {}
+    for p in filhos:
+        if p.is_dir() and re.fullmatch(r"\d{4}", p.name) and _ANO_MIN <= int(p.name) <= _ANO_MAX:
+            if any(p.glob("*.csv")):
+                achados[int(p.name)] = p
+    return achados
+
+
+def csvs_do_ano(pasta_ano) -> List[Path]:
+    """Todos os .csv da pasta do ano, em ordem de nome (o mais novo, por nome,
+    vence em candle repetido quando o carregador funde os arquivos)."""
+    return sorted(Path(pasta_ano).glob("*.csv"))
+
+
+def interpretar_anos(texto: Optional[str], disponiveis: List[int]) -> List[int]:
+    """Converte o texto em lista de anos (subconjunto de `disponiveis`, ordenada).
+
+    Aceita: vazio/'todos'/'tudo' = todos; '2023'; '2023-2025' (tambem '2023 a 2025',
+    '2023:2025', '2023 ate 2025'); '2022,2024' (ou separado por espaco/';');
+    'ultimos 3' = os 3 anos mais recentes. ValueError com mensagem clara se o
+    texto nao for entendido ou pedir ano sem pasta."""
+    if not disponiveis:
+        raise ValueError("nenhum ano disponivel")
+    dispon = sorted(set(disponiveis))
+    bruto = (texto or "").strip()
+    t = bruto.lower().replace("é", "e").replace("ú", "u")
+    if t in ("", "todos", "todo", "tudo", "all"):
+        return dispon
+    m = re.fullmatch(r"(?:ultimos|ultimo|u)\s*(\d+)", t)
+    if m:
+        n = int(m.group(1))
+        if n <= 0:
+            raise ValueError(f"quantidade de anos invalida em '{bruto}'")
+        return dispon[-n:]
+    m = re.fullmatch(r"(\d{4})\s*(?:-|:|a|ate)\s*(\d{4})", t)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        if a > b:
+            a, b = b, a
+        pedidos = list(range(a, b + 1))
+        # intervalo: so os anos que existem dentro dele (buraco no meio nao e erro)
+        escolhidos = [x for x in pedidos if x in dispon]
+        if not escolhidos:
+            raise ValueError(f"nenhum ano de {a} a {b} tem pasta; disponiveis: {', '.join(map(str, dispon))}")
+        return escolhidos
+    partes = [x for x in re.split(r"[,;\s]+", t) if x]
+    if partes and all(re.fullmatch(r"\d{4}", x) for x in partes):
+        pedidos = sorted({int(x) for x in partes})
+        faltam = [x for x in pedidos if x not in dispon]
+        if faltam:
+            raise ValueError(f"ano(s) sem pasta: {', '.join(map(str, faltam))}; "
+                             f"disponiveis: {', '.join(map(str, dispon))}")
+        return pedidos
+    raise ValueError(f"nao entendi os anos '{bruto}'. Exemplos: todos | 2023 | 2023-2025 | 2022,2024 | ultimos 2")
+
+
+def dias_pos_buraco(dias: List[date], limite_dias: int = 10, aquecimento: int = 3) -> set:
+    """Pregoes que seguem um buraco de calendario maior que `limite_dias` (anos nao
+    consecutivos escolhidos, p.ex. 2023 e 2025): o primeiro e os `aquecimento-1`
+    seguintes, para os indicadores nao serem contaminados pelo salto. Devolve o
+    conjunto de dias a tirar da apuracao (continuam como aquecimento)."""
+    ordenados = sorted(dias)
+    fora = set()
+    for i in range(1, len(ordenados)):
+        if (ordenados[i] - ordenados[i - 1]).days > limite_dias:
+            fora.update(ordenados[i:i + aquecimento])
+    return fora
