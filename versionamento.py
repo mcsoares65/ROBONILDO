@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V488"
+VERSAO = "V489"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1494,3 +1494,7 @@ VERSAO = "V488"
 #                  disparada" passa por gestor.pode_abrir_posicao(fechamento previsto);
 #                  se recusar (horario limite, limite de perdas), a frase diz o motivo.
 #   Causa: 05/10/2026 18:15 - "fechamento das 18:30" (limite de entradas: 18:20).
+
+# ---------------------------------------------------------------------------
+# V489 - Regra 12 do compliance: so o dono aprova (merge); conselho consultivo
+#   Documentacao apenas (compliance.md, CODEOWNERS). Nenhum codigo alterado.

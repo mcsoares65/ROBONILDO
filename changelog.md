@@ -4,6 +4,18 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V489 — Regra 12: só o dono aprova; revisão do conselho vira consultiva
+
+Pedido do dono (05/10/2026): só ele faz o merge dos PRs, então a exigência de aprovação
+do conselho antes do teste oficial não faz sentido. `compliance.md` (CODEOWNERS):
+- Regra 12 reescrita: o PR continua sendo o portão (autoria, declaração de variações,
+  Regra 11.3), mas quem aprova é o dono, e o merge dele é a aprovação. Outras IAs podem
+  comentar; não bloqueia.
+- O restante não muda: teste oficial só depois do merge, Regra 10 e Holdout na promoção.
+- Ajustados os dois lugares que citavam "revisão do conselho" (lista de contribuições
+  isoladas e item 8 do Termo de concordância) e acrescentado o adendo 2 ao histórico.
+- Só documentação; nenhum código alterado. As atas anteriores não são reescritas (Regra 15).
+
 ## V488 — narração não promete ordem depois do horário limite
 
 Log de 05/10/2026, 18:15: o robô narrou "Se confirmado no fechamento das 18:30, a ordem
