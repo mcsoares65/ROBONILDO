@@ -4,6 +4,30 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V483 — trava de 25% da banca desligada
+
+Por decisão do dono (05/10/2026), `RISCO_MAXIMO_PCT_BANCA` passa de `0.25` para `0`.
+Medido no mesmo motor (2020-2026, preços reescalados à volatilidade de 2026, 1 contrato):
+
+| Trava | Titular (R$) | Entrada composta + saída v4 (R$) | 2026 titular (R$) |
+|---|---|---|---|
+| 25% (antes) | 21.826 | 24.364 | 15.066 |
+| 35% | 23.225 | 25.679 | 17.389 |
+| 50% | 23.446 | 25.800 | 17.494 |
+| desligada | 23.679 | 25.890 | 17.494 |
+
+- A trava bloqueava poucas entradas (4 a 11 por ano) e, na soma, custou mais do que evitou
+  (+R$ 1.853 no titular sem ela). Por ano o efeito é misto: ela ajudou em 2022, 2023 e 2024
+  (+R$ 738, +1.043, +751) e atrapalhou em 2020, 2025 e 2026 (-1.301, -518, -2.428).
+- Risco assumido: sem a trava, a pior perda isolada simulada foi R$ 707 (2024, ~47% da banca
+  real de R$ 1.490, igual ao incidente de 01/10); em 2026 a pior foi R$ 205.
+- `motor.validar_risco_inicial`: `pct == 0` desliga só o limite percentual; a recusa por stop
+  inválido/ausente (fail-closed, V462) continua ativa. Teste novo
+  `test_pct_zero_nao_desliga_o_fail_closed`.
+- Para religar: `RISCO_MAXIMO_PCT_BANCA = 0.25` (ou 0.35 / 0.5) em `configuracao.py`.
+
+---
+
 ## V482 — adendo 2 da ata AA: histórico completo e causa da discrepância de 2026
 
 Só documentação (`conselho/2026-10-05-AA.txt`), nenhum código alterado. Substitui as

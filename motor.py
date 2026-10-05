@@ -607,7 +607,9 @@ class MotorRobonildo:
         cartucho de saida ou sem row nao ha o que verificar e nao bloqueia."""
         pct = getattr(cfg, "RISCO_MAXIMO_PCT_BANCA", 0) or 0
         banca = getattr(cfg, "BANCA_REAL_REAIS", 0) or 0
-        if not pct or not banca or self.avaliar_saida is None or row is None:
+        # V483: pct == 0 desliga SO o limite percentual; a verificacao fail-closed
+        # do stop (V462) continua valendo, pois e outra protecao.
+        if self.avaliar_saida is None or row is None:
             return True, ""
         fechada = bool(getattr(cfg, "RISCO_FALHA_FECHADA", False))
 
@@ -638,6 +640,8 @@ class MotorRobonildo:
         lado = str(sinal.lado).upper()
         if (lado == "COMPRA" and stop >= entrada) or (lado == "VENDA" and stop <= entrada):
             return invalido("stop do lado errado do preço")
+        if not pct or not banca:
+            return True, ""
         pontos = abs(entrada - stop)
         risco = pontos * cfg.VALOR_PONTO_REAIS + cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
         limite = pct * banca

@@ -104,7 +104,11 @@ BANCA_REAL_REAIS = 1490.00
 # backtest (motor.validar_risco_inicial), para ao vivo e laboratorio decidirem
 # igual. 0 desliga. Incidente de 01/10: stop de 3.535 pts = R$ 707 (47% da banca
 # real, 354% da banca configurada de R$ 200).
-RISCO_MAXIMO_PCT_BANCA = 0.25
+# V483: DESLIGADA por decisao do dono (05/10/2026): no backtest 2020-2026 a trava
+# custou mais do que evitou (titular: R$ 21.826 com 25% vs R$ 23.679 sem; em 2026
+# R$ 15.066 vs R$ 17.494). Risco assumido: uma perda isolada de ate ~R$ 700 (~47%
+# da banca real, como em 01/10). Para religar, ponha 0.25 (ou 0.35 / 0.5).
+RISCO_MAXIMO_PCT_BANCA = 0
 # V462 (achado A do Manus, ata 2026-10-02-Y): quando o stop inicial NAO PODE ser
 # verificado (cartucho falhou, nao propôs stop, NaN/inf, texto, ou stop do lado
 # errado do preco) o padrao agora e BLOQUEAR a entrada (fail-closed): numa ordem
