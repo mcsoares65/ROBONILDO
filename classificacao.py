@@ -175,8 +175,7 @@ def _listar_py(pasta: Path) -> list[Path]:
 
     Ignora nomes que começam com `_` (reservados, Regra 7) e `test_*.py` (rede de
     segurança: os testes moram em estrategia/testes/, fora destas pastas). Só
-    estratégias candidatas ficam em entrada/ e saida/; auxiliares de cartucho
-    moram em `auxiliar/` (subpasta, nunca varrida)."""
+    estratégias candidatas ficam em entrada/ e saida/."""
     if not pasta.exists():
         return []
     return sorted(
