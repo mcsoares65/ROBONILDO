@@ -4,6 +4,16 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V472 — tela do `classificacao.py` mais enxuta
+
+Saíram do início da execução: a linha "Multi = score ABSOLUTO…", os títulos
+`[ETAPA 1/2]`/`[ETAPA 2/2]`, a lista de saídas validadas, a linha "Saídas
+compatíveis | Combinações a executar" e o log de cada combinação. No lugar, uma
+barra `[COMBINAÇÕES]` que atualiza na mesma linha. Incompatíveis continuam
+aparecendo no fim.
+
+---
+
 ## V471 — `classificacao.py` sem o inventário de cartuchos no início
 
 Removido o bloco "CARTUCHOS NO DISCO (entrada/saída — sem laboratório)" que
