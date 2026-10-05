@@ -22,6 +22,8 @@ from __future__ import annotations
 import csv
 import importlib.util
 import math
+import multiprocessing
+import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, replace
@@ -403,7 +405,8 @@ def descobrir_cartucho_saida():
 JANELA_INDICADORES = 1500
 
 
-def preparar_rows(candles: list[Candle], dias_avaliacao: Optional[set] = None) -> list[Optional[dict]]:
+def preparar_rows(candles: list[Candle], dias_avaliacao: Optional[set] = None,
+                  progresso: bool = True) -> list[Optional[dict]]:
     """Indicadores por candle. Com dias_avaliacao, só calcula os candles desses
     dias (os anteriores continuam servindo de aquecimento, sem serem pontuados)."""
     rows = [None] * len(candles)
@@ -412,7 +415,7 @@ def preparar_rows(candles: list[Candle], dias_avaliacao: Optional[set] = None) -
     total = len(alvo)
     for concluido, indice in enumerate(alvo, 1):
         rows[indice] = construir_row(candles[max(0, indice + 1 - JANELA_INDICADORES):indice + 1])
-        if concluido % 250 == 0 or concluido == total:
+        if progresso and (concluido % 250 == 0 or concluido == total):
             _progresso("INDICADORES", concluido, total)
     return rows
 
@@ -607,8 +610,10 @@ def executar_jogo(
         row = rows[indice]
         if row is None:
             continue
+        # Com `row` pronta o motor só lê o último candle (candles[-1]); passar a
+        # fatia inteira do histórico custava O(n) por candle (quadrático no total).
         motor.processar_candle_historico(
-            candles[:indice + 1],
+            candles[indice:indice + 1],
             ultimo_candle_do_dia=_ultimo_candle_do_dia(candles, indice),
             row=row,
         )
@@ -1489,6 +1494,116 @@ def _executar_diagnostico(candles, rows, dias, dias_avaliacao, entradas, saidas,
     return {"modo": "D", "diagnostico": linhas, "repetem_nas_metades": repetem}
 
 
+# ---------------------------------------------------------------------------
+# Execução em paralelo (V477)
+#
+# O motor não guarda nada de um pregão para o outro (posição, contadores de perda e
+# de operações zeram a cada dia; a banca só entra em log), então o histórico pode ser
+# cortado em BLOCOS de pregões consecutivos e cada bloco rodado por um processo, com
+# o mesmo resultado da execução em série: cada processo calcula os indicadores só dos
+# seus dias (vendo JANELA_INDICADORES candles para trás), roda todas as combinações
+# neles e devolve as operações; aqui as operações dos blocos são juntadas em ordem.
+# Nada de linhas de indicadores trafega entre processos (cada uma pesa ~10 KB).
+# Usa sempre o modo "spawn" (o único do Windows), assim o que se testa aqui é o que
+# roda na sua máquina.
+# ---------------------------------------------------------------------------
+LIMIAR_PARALELO_CANDLES = 2500     # abaixo disso, a partida dos processos não compensa
+BLOCOS_POR_PROCESSO = 4
+
+_CARTUCHOS_DO_PROCESSO: dict = {}
+
+
+def processos_padrao() -> int:
+    """Núcleos lógicos menos um (para o Windows e o Profit), de 1 a 8."""
+    return max(1, min((os.cpu_count() or 1) - 1, 8))
+
+
+def _carregar_cartucho_no_processo(tipo: str, nome: str, caminho: str):
+    chave = (tipo, caminho)
+    if chave not in _CARTUCHOS_DO_PROCESSO:
+        modulo = _importar_arquivo(Path(caminho), f"par_{tipo}_{nome}")
+        _CARTUCHOS_DO_PROCESSO[chave] = getattr(
+            modulo, "gerar_sinal" if tipo == "entrada" else "avaliar_saida")
+    return _CARTUCHOS_DO_PROCESSO[chave]
+
+
+def _bloco_worker(tarefa):
+    """Roda, no processo, todas as combinações sobre os pregões de UM bloco.
+    Devolve (indice_do_bloco, [("ok", trades) | ("erro", texto), ...] na ordem dos pares)."""
+    indice, candles_fatia, dias_bloco, pares_def, cenario = tarefa
+    rows = preparar_rows(candles_fatia, dias_bloco, progresso=False)
+    saida = []
+    for (e_tipo, e_nome, e_caminho), (s_tipo, s_nome, s_caminho) in pares_def:
+        gerar = _carregar_cartucho_no_processo(e_tipo, e_nome, e_caminho)
+        avaliar = _carregar_cartucho_no_processo(s_tipo, s_nome, s_caminho)
+        estrategia = CartuchoEntrada(nome=e_nome, caminho=Path(e_caminho), gerar_sinal=gerar)
+        try:
+            trades = executar_jogo(candles_fatia, rows, estrategia, dias_bloco,
+                                   avaliar_saida=avaliar, cenario=cenario or None)
+        except (KeyError, TypeError, ValueError, AttributeError) as erro:
+            saida.append(("erro", f"{type(erro).__name__}: {erro}"))
+        else:
+            saida.append(("ok", trades))
+    return indice, saida
+
+
+def _dividir_em_blocos(candles: list[Candle], dias_avaliacao: set, n_blocos: int) -> list[tuple]:
+    """[(fatia_de_candles, dias_do_bloco)] em ordem. Cada fatia começa JANELA_INDICADORES
+    candles antes do primeiro pregão do bloco e termina no último candle do último pregão."""
+    dias = sorted(dias_avaliacao)
+    n_blocos = max(1, min(n_blocos, len(dias)))
+    tamanho, resto = divmod(len(dias), n_blocos)
+    blocos, inicio = [], 0
+    for b in range(n_blocos):
+        fim = inicio + tamanho + (1 if b < resto else 0)
+        dias_bloco = set(dias[inicio:fim])
+        inicio = fim
+        indices = [i for i, c in enumerate(candles) if c.horario.date() in dias_bloco]
+        if not indices:
+            continue
+        a, z = indices[0], indices[-1]
+        blocos.append((candles[max(0, a - JANELA_INDICADORES):z + 1], dias_bloco))
+    return blocos
+
+
+def executar_pares_em_paralelo(candles, dias_avaliacao, pares, cenario, processos, progresso=True):
+    """Roda `pares` [(CartuchoEntrada, CartuchoSaida)] em `processos` processos e devolve,
+    na ordem dos pares, [("ok", trades) | ("erro", texto)] — o mesmo que a execução em série."""
+    blocos = _dividir_em_blocos(candles, dias_avaliacao, processos * BLOCOS_POR_PROCESSO)
+    pares_def = [
+        (("entrada", e.nome, str(e.caminho)), ("saida", s.nome, str(s.caminho)))
+        for e, s in pares
+    ]
+    tarefas = [(i, fatia, dias_bloco, pares_def, cenario) for i, (fatia, dias_bloco) in enumerate(blocos)]
+    recebidos: dict = {}
+    ctx = multiprocessing.get_context("spawn")
+    with ctx.Pool(processes=min(processos, len(tarefas))) as pool:
+        for indice, saida in pool.imap_unordered(_bloco_worker, tarefas):
+            recebidos[indice] = saida
+            if progresso:
+                _progresso("PROCESSAMENTO", len(recebidos), len(tarefas),
+                           f"{len(pares)} combinações em {processos} processos")
+    resultado = []
+    for k in range(len(pares)):
+        erros = [recebidos[i][k][1] for i in sorted(recebidos) if recebidos[i][k][0] == "erro"]
+        if erros:
+            resultado.append(("erro", erros[0]))
+            continue
+        trades = []
+        for i in sorted(recebidos):
+            trades.extend(recebidos[i][k][1])
+        resultado.append(("ok", trades))
+    return resultado
+
+
+def _row_de_validacao(candles: list[Candle], dias_avaliacao: set) -> list[Optional[dict]]:
+    """A única linha que validar_contrato_saida usa: a do último candle avaliado."""
+    for indice in range(len(candles) - 1, 64, -1):
+        if candles[indice].horario.date() in dias_avaliacao:
+            return [construir_row(candles[max(0, indice + 1 - JANELA_INDICADORES):indice + 1])]
+    return [None]
+
+
 def executar(
     caminho_csv: Optional[str] = None,
     *,
@@ -1499,6 +1614,7 @@ def executar(
     saida_dir: Optional[str] = None,
     metades: Optional[bool] = None,
     anos: Optional[str] = None,
+    processos: Optional[int] = None,
 ):
     """modo: 'E'/'S'/'C'/'A'/'D' (None = pergunta; A = análise: cruzado completo +
     planilha .xlsx em saida_dir, padrão <projeto>\\analise (único modo que grava arquivo); D = diagnóstico por
@@ -1511,7 +1627,8 @@ def executar(
     None = pergunta. anos: texto aceito por historico_csv.interpretar_anos ('' ou 'todos' =
     todos os anos com pasta; None = pergunta quando há mais de um); só vale sem
     `caminho_csv` e quando a pasta cfg.PASTA_HISTORICO_BACKTEST tem pastas de ano — senão
-    lê o arquivo único de sempre (cfg.CAMINHO_HISTORICO_INICIAL)."""
+    lê o arquivo único de sempre (cfg.CAMINHO_HISTORICO_INICIAL). processos: nº de
+    processos para E/S/C/A (None = núcleos-1, 1 = em série); modo D roda em série."""
     pastas_ano = {} if caminho_csv else listar_anos(cfg.PASTA_HISTORICO_BACKTEST)
     caminho = Path(caminho_csv or cfg.CAMINHO_HISTORICO_INICIAL)
     if not pastas_ano and not caminho.exists():
@@ -1643,7 +1760,15 @@ def executar(
     print(f"Entradas no ranking: {len(entradas)} | Saídas no ranking: {len(saidas)}")
     print("=" * 100)
 
-    rows = preparar_rows(candles, dias_avaliacao)
+    n_processos = processos_padrao() if processos is None else max(1, int(processos))
+    em_paralelo = (
+        modo != "D" and n_processos > 1
+        and sum(1 for c in candles if c.horario.date() in dias_avaliacao) >= LIMIAR_PARALELO_CANDLES
+    )
+    if em_paralelo:
+        rows = _row_de_validacao(candles, dias_avaliacao)    # o resto é calculado nos processos
+    else:
+        rows = preparar_rows(candles, dias_avaliacao)
 
     incompatíveis = list(falhas_e) + list(falhas_s)
     saidas_compativeis = []
@@ -1686,19 +1811,32 @@ def executar(
     trades_titular: list[dict] = []
 
     total = len(pares_a_rodar)
+    if em_paralelo:
+        brutos = executar_pares_em_paralelo(
+            candles, dias_avaliacao, pares_a_rodar, cenario or None, n_processos)
+        resultados_pares = list(zip(pares_a_rodar, brutos))
+    else:
+        resultados_pares = None
     n = 0
     for ent, sai in pares_a_rodar:
         n += 1
         rotulo = f"{ent.nome} × {sai.nome}"
-        _progresso("COMBINAÇÕES", n - 1, total, rotulo)
-        try:
-            trades = executar_jogo(
-                candles, rows, ent, dias_avaliacao, avaliar_saida=sai.avaliar_saida,
-                cenario=cenario or None,
-            )
-        except (KeyError, TypeError, ValueError, AttributeError) as erro:
-            incompatíveis.append((rotulo, f"{type(erro).__name__}: {erro}"))
-            continue
+        if resultados_pares is not None:
+            situacao, conteudo = resultados_pares[n - 1][1]
+            if situacao == "erro":
+                incompatíveis.append((rotulo, conteudo))
+                continue
+            trades = conteudo
+        else:
+            _progresso("COMBINAÇÕES", n - 1, total, rotulo)
+            try:
+                trades = executar_jogo(
+                    candles, rows, ent, dias_avaliacao, avaliar_saida=sai.avaliar_saida,
+                    cenario=cenario or None,
+                )
+            except (KeyError, TypeError, ValueError, AttributeError) as erro:
+                incompatíveis.append((rotulo, f"{type(erro).__name__}: {erro}"))
+                continue
         res = _montar_resultado_par(
             ent.nome, sai.nome, trades, dias,
             entrada_titular=ent.titular, saida_titular=sai.titular,
@@ -1707,7 +1845,8 @@ def executar(
         if ent.titular and sai.titular:
             trades_titular = sorted(trades, key=lambda t: t["horario_execucao"])
         pares_ok.append(res)
-    _progresso("COMBINAÇÕES", total, total)
+    if resultados_pares is None:
+        _progresso("COMBINAÇÕES", total, total)
 
     rank_entrada: list[dict] = []
     rank_saida: list[dict] = []
@@ -1862,6 +2001,8 @@ def _ler_argumentos(argv=None):
                     help="modo D: mostra o que se repete nas duas metades do período")
     ap.add_argument("--saida-dir", help="pasta da planilha do modo A (padrão: analise/ ao lado do classificacao.py)")
     ap.add_argument("--anos", help="anos do backtest (pastas ...\\HISTORICO\\AAAA): 'todos', '2023', '2023-2025', '2022,2024' ou 'ultimos 2'")
+    ap.add_argument("--processos", type=int, help="processos em paralelo nos modos E/S/C/A (padrão: núcleos-1; 1 = em série)")
+    ap.add_argument("--sem-paralelo", action="store_true", help="roda em série (igual a --processos 1)")
     ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
     ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
                     + ", ".join(cen_mod.NOMES))
@@ -1891,4 +2032,5 @@ if __name__ == "__main__":
         anos = ""           # rodou por linha de comando: não pergunta, vale todos os anos
     executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao,
              cenario=cenario, saida_dir=args.saida_dir, anos=anos,
+             processos=1 if args.sem_paralelo else args.processos,
              metades=True if args.metades else (False if args.modo else None))

@@ -4,6 +4,25 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V477 — mais rápido: sem cópia do histórico a cada candle e em vários processos
+
+**Motor de simulação:** o `executar_jogo` entregava ao motor uma cópia de todo o
+histórico até o candle atual, a cada candle (custo quadrático). Com a linha de
+indicadores pronta o motor só lê o último candle, então agora recebe só ele. Mesmo
+resultado; metade do tempo de uma combinação em 2026 e ganho muito maior com anos.
+
+**Paralelismo (modos E, S, C e A):** o histórico é cortado em blocos de pregões
+seguidos e cada bloco roda em um processo (cálculo dos indicadores do bloco + todas
+as combinações), juntando as operações no fim. É exato porque o motor não leva nada
+de um pregão para o outro. Padrão: núcleos − 1 (máx. 8) — no seu PC de 4 núcleos,
+3 processos. `--processos N` escolhe; `--sem-paralelo` roda em série. O modo D e
+históricos pequenos (< 2.500 candles) rodam em série.
+
+Conferido: as 576 combinações de 2026 dão exatamente as mesmas operações em série e
+em paralelo (e `test_paralelo.py` repete a conferência numa série sintética).
+
+---
+
 ## V476 — histórico por ano (uma pasta por ano)
 
 O backtest passa a ler uma pasta por ano: `D:\DAYTRADE\HISTORICO\2023`, `\2024`,
