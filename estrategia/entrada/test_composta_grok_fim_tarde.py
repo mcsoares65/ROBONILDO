@@ -1,7 +1,7 @@
 """Laboratorio (entrada composta): as portas 1-3 reproduzem a entrada titular grok_3
 e a 4a (fim de tarde) so atua quando as anteriores nao sinalizam.
-Arquivo com prefixo `_`: o classificador nao o trata como candidata (Regra 7).
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p '_test_*.py'"""
+Arquivo `test_*`: o classificador nao o trata como candidata.
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
 import contextlib
 import io
 import importlib.util
@@ -13,7 +13,7 @@ RAIZ = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(RAIZ))
 import classificacao as cl
 import simulador_mercado as sim
-from _test_periodo_simulador import historico
+from test_periodo_simulador import historico
 
 
 def carregar(sub, nome):

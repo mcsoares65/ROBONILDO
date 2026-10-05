@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V468"
+VERSAO = "V469"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1259,3 +1259,26 @@ VERSAO = "V468"
 # Arquivos: estrategia/entrada/entrada_composta_grok_fim_tarde_claude_v1.py,
 # estrategia/saida/saida_composta_stop_atr_alvo_ma21_claude_v1.py, dois
 # _test_*.py, versionamento.py e changelog.md.
+
+# ---------------------------------------------------------------------------
+# V469 - descoberta nao depende mais de sublinhado inicial no nome do arquivo
+# ---------------------------------------------------------------------------
+# Incidente: no disco do dono os arquivos "_*.py" perderam o "_" (copia entre
+# pastas), entao "_paulinho_just.py", "_daytrader_ohlc.py" e "_test_*.py"
+# apareceram como candidatos INCOMPATIVEIS e os imports "estrategia.entrada._x"
+# quebraram (entrada_paulinho_just_fechamento_V01 nao carregou).
+#
+# Correcao sem depender do prefixo: auxiliares de cartucho foram para
+# estrategia/entrada/auxiliar/ (daytrader_ohlc.py, paulinho_just.py; a
+# descoberta nunca desce em subpastas) e os testes viraram test_*.py, que o
+# classificador agora ignora (alem dos "_*" reservados pela Regra 7, mantida).
+# Rodar: python -m unittest discover -s estrategia/entrada   (e estrategia/saida)
+#
+# Nao ha mudanca de regra de estrategia nem de titular. Suites: 67 + 29 OK.
+# Acao do dono: apagar de estrategia/entrada/ os arquivos antigos
+# daytrader_ohlc.py e paulinho_just.py (copias sem "_"); os test_*.py antigos
+# sao sobrescritos pelos novos e ja sao ignorados.
+#
+# Arquivos: classificacao.py (_listar_py), 11 cartuchos de entrada (import),
+# auxiliar/ (2 movidos), 16 testes renomeados, CI, historico_csv.py,
+# versionamento.py e changelog.md.

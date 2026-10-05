@@ -6,9 +6,9 @@ compatíveis apenas com OHLC usando os 22 candles fechados fornecidos pelo motor
 20 para a regra atual e mais um para reproduzir, sem estado global, a supressão
 de sinais idênticos em candles consecutivos.
 
-O arquivo começa com ``_`` para não ser tratado como cartucho pelo
-``classificacao.py``. Somente os módulos públicos ao lado dele participam do
-ranking.
+O arquivo fica na subpasta ``auxiliar/`` para não ser tratado como cartucho
+pelo ``classificacao.py`` (a descoberta não desce em subpastas). Somente os
+módulos públicos de ``estrategia/entrada/`` participam do ranking.
 """
 
 from decimal import Decimal, InvalidOperation

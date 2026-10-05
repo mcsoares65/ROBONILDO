@@ -1,6 +1,6 @@
 """Reversao confirmada a 0,60% da origem intradiaria (metodo Just/WIN)."""
 
-from estrategia.entrada._paulinho_just import sinal_origem_intradiaria
+from estrategia.entrada.auxiliar.paulinho_just import sinal_origem_intradiaria
 
 
 def gerar_sinal(row) -> int:

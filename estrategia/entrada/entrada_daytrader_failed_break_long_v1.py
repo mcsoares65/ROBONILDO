@@ -1,6 +1,6 @@
 """Falso rompimento para compra, adaptado do pacote strategies."""
 
-from estrategia.entrada._daytrader_ohlc import gerar_sinal_compat
+from estrategia.entrada.auxiliar.daytrader_ohlc import gerar_sinal_compat
 
 
 def gerar_sinal(row) -> int:

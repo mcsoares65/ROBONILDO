@@ -38,8 +38,8 @@ jobs:
           for f in estrategia/entrada/*.py estrategia/entrada/titular/*.py \
                    estrategia/saida/*.py estrategia/saida/titular/*.py; do
             [ -f "$f" ] || continue
-            # testes de laboratorio (_test_*) precisam importar motor/classificacao
-            case "$(basename "$f")" in _test_*) continue ;; esac
+            # testes de laboratorio (test_*) precisam importar motor/classificacao
+            case "$(basename "$f")" in test_*) continue ;; esac
             if grep -nE "^\s*(import|from)\s+(motor|configuracao|principal|classificacao|registrador|email_notificacao|gestor_risco|analise|versionamento)\b" "$f"; then
               echo "REGRA 3 VIOLADA em $f - cartucho não pode importar módulo do projeto"
               fail=1
@@ -50,8 +50,8 @@ jobs:
       - name: Testes de laboratório (entrada e saída)
         run: |
           python3 -m pip install --quiet openpyxl colorama
-          python3 -m unittest discover -s estrategia/entrada -p "_test_*.py"
-          python3 -m unittest discover -s estrategia/saida -p "_test_*.py"
+          python3 -m unittest discover -s estrategia/entrada -p "test_*.py"
+          python3 -m unittest discover -s estrategia/saida -p "test_*.py"
 
       # Passo opcional: rodar classificacao.py contra o dataset oficial.
       # Não ativado por padrão porque o histórico (WINFUT_F_0_15min.csv) não

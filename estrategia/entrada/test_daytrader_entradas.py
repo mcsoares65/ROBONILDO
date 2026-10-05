@@ -1,6 +1,6 @@
 """V465 (laboratorio, entradas): adaptacao do pacote strategies aos cartuchos de entrada.
-Arquivo com prefixo `_`: o classificador nao o trata como candidata (Regra 7).
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p '_test_*.py'"""
+Arquivo `test_*`: o classificador nao o trata como candidata.
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
 
 import importlib
 import sys
@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from motor import Candle, construir_row
-from estrategia.entrada._daytrader_ohlc import gerar_sinal_compat
+from estrategia.entrada.auxiliar.daytrader_ohlc import gerar_sinal_compat
 
 
 ENTRADAS = (
