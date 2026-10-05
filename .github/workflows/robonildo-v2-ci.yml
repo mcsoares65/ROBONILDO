@@ -45,11 +45,6 @@ jobs:
           done
           exit $fail
 
-      - name: Testes de laboratório (estrategia/testes)
-        run: |
-          python3 -m pip install --quiet openpyxl colorama
-          python3 -m unittest discover -s estrategia/testes -p "test_*.py"
-
       # Passo opcional: rodar classificacao.py contra o dataset oficial.
       # Não ativado por padrão porque o histórico (WINFUT_F_0_15min.csv) não
       # está neste repositório (arquivo de dados de mercado, não código).

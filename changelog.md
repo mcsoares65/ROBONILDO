@@ -4,6 +4,21 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V485 — pasta `estrategia/testes/` removida
+
+Decisão do dono: a pasta não faz parte do núcleo do projeto. Conferido que nada
+(`principal`, `motor`, `classificacao`, `historico_csv`, cartuchos) importa dela;
+só havia comentários citando o caminho. Removidos os 17 arquivos de teste e o passo
+"Testes de laboratório" do CI; ficam as checagens de compilação e da Regra 3.
+Ajustados dois comentários (`classificacao.py`, `historico_csv.py`). Nenhuma
+estratégia, motor ou configuração alterados.
+
+Consequência assumida: o CI deixa de rodar testes automáticos (trava de risco/fail-closed
+V462, igualdade serial x paralelo, histórico por ano). O código de teste continua no
+histórico do git (commit anterior a este) se for preciso recuperar.
+
+---
+
 ## V484 — medição das candidatas ChatGPT "meta 20k"
 
 Executados os passos 1 e 2 da ata AB (7 anos, preços reescalados, 1 contrato):

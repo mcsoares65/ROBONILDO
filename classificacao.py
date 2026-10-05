@@ -248,8 +248,7 @@ EstrategiaCarregada = CartuchoEntrada
 def _listar_py(pasta: Path) -> list[Path]:
     """Arquivos .py de cartucho diretamente numa pasta (não desce em subpastas).
 
-    Ignora nomes que começam com `_` (reservados, Regra 7) e `test_*.py` (rede de
-    segurança: os testes moram em estrategia/testes/, fora destas pastas). Só
+    Ignora nomes que começam com `_` (reservados, Regra 7) e `test_*.py`. Só
     estratégias candidatas ficam em entrada/ e saida/."""
     if not pasta.exists():
         return []

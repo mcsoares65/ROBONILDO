@@ -3,7 +3,7 @@ ROBONILDO - historico_csv.py (V462)
 
 Leitura dos CSVs de historico (export do Profit ou arquivo persistente do robo) e
 escolha do arquivo certo para a carga inicial. Isolado de principal.py para ser
-testavel sem Profit/Windows (estrategia/testes/test_historico_csv.py).
+testavel sem Profit/Windows.
 
 V476 - historico por ANO para o backtest: uma pasta por ano sob a pasta-base
 (D:\\DAYTRADE\\HISTORICO\\2023, ...\\2026). listar_anos / interpretar_anos /
