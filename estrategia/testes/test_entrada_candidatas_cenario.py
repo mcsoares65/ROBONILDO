@@ -10,17 +10,19 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(RAIZ))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from apoio_cartuchos import caminho_cartucho  # noqa: E402
 
 
 def existe(pasta, nome):
     """Candidata removida do disco -> o teste dela e pulado (nao quebra a suite)."""
-    return (RAIZ / "estrategia" / pasta / f"{nome}.py").exists()
+    return caminho_cartucho(pasta, nome) is not None
 
 
 def carregar(pasta, nome):
     if not existe(pasta, nome):
         return None
-    spec = importlib.util.spec_from_file_location(nome, RAIZ / "estrategia" / pasta / f"{nome}.py")
+    spec = importlib.util.spec_from_file_location(nome, caminho_cartucho(pasta, nome))
     modulo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modulo)
     return modulo

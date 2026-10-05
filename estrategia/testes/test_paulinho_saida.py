@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from estrategia.saida.saida_paulinho_just_rr2_V01 import avaliar_saida
+from estrategia.saida.desclassificadas.saida_paulinho_just_rr2_V01 import avaliar_saida
 
 
 class SaidaPaulinho(unittest.TestCase):

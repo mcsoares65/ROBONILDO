@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from estrategia.saida.saida_daytrader_rr2_v1 import avaliar_saida
+from estrategia.saida.desclassificadas.saida_daytrader_rr2_v1 import avaliar_saida
 
 
 def candle_dict(indice, abertura=100.0, maxima=105.0, minima=95.0, fechamento=100.0):
