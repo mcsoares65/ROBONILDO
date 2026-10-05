@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V481"
+VERSAO = "V483"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1453,3 +1453,11 @@ VERSAO = "V481"
 # com entrada_grok_3_v1; primeira colocada no ranking disponivel.
 # Validacao segmentada em 150/50/50 pregoes e controle anterior de 183 pregoes.
 # Suite: 112 testes OK, 6 pulados. Ata: conselho/2026-10-05-AC.txt.
+
+# ---------------------------------------------------------------------------
+# V483 - trava de 25% da banca DESLIGADA (decisao do dono, 05/10/2026)
+#   configuracao.py : RISCO_MAXIMO_PCT_BANCA = 0 (antes 0.25)
+#   motor.py        : pct == 0 desliga so o limite percentual; a verificacao
+#                     fail-closed do stop (V462) continua ativa.
+#   Medicao (backtest 2020-2026, precos reescalados): titular R$ 21.826 (25%) vs
+#   R$ 23.679 (sem trava); 2026: R$ 15.066 vs R$ 17.494.

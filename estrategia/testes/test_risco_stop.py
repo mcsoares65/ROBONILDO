@@ -72,7 +72,14 @@ class RiscoInicial(unittest.TestCase):
 
     def test_desligado_com_pct_zero(self):
         cfg.RISCO_MAXIMO_PCT_BANCA = 0
-        self.assertTrue(self.ok(motor_com(lambda r, p: {"novo_stop": 100.0})))
+        self.assertTrue(self.ok(motor_com(lambda r, p: {"novo_stop": 187390.0 - 5000})))
+
+    def test_pct_zero_nao_desliga_o_fail_closed(self):
+        """V483: sem o limite de 25%, stop invalido/ausente ainda bloqueia."""
+        cfg.RISCO_MAXIMO_PCT_BANCA = 0
+        for f in (lambda r, p: {"fechar": False}, lambda r, p: {"novo_stop": float("nan")},
+                  lambda r, p: {"novo_stop": 187390.0 + 100}):
+            self.assertFalse(self.ok(motor_com(f)))
 
 
 if __name__ == "__main__":
