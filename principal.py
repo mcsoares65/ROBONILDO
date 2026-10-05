@@ -742,13 +742,27 @@ def rodar():
                         # fechamento") e entende que a ordem deveria ter saido
                         # AGORA, quando ela se refere ao fechamento SEGUINTE.
                         # Nomear o horario elimina a ambiguidade.
-                        fechamento_previsto = (
+                        fechamento_previsto_dt = (
                             candle_atual.horario + timedelta(minutes=cfg.TIMEFRAME_MINUTOS)
-                        ).strftime("%H:%M")
-                        explicacao = (
-                            f"{explicacao} Se confirmado no fechamento das "
-                            f"{fechamento_previsto}, a ordem será disparada."
                         )
+                        fechamento_previsto = fechamento_previsto_dt.strftime("%H:%M")
+                        # V488: a mesma porta que a entrada real usa (pode_abrir_posicao,
+                        # avaliada no fechamento). Em 05/10/2026 as 18:15 o robo narrou
+                        # "se confirmado no fechamento das 18:30, a ordem sera disparada",
+                        # mas 18:30 e depois do horario limite (18:20): nao havia ordem
+                        # possivel. Nao promete ordem que o gestor vai recusar.
+                        pode_no_fechamento, motivo_no_fechamento = gestor.pode_abrir_posicao(
+                            fechamento_previsto_dt)
+                        if pode_no_fechamento:
+                            explicacao = (
+                                f"{explicacao} Se confirmado no fechamento das "
+                                f"{fechamento_previsto}, a ordem será disparada."
+                            )
+                        else:
+                            explicacao = (
+                                f"{explicacao} Mas o fechamento previsto, {fechamento_previsto}, "
+                                f"não permite ordem: {motivo_no_fechamento}."
+                            )
                         print(f"[CENÁRIO EM FORMAÇÃO] {explicacao}")
                         narrar(explicacao)
                         ultima_expectativa_narrada = chave_expectativa
