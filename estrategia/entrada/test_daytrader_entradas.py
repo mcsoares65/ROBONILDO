@@ -1,8 +1,7 @@
-"""V465 (laboratorio, entradas): adaptacao do pacote strategies aos cartuchos de entrada.
+"""V465 (laboratorio, entradas): ponte `auxiliar/daytrader_ohlc` do pacote strategies.
 Arquivo `test_*`: o classificador nao o trata como candidata.
 Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
 
-import importlib
 import sys
 import unittest
 from datetime import datetime, timedelta
@@ -12,19 +11,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from motor import Candle, construir_row
 from estrategia.entrada.auxiliar.daytrader_ohlc import gerar_sinal_compat
-
-
-ENTRADAS = (
-    "entrada_daytrader_channel_reversion_long_v1",
-    "entrada_daytrader_channel_reversion_short_v1",
-    "entrada_daytrader_channel_long_v2",
-    "entrada_daytrader_channel_short_v2",
-    "entrada_daytrader_ema_pullback_long_v1",
-    "entrada_daytrader_failed_break_long_v1",
-    "entrada_daytrader_failed_break_short_v1",
-    "entrada_daytrader_failed_break_long_v2",
-    "entrada_daytrader_failed_break_short_v2",
-)
 
 
 def candle_dict(indice, abertura=100.0, maxima=105.0, minima=95.0, fechamento=100.0):
@@ -54,14 +40,6 @@ class EstrategiasImportadas(unittest.TestCase):
         self.assertIsNotNone(row)
         self.assertEqual(len(row["ohlc_recentes"]), 96)
         self.assertEqual(row["ohlc_recentes"][-1]["dt"], candles[-1].horario)
-
-
-    def test_nove_cartuchos_publicos_respeitam_dominio_do_contrato(self):
-        row = {"ohlc_recentes": tuple(candle_dict(i) for i in range(22))}
-        for nome in ENTRADAS:
-            with self.subTest(nome):
-                modulo = importlib.import_module(f"estrategia.entrada.{nome}")
-                self.assertIn(modulo.gerar_sinal(row), (-1, 0, 1))
 
 
     def test_reversao_de_canal_compra(self):

@@ -1282,3 +1282,10 @@ VERSAO = "V469"
 # Arquivos: classificacao.py (_listar_py), 11 cartuchos de entrada (import),
 # auxiliar/ (2 movidos), 16 testes renomeados, CI, historico_csv.py,
 # versionamento.py e changelog.md.
+#
+# Merge com a main (commit "atualizacao de estrategias" do dono): mantidas as
+# remocoes das estrategias daytrader, gabriel e paulinho_origem; testes que
+# dependiam delas foram ajustados (test_daytrader_entradas sem o teste dos nove
+# cartuchos; test_gabriel_entradas sem contagem fixa). O diagnostico_cenarios.py
+# chegou VAZIO na main (0 linhas) e foi restaurado da V468 porque test_cenario
+# depende dele - se o esvaziamento foi intencional, reverter este arquivo.

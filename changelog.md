@@ -20,6 +20,9 @@ Correção que não depende do prefixo:
 - imports dos 11 cartuchos atualizados; CI atualizado (`-p "test_*.py"`).
 
 Rodar: `python -m unittest discover -s estrategia/entrada` (e `estrategia/saida`).
+Merge com a main: mantidas as remoções do dono (daytrader, gabriel,
+paulinho_origem); testes dependentes ajustados; `diagnostico_cenarios.py`, que
+chegou vazio na main, foi restaurado (`test_cenario` depende dele).
 Nenhuma estratégia ou titular alterado. **Ação do dono:** apagar de
 `estrategia/entrada/` os arquivos antigos `daytrader_ohlc.py` e `paulinho_just.py`.
 
