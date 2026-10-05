@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V483"
+VERSAO = "V484"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1461,3 +1461,9 @@ VERSAO = "V483"
 #                     fail-closed do stop (V462) continua ativa.
 #   Medicao (backtest 2020-2026, precos reescalados): titular R$ 21.826 (25%) vs
 #   R$ 23.679 (sem trava); 2026: R$ 15.066 vs R$ 17.494.
+
+# ---------------------------------------------------------------------------
+# V484 - medicao das candidatas ChatGPT "meta 20k" (adendo da ata AB)
+#   entrada_chatgpt_compressao_rompimento_v1 sai de desclassificada/ para entrada/
+#   (candidata); abertura_expansao e gap_continuacao ficam desclassificadas.
+#   Nenhum titular alterado.

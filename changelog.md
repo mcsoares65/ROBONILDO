@@ -4,6 +4,21 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V484 — medição das candidatas ChatGPT "meta 20k"
+
+Executados os passos 1 e 2 da ata AB (7 anos, preços reescalados, 1 contrato):
+- `entrada_chatgpt_compressao_rompimento_v1` — R$ 8.662, 391 ops, t=2,4, drawdown
+  -1.188; positiva em todos os anos de 2020-2025, -195 em 2026. **Volta para
+  `estrategia/entrada/` como candidata.**
+- `entrada_chatgpt_abertura_expansao_v1` (t=0,3) e `entrada_chatgpt_gap_continuacao_v1`
+  (t=0,2, drawdown -3.048) ficam em `desclassificada/`.
+- `saida_chatgpt_tempo_sem_progresso_v1` (já em `saida/`): +R$ 1.129 e drawdown menor
+  que a v4 com o titular de entrada, mas pior em 2021 e 2026; efeito pequeno.
+- Detalhes no adendo de `conselho/2026-10-05-AB.txt`. Nenhum titular alterado;
+  pendentes ranking C, Regra 10 e holdout após 05/10/2026.
+
+---
+
 ## V483 — trava de 25% da banca desligada
 
 Por decisão do dono (05/10/2026), `RISCO_MAXIMO_PCT_BANCA` passa de `0.25` para `0`.
