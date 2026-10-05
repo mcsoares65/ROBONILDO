@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V486"
+VERSAO = "V487"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1480,3 +1480,9 @@ VERSAO = "V486"
 #                  se a voz esta ocupada.
 #   Causa (log de 05/10/2026): 825 avisos em 27 min na abertura, fila do SAPI sem
 #   limite; a voz seguia lendo "Preco parado..." depois das 11:40.
+
+# ---------------------------------------------------------------------------
+# V487 - nova entrada bloqueada com vinculo DDE suspeito
+#   principal.py      : _vinculo_suspeito (preco parado / horario atrasado no ciclo
+#                       atual; nao conta "salto"); bloqueia so a ABERTURA.
+#   configuracao.py   : BLOQUEAR_ENTRADA_VINCULO_SUSPEITO = True

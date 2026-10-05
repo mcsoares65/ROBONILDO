@@ -4,6 +4,23 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V487 — nova entrada bloqueada com o vínculo DDE suspeito
+
+Pendência da V486: o robô só avisava quando o DDE estava atrasado ou congelado e
+seguia operando com dado velho (rajadas de até 2,5 min na abertura de 05/10/2026).
+- Enquanto o ciclo atual apontar "Preço parado" (>45 s) ou "Horário do DDE" (>10 s do
+  relógio real), **nenhuma entrada nova** é aberta; o motivo aparece como sinal
+  bloqueado. Saídas, stops e fechamento de posição **não** mudam.
+- Recalculado a cada ciclo: libera sozinho quando o vínculo normaliza. "Salto
+  suspeito" (glitch pontual) não bloqueia. Não vale em replay.
+- Efeito colateral aceito: o sinal é avaliado no fechamento do candle; se cair num
+  momento bloqueado a entrada daquele candle é perdida (inclui leilão, onde o preço
+  fica parado).
+- `configuracao.BLOQUEAR_ENTRADA_VINCULO_SUSPEITO = True` (False desliga).
+- Empilhado sobre a V486 (#85). Não testado ao vivo.
+
+---
+
 ## V486 — avisos de integridade do DDE deixam de inundar a narração
 
 Log de 05/10/2026: na abertura (09:04–09:31) o DDE chegou em rajadas, com o horário

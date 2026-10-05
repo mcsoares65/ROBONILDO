@@ -109,6 +109,10 @@ BANCA_REAL_REAIS = 1490.00
 # R$ 15.066 vs R$ 17.494). Risco assumido: uma perda isolada de ate ~R$ 700 (~47%
 # da banca real, como em 01/10). Para religar, ponha 0.25 (ou 0.35 / 0.5).
 RISCO_MAXIMO_PCT_BANCA = 0
+# V487: com o vinculo DDE suspeito (preco parado ha mais de 45 s ou horario do DDE
+# a mais de 10 s do relogio real) NENHUMA entrada nova e aberta; saidas e stops
+# seguem normais. Volta ao normal sozinho quando o aviso some. False desliga.
+BLOQUEAR_ENTRADA_VINCULO_SUSPEITO = True
 # V462 (achado A do Manus, ata 2026-10-02-Y): quando o stop inicial NAO PODE ser
 # verificado (cartucho falhou, nao propôs stop, NaN/inf, texto, ou stop do lado
 # errado do preco) o padrao agora e BLOQUEAR a entrada (fail-closed): numa ordem

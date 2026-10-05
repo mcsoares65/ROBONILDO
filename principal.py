@@ -241,6 +241,8 @@ def narrar(texto: str, descartavel: bool = False):
         print(f"[NARRADOR] Falha ao falar '{texto}': {e}")
 
 
+_vinculo_suspeito = False       # V487: True enquanto o ultimo ciclo apontou preco parado ou
+                                 # horario do DDE atrasado - bloqueia NOVAS entradas (saidas nao)
 _ultimo_aviso_integridade = {}  # V486: tipo de aviso -> quando foi emitido pela ultima vez
 
 HEARTBEAT_SEGUNDOS = 5   # tick a tick, como estava antes do ajuste de poluicao visual.
@@ -643,6 +645,10 @@ def rodar():
 
         # ---------- Prova real contra a tela do Profit ----------
         avisos_integridade = leitor.verificar_integridade(preco, agora, modo_replay=_MODO_REPLAY)
+        # V487: "Preço parado" e "Horário do DDE" indicam dado velho; "Salto" (glitch pontual)
+        # nao entra. Recalculado a cada ciclo: sai sozinho quando o vinculo normaliza.
+        _vinculo_suspeito = (not _MODO_REPLAY) and any(
+            av.split(" ", 1)[0] in ("Preço", "Horário") for av in avisos_integridade)
         for aviso in avisos_integridade:
             # V486: no maximo um aviso de cada TIPO a cada AVISO_INTEGRIDADE_REPETIR_SEGUNDOS
             # (o tipo e a primeira palavra: Salto / Preço / Horário).
@@ -1259,6 +1265,12 @@ def rodar():
                         pode = False
                         motivo_bloqueio = (f"Historico com buraco nao preenchido - aquecendo "
                                            f"({candles_aquecimento_restantes} candles restantes)")
+                    if pode and _vinculo_suspeito and getattr(cfg, "BLOQUEAR_ENTRADA_VINCULO_SUSPEITO", True):
+                        # V487: nao abre posicao com preco parado/horario atrasado do DDE
+                        # (log de 05/10/2026: rajadas de ate 2,5 min na abertura).
+                        pode = False
+                        motivo_bloqueio = ("Vínculo DDE suspeito (preço parado ou horário atrasado) - "
+                                           "nova entrada bloqueada até normalizar")
                     if pode:
                         # V461: limite de risco por operacao ANTES de enviar ordem
                         pode, motivo_bloqueio = gestor.validar_risco_inicial(sinal, row_fechamento)
