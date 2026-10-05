@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V486"
+VERSAO = "V487"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1480,3 +1480,10 @@ VERSAO = "V486"
 #                  se a voz esta ocupada.
 #   Causa (log de 05/10/2026): 825 avisos em 27 min na abertura, fila do SAPI sem
 #   limite; a voz seguia lendo "Preco parado..." depois das 11:40.
+
+# ---------------------------------------------------------------------------
+# V487 - 3 entradas candidatas a partir da documentacao de indicadores da Nelogica
+#   entrada_keltner_rompimento_claude_v1, entrada_cci_100_claude_v1,
+#   entrada_aroon_forte_claude_v1 (cartuchos stateless, so ohlc_recentes).
+#   13 hipoteses testadas (Regra 11.2), 3 viram candidatas; evidencia fraca.
+#   Ata: conselho/2026-10-05-AD.txt. Nenhum titular ou motor alterado.
