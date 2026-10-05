@@ -1425,3 +1425,5 @@ VERSAO = "V477"
 # Conferido: as 576 combinacoes de 2026 dao exatamente as mesmas operacoes em
 # serie e em paralelo; teste_paralelo.py repete a conferencia numa serie sintetica.
 # Nenhuma estrategia alterada.
+# Tambem: removido test_gabriel_saidas.py (as 3 saidas Gabriel foram excluidas da pasta de
+# estrategias no commit 'excluido arquivos desclassificados'; o teste exigia os 3 arquivos).
