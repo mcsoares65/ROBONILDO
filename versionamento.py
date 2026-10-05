@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V471"
+VERSAO = "V472"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1318,3 +1318,14 @@ VERSAO = "V471"
 # execucao foi removido (chamada e funcao imprimir_inventario_cartuchos).
 # A descoberta de cartuchos (listar_cartuchos_disco) e o aviso de
 # INCOMPATIVEIS no final permanecem iguais. Nenhuma estrategia alterada.
+
+
+# ---------------------------------------------------------------------------
+# V472 — tela do classificacao.py mais enxuta
+# ---------------------------------------------------------------------------
+# Removidos do inicio da execucao: a linha "Multi = score ABSOLUTO...", os
+# titulos [ETAPA 1/2] e [ETAPA 2/2], a lista com o nome de cada saida validada,
+# a linha "Saidas compativeis | Combinacoes a executar" e as linhas por
+# combinacao. Entra uma unica barra [COMBINACOES] atualizada na mesma linha.
+# Incompativeis continuam listados no fim. _progresso() agora apaga o resto da
+# linha anterior. Nenhuma estrategia alterada.

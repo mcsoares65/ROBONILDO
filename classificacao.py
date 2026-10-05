@@ -117,12 +117,11 @@ def _progresso(etapa: str, atual: int, total: int, detalhe: str = "") -> None:
     """Atualiza uma única linha do terminal sem poluir a classificação."""
     percentual = 100.0 * atual / total if total else 100.0
     complemento = f" | {detalhe}" if detalhe else ""
-    print(
-        f"\r[{etapa}] {atual:>{len(str(max(total, 1)))}}/{total} "
-        f"({percentual:6.2f}%){complemento}",
-        end="",
-        flush=True,
+    linha = (
+        f"[{etapa}] {atual:>{len(str(max(total, 1)))}}/{total} "
+        f"({percentual:6.2f}%){complemento}"
     )
+    print("\r" + linha.ljust(110), end="", flush=True)   # ljust apaga resto da linha anterior
     if atual >= total:
         print()
 
@@ -1612,23 +1611,18 @@ def executar(
     print(f"Entrada titular: {entrada_titular.nome}.py")
     print(f"Saída titular  : {saida_titular_carregada.nome}.py")
     print(f"Entradas no ranking: {len(entradas)} | Saídas no ranking: {len(saidas)}")
-    print("Multi = score ABSOLUTO individual (50/30/20) — sem percentil entre concorrentes.")
     print("=" * 100)
 
-    print("[ETAPA 1/2] Calculando indicadores com o motor oficial...")
     rows = preparar_rows(candles, dias_avaliacao)
 
     incompatíveis = list(falhas_e) + list(falhas_s)
     saidas_compativeis = []
-    print("[CONTRATO] Validando proteção inicial dos cartuchos de saída...")
     for sai in saidas:
         compativel, motivo = validar_contrato_saida(sai, rows)
         if compativel:
             saidas_compativeis.append(sai)
-            print(f"  {sai.nome}")
         else:
             incompatíveis.append((sai.nome, motivo))
-            print(f"  {sai.nome} (INCOMPATIVEL)")
 
     if saida_titular_carregada not in saidas_compativeis:
         motivo = next(
@@ -1658,20 +1652,15 @@ def executar(
     else:  # C e A: todas as combinações (E e S do modo A são fatias do cruzado)
         pares_a_rodar = [(ent, sai) for ent in entradas for sai in saidas]
 
-    print(
-        f"[CONTRATO] Saídas compatíveis: {len(saidas)} | "
-        f"Combinações a executar: {len(pares_a_rodar)}"
-    )
     pares_ok = []  # list of dict resultados
     trades_titular: list[dict] = []
 
     total = len(pares_a_rodar)
-    print(f"[ETAPA 2/2] Executando {total} combinação(ões)...")
     n = 0
     for ent, sai in pares_a_rodar:
         n += 1
         rotulo = f"{ent.nome} × {sai.nome}"
-        print(f"  [{n}/{total}] {rotulo}...", end="", flush=True)
+        _progresso("COMBINAÇÕES", n - 1, total, rotulo)
         try:
             trades = executar_jogo(
                 candles, rows, ent, dias_avaliacao, avaliar_saida=sai.avaliar_saida,
@@ -1679,7 +1668,6 @@ def executar(
             )
         except (KeyError, TypeError, ValueError, AttributeError) as erro:
             incompatíveis.append((rotulo, f"{type(erro).__name__}: {erro}"))
-            print(" (INCOMPATIVEL)")
             continue
         res = _montar_resultado_par(
             ent.nome, sai.nome, trades, dias,
@@ -1689,7 +1677,7 @@ def executar(
         if ent.titular and sai.titular:
             trades_titular = sorted(trades, key=lambda t: t["horario_execucao"])
         pares_ok.append(res)
-        print(f" ok | {len(trades)} ops | {_moeda(res['resultado'])}")
+    _progresso("COMBINAÇÕES", total, total)
 
     rank_entrada: list[dict] = []
     rank_saida: list[dict] = []
