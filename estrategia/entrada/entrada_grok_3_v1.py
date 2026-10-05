@@ -99,21 +99,7 @@ def diagnosticar_oportunidades(row):
     for oportunidade in oportunidades:
         faltante = oportunidade["faltantes"][0] if oportunidade["faltantes"] else "nenhuma"
         detalhe = faltante
-        bloqueio_horario = faltante == "horário permitido"
-        if bloqueio_horario:
-            nome = oportunidade["estrategia"]
-            if nome == "Retomada MA21":
-                if row["dt"].weekday() == 3:
-                    detalhe = "BLOQUEADA NESTA QUINTA"
-                elif "12:00" <= hora <= "13:15":
-                    detalhe = "BLOQUEADA ATÉ 13:30"
-                else:
-                    detalhe = "BLOQUEADA ATÉ 17:00"
-            elif nome == "MACD + Estocástico":
-                detalhe = "BLOQUEADA ATÉ 12:45"
-            else:
-                detalhe = "BLOQUEADA ATÉ 13:30"
-        elif faltante == "aproximação da MA21":
+        if faltante == "aproximação da MA21":
             detalhe = f"dist. MA21 {row['distancia_ma21']:.0f} (máx. 90)"
         elif faltante == "estocástico fora dos extremos":
             detalhe = f"estoc. {row['stoch']:.1f} (16,5-83,5)"
@@ -125,7 +111,6 @@ def diagnosticar_oportunidades(row):
             proporcao_corpo = (corpo / amplitude * 100.0) if amplitude > 0 else 0.0
             detalhe = f"corpo {proporcao_corpo:.0f}% (máx. 70%)"
         oportunidade["detalhe"] = detalhe
-        oportunidade["bloqueio_horario"] = bloqueio_horario
     return sorted(oportunidades, key=lambda item: (-item["progresso"], item["prioridade"]))
 
 
