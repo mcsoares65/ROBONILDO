@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V487"
+VERSAO = "V488"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1487,3 +1487,10 @@ VERSAO = "V487"
 #   entrada_aroon_forte_claude_v1 (cartuchos stateless, so ohlc_recentes).
 #   13 hipoteses testadas (Regra 11.2), 3 viram candidatas; evidencia fraca.
 #   Ata: conselho/2026-10-05-AD.txt. Nenhum titular ou motor alterado.
+
+# ---------------------------------------------------------------------------
+# V488 - narracao de expectativa nao promete ordem que o gestor vai recusar
+#   principal.py : o aviso "Se confirmado no fechamento das HH:MM, a ordem sera
+#                  disparada" passa por gestor.pode_abrir_posicao(fechamento previsto);
+#                  se recusar (horario limite, limite de perdas), a frase diz o motivo.
+#   Causa: 05/10/2026 18:15 - "fechamento das 18:30" (limite de entradas: 18:20).

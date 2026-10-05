@@ -4,6 +4,20 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V488 — narração não promete ordem depois do horário limite
+
+Log de 05/10/2026, 18:15: o robô narrou "Se confirmado no fechamento das 18:30, a ordem
+será disparada", mas 18:30 é depois de `HORARIO_BLOQUEIO_NOVAS_ENTRADAS` (18:20) e do corte
+forçado (18:20:58): nenhuma ordem era possível. A narração de expectativa avaliava a estratégia
+sem checar o gestor.
+- A frase passa por `gestor.pode_abrir_posicao(fechamento previsto)`, a mesma porta da entrada
+  real. Se recusar (horário limite ou limite diário de perdas), diz o motivo em vez de prometer
+  a ordem. Só muda texto/voz; sinal, ordem e risco não mudam.
+- Medido no backtest (titular, 7 anos): entradas executadas às 18:15 são raras (0 a 9 por ano,
+  27 no total) e somam R$ -220; não é um problema financeiro, só de aviso. O horário limite
+  (18:20) NÃO foi alterado; decisão do dono se quiser antecipá-lo.
+- Não testado ao vivo (Windows).
+
 ## V487 — três entradas candidatas a partir da documentação de indicadores da Nelogica
 
 A documentação (94 indicadores exportáveis pelo DDE do Profit + 85 artigos) foi estudada;
