@@ -1,11 +1,3 @@
-## V481 — saída ChatGPT estrutural assimétrica
-
-- Adiciona `saida_chatgpt_estrutura_assimetrica_v1.py` como candidata S001.
-- Stop estrutural de quatro candles limitado a 2,10 ATR.
-- Alvo assimétrico: 1,90R em compras e 1,55R em vendas.
-- Em 2026 até 24/09, com a entrada titular: resultado R$16.420,63, drawdown -R$323,50 e acumulado R$16.097,12.
-- Nenhum titular foi alterado; detalhes e limitações em `conselho/2026-10-05-AC.txt`.
-
 # ROBONILDO — Changelog
 
 Arquivo único e estável — entradas empilhadas, mais recente no topo.
@@ -27,9 +19,19 @@ que 2026 rende R$ 79 por operação contra R$ -17 a +10 nos outros anos:
   17:45 em 2/3 dos dias até 2023.
 Pede ao conselho a revisão do titular de entrada e limiares em ATR em vez de pontos.
 
-**Testes:** `test_chatgpt_meta20k.py` quebrava na `main` desde que as 3 entradas do
-ChatGPT foram movidas para `entrada/desclassificada/`; passa a usar
-`apoio_cartuchos.caminho_cartucho`, como os outros testes de desclassificadas.
+**Testes:** o `test_chatgpt_meta20k.py` (quebrado desde que as 3 entradas do ChatGPT
+foram para `entrada/desclassificada/`) foi removido na V481; nesta rebase a correção
+que eu tinha feito nele ficou sem efeito.
+
+---
+
+## V481 — saída ChatGPT estrutural assimétrica
+
+- Adiciona `saida_chatgpt_estrutura_assimetrica_v1.py` como candidata S001.
+- Stop estrutural de quatro candles limitado a 2,10 ATR.
+- Alvo assimétrico: 1,90R em compras e 1,55R em vendas.
+- Em 2026 até 24/09, com a entrada titular: resultado R$16.420,63, drawdown -R$323,50 e acumulado R$16.097,12.
+- Nenhum titular foi alterado; detalhes e limitações em `conselho/2026-10-05-AC.txt`.
 
 ---
 
