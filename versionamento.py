@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V484"
+VERSAO = "V485"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1467,3 +1467,8 @@ VERSAO = "V484"
 #   entrada_chatgpt_compressao_rompimento_v1 sai de desclassificada/ para entrada/
 #   (candidata); abertura_expansao e gap_continuacao ficam desclassificadas.
 #   Nenhum titular alterado.
+
+# ---------------------------------------------------------------------------
+# V485 - pasta estrategia/testes/ removida (decisao do dono, 05/10/2026)
+#   Nada do robo, do motor ou do classificador importa dela. Passo de testes
+#   removido do CI. Nenhuma estrategia alterada.
