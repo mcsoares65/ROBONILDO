@@ -12,7 +12,9 @@ continuam sendo calculadas para auditoria, mas não definem a posição.
 
 Modos: E (entradas × saída titular), S (saídas × entrada titular),
 C (todas as combinações) e A (Análise: roda o cruzado completo e grava uma
-planilha .xlsx com rankings e apuração dia/mês/ano por estratégia).
+planilha .xlsx com rankings e apuração dia/mês/ano por estratégia) e
+D (Diagnóstico de cenários: R$ e operações de cada entrada e saída em cada
+cenário, só leitura; incorpora o antigo diagnostico_cenarios.py).
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ import math
 import re
 import subprocess
 import contextlib
+from collections import defaultdict
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -968,14 +971,16 @@ def _perguntar_modo_ranking() -> str:
       C = cruzado     (todas as combinações — ranking principal)
       A = análise     (cruzado completo + planilha .xlsx: rankings e apuração
                        diária/mensal/anual por estratégia)
+      D = diagnóstico (como cada entrada e cada saída se sai em cada cenário)
     """
     while True:
         resp = input(
-            "Qual ranking deseja? Entradas (E), Saídas (S), Cruzada (C) ou Análise (A): "
+            "Qual ranking deseja? Entradas (E), Saídas (S), Cruzada (C), Análise (A) "
+            "ou Diagnóstico de cenários (D): "
         ).strip().upper()
-        if resp in ("E", "S", "C", "A"):
+        if resp in ("E", "S", "C", "A", "D"):
             return resp
-        print(f"Resposta '{resp}' não reconhecida — digite exatamente E, S, C ou A.")
+        print(f"Resposta '{resp}' não reconhecida — digite exatamente E, S, C, A ou D.")
 
 
 def _perguntar_cenario() -> str:
@@ -1277,6 +1282,242 @@ def gravar_planilha_analise(
     return caminho
 
 
+# ---------------------------------------------------------------------------
+# Modo D (Diagnóstico de cenários) — incorpora o antigo diagnostico_cenarios.py.
+# Só leitura: não altera motor, cartuchos nem ranking. Cada operação é marcada
+# com o cenário (cenario.py) do candle que gerou o sinal; depois agrega por
+# estratégia x cenário. Com dados simulados em 'regimes', mede também o quanto
+# o reconhecedor de cenário acerta contra o gabarito do simulador.
+DIAG_MIN_OPS_CONFIAVEL = 20     # abaixo disso a célula é só indício
+
+
+def diagnosticar_cenarios(candles, rows, dias, entradas, saidas, entrada_titular, saida_titular) -> list[dict]:
+    """Cada entrada x saida titular e cada saida x entrada titular, agregadas por cenario.
+    Linhas: tipo ('entrada'|'saida'), estrategia, cenario, ops, resultado, vitorias."""
+    row_por_hora = {c.horario: r for c, r in zip(candles, rows)}
+    saidas_ok = list(saidas)       # ja validadas por executar() (contrato de saida)
+    pares = [("entrada", e.nome, e, saida_titular) for e in entradas]
+    pares += [("saida", s.nome, entrada_titular, s) for s in saidas_ok]
+
+    celulas = defaultdict(lambda: [0, 0.0, 0])
+    for tipo, nome, ent, sai in pares:
+        try:
+            trades = executar_jogo(candles, rows, ent, dias, avaliar_saida=sai.avaliar_saida)
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+        for t in trades:
+            cen = cen_mod.classificar(row_por_hora.get(t["horario_rotulo"]))
+            c = celulas[(tipo, nome, cen)]
+            c[0] += 1
+            c[1] += t["resultado_reais"]
+            c[2] += 1 if t["resultado_reais"] > 0 else 0
+    return [
+        {"tipo": k[0], "estrategia": k[1], "cenario": k[2], "ops": v[0],
+         "resultado": round(v[1], 2), "vitorias": v[2]}
+        for k, v in sorted(celulas.items())
+    ]
+
+
+def distribuicao_cenarios(rows) -> dict:
+    cont = defaultdict(int)
+    for r in rows:
+        if r is not None:
+            cont[cen_mod.classificar(r)] += 1
+    return dict(cont)
+
+
+# Regime verdadeiro do simulador -> cenários aceitos como acerto.
+DIAG_ACERTOS = {
+    "tendencia_alta": {"tendencia", "esticado"},
+    "tendencia_baixa": {"tendencia", "esticado"},
+    "lateral": {"lateral"},
+    "volatil": {"volatil", "esticado"},
+}
+
+
+def matriz_confusao_cenarios(candles, rows, rotulos: dict) -> dict:
+    """Gabarito (regime do simulador) x cenário reconhecido. Candles de abertura
+    e fim de tarde são separados do resto, pois dependem do relógio, não do regime."""
+    m = defaultdict(lambda: defaultdict(int))
+    for c, r in zip(candles, rows):
+        if r is None or c.horario not in rotulos:
+            continue
+        m[rotulos[c.horario]][cen_mod.classificar(r)] += 1
+    return {k: dict(v) for k, v in m.items()}
+
+
+def acerto_geral_cenarios(matriz: dict) -> float:
+    ok = tot = 0
+    for regime, cols in matriz.items():
+        for cen, n in cols.items():
+            if cen in ("abertura", "fim_de_tarde", cen_mod.INDEFINIDO):
+                continue
+            tot += n
+            if cen in DIAG_ACERTOS.get(regime, set()):
+                ok += n
+    return ok / tot if tot else float("nan")
+
+
+_DIAG_LARGURA_NOME = 24
+_DIAG_LARGURA_CEL = 11           # 24 + 7*11 = 101 colunas: cabe ate num console estreito
+_DIAG_IAS = ("chatgpt", "claude", "deepseek", "gemini", "grok", "manus")
+
+
+def nomes_curtos(nomes) -> dict:
+    """Nome para exibir: sem o prefixo entrada_/saida_ (o titulo da tabela ja diz)
+    e sem o nome da IA quando sobra uma descricao (macd_estocastico_claude_v1 ->
+    macd_estocastico_v1). Cartuchos antigos, cujo nome e so a IA, ficam como estao.
+    Se dois nomes curtos colidirem, os dois voltam ao nome sem prefixo."""
+    base = {n: re.sub(r"^(entrada|saida)_", "", n) for n in nomes}
+    curto = {}
+    for n, b in base.items():
+        partes = b.split("_")
+        sem_ia = [x for x in partes if x.lower() not in _DIAG_IAS]
+        descricao = [x for x in sem_ia if not re.fullmatch(r"v?\d+", x, re.I)]
+        curto[n] = "_".join(sem_ia) if descricao else b     # sem descricao, a IA e o proprio nome
+    repetidos = {c for c in curto.values() if list(curto.values()).count(c) > 1}
+    return {n: (base[n] if curto[n] in repetidos else curto[n]) for n in nomes}
+
+
+def imprimir_distribuicao_cenarios(dist: dict) -> None:
+    total = sum(dist.values()) or 1
+    print("\nCandles por cenario:")
+    for nome in cen_mod.NOMES:
+        n = dist.get(nome, 0)
+        print(f"  {nome:14s}{n:>7d}  {100 * n / total:>4.0f}%")
+
+
+def imprimir_confusao_cenarios(matriz: dict) -> None:
+    cols = list(cen_mod.NOMES)
+    print("\nGabarito do simulador (linhas) x cenario reconhecido (colunas), % da linha:")
+    print(f"  {'gabarito':17s}" + "".join(f"{c[:9]:>10s}" for c in cols))
+    for regime, v in matriz.items():
+        tot = sum(v.values()) or 1
+        print(f"  {regime:17s}" + "".join(f"{100 * v.get(c, 0) / tot:>9.0f}%" for c in cols))
+
+
+def imprimir_diagnostico(linhas: list[dict], titulo: str = "") -> None:
+    if titulo:
+        print(f"\n===== {titulo} =====")
+    rotulos = {"abertura": "abertura", "fim_de_tarde": "fim_tarde", "volatil": "volatil",
+               "esticado": "esticado", "tendencia": "tendencia", "lateral": "lateral",
+               cen_mod.INDEFINIDO: "indef."}
+    for tipo in ("entrada", "saida"):
+        sub = [l for l in linhas if l["tipo"] == tipo]
+        if not sub:
+            continue
+        nomes = sorted({l["estrategia"] for l in sub})
+        curtos = nomes_curtos(nomes)
+        cols = list(cen_mod.NOMES)
+        print(f"\n-- {tipo.upper()}: R$/ops por cenario; * = menos de {DIAG_MIN_OPS_CONFIAVEL} ops --")
+        print(f"{'':{_DIAG_LARGURA_NOME}s}" + "".join(f"{rotulos[c]:>{_DIAG_LARGURA_CEL}s}" for c in cols))
+        for n in nomes:
+            partes = []
+            for c in cols:
+                cel = next((l for l in sub if l["estrategia"] == n and l["cenario"] == c), None)
+                if cel is None:
+                    partes.append(f"{'-':>{_DIAG_LARGURA_CEL}s}")
+                else:
+                    marca = "*" if cel["ops"] < DIAG_MIN_OPS_CONFIAVEL else " "
+                    partes.append(f"{cel['resultado']:.0f}/{cel['ops']}{marca}".rjust(_DIAG_LARGURA_CEL))
+            print(f"{curtos[n][:_DIAG_LARGURA_NOME]:{_DIAG_LARGURA_NOME}s}" + "".join(partes))
+
+
+DIAG_MIN_OPS_METADE = 10        # operações mínimas por metade para a célula contar
+
+
+def consistencia_metades(linhas_a: list[dict], linhas_b: list[dict], nome_titular_entrada: str,
+                 nome_titular_saida: str) -> list[dict]:
+    """Compara duas metades (do período que o usuário escolheu) e devolve as células
+    em que a estratégia fica melhor (ou pior) que a titular NO MESMO SENTIDO nas
+    duas metades. Só conta célula com >= DIAG_MIN_OPS_METADE operações em ambas as
+    metades, na estratégia e na titular. Ordena pelo menor efeito entre as metades.
+    Não define período nenhum: as metades vêm dos dias que foram apurados."""
+    def indexa(linhas):
+        return {(l["tipo"], l["estrategia"], l["cenario"]): l for l in linhas}
+
+    a, b = indexa(linhas_a), indexa(linhas_b)
+    saida = []
+    for (tipo, nome, cen), la in a.items():
+        titular = nome_titular_entrada if tipo == "entrada" else nome_titular_saida
+        if nome == titular or (tipo, nome, cen) not in b:
+            continue
+        ta, tb = a.get((tipo, titular, cen)), b.get((tipo, titular, cen))
+        lb = b[(tipo, nome, cen)]
+        if None in (ta, tb):
+            continue
+        if min(la["ops"], lb["ops"], ta["ops"], tb["ops"]) < DIAG_MIN_OPS_METADE:
+            continue
+        da, db = la["resultado"] - ta["resultado"], lb["resultado"] - tb["resultado"]
+        if da * db > 0:
+            saida.append({"tipo": tipo, "estrategia": nome, "cenario": cen,
+                          "delta_metade_1": round(da, 2), "delta_metade_2": round(db, 2),
+                          "efeito_minimo": round(min(abs(da), abs(db)) * (1 if da > 0 else -1), 2)})
+    return sorted(saida, key=lambda x: -abs(x["efeito_minimo"]))
+
+
+def gravar_csv_diagnostico(linhas: list[dict], caminho: Path) -> Path:
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    with caminho.open("w", newline="", encoding="utf-8-sig") as f:
+        w = csv.DictWriter(f, fieldnames=["tipo", "estrategia", "cenario", "ops", "resultado", "vitorias"],
+                           delimiter=";")
+        w.writeheader()
+        w.writerows(linhas)
+    return caminho
+
+
+def _executar_diagnostico(candles, rows, dias, dias_avaliacao, entradas, saidas,
+                          entrada_titular, saida_titular, incompativeis, fonte_arquivo,
+                          rotulos_sim, metades) -> dict:
+    """Modo D: imprime distribuição de cenários, (se simulado em regimes) a matriz
+    de confusão do reconhecedor, a tabela estratégia × cenário e grava o CSV."""
+    print("[ETAPA 2/2] Diagnóstico por cenário (cada entrada × saída titular e cada saída × entrada titular)...")
+    imprimir_distribuicao_cenarios(distribuicao_cenarios(rows))
+    if rotulos_sim:
+        matriz = matriz_confusao_cenarios(candles, rows, rotulos_sim)
+        imprimir_confusao_cenarios(matriz)
+        print(f"Acerto (fora abertura/fim de tarde): {acerto_geral_cenarios(matriz):.1%}")
+    linhas = diagnosticar_cenarios(
+        candles, rows, dias_avaliacao, entradas, saidas, entrada_titular, saida_titular)
+    imprimir_diagnostico(linhas, f"DIAGNÓSTICO DE CENÁRIOS {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO})")
+
+    if metades is None:
+        metades = input("Mostrar o que se repete nas duas metades do período? (S/N) [Enter = N]: "
+                        ).strip().upper() in ("S", "SIM")
+    repetem = []
+    if metades and len(dias) >= 2:
+        meio = len(dias) // 2
+        d1, d2 = set(dias[:meio]), set(dias[meio:])
+        l1 = diagnosticar_cenarios(candles, rows, d1, entradas, saidas, entrada_titular, saida_titular)
+        l2 = diagnosticar_cenarios(candles, rows, d2, entradas, saidas, entrada_titular, saida_titular)
+        repetem = consistencia_metades(l1, l2, entrada_titular.nome, saida_titular.nome)
+        print("\n-- REPETE NAS DUAS METADES, em R$ vs a titular (min "
+              f"{DIAG_MIN_OPS_METADE} ops por metade) --")
+        print(f"metade 1: {dias[0]} a {dias[meio - 1]}")
+        print(f"metade 2: {dias[meio]} a {dias[-1]}")
+        curtos = nomes_curtos({r["estrategia"] for r in repetem})
+        print(f"{'':8s}{'':26s}{'cenario':13s}{'metade 1':>10s}{'metade 2':>10s}")
+        for r in repetem[:25]:
+            print(f"{r['tipo']:8s}{curtos[r['estrategia']][:24]:26s}{r['cenario']:13s}"
+                  f"{r['delta_metade_1']:>10.0f}{r['delta_metade_2']:>10.0f}")
+        if not repetem:
+            print("nenhuma célula se repete nas duas metades")
+        print("Muitas células são testadas: um padrão que repete ainda pode ser acaso; trate como hipótese.")
+
+    csv_diag = gravar_csv_diagnostico(
+        linhas,
+        Path(cfg.PASTA_LOGS_AUDITORIA) / f"diagnostico_cenarios_{VERSAO_CLASSIFICACAO.lower()}"
+                                         f"_motor_{cfg.VERSAO.lower()}{fonte_arquivo}.csv",
+    )
+    print(f"\nRelatórios:\n  {csv_diag.resolve()}")
+    print("Limitação: OHLC 15min não revela ordem intrabar nem preço exato das 18:20.")
+    if incompativeis:
+        print("\nCartuchos/combinações INCOMPATIVEIS:")
+        for nome, erro in incompativeis:
+            print(f"- {nome} (INCOMPATIVEL): {erro}")
+    return {"modo": "D", "diagnostico": linhas, "repetem_nas_metades": repetem, "csv": csv_diag}
+
+
 def executar(
     caminho_csv: Optional[str] = None,
     *,
@@ -1285,9 +1526,12 @@ def executar(
     simulacao: Optional[dict] = None,
     cenario: Optional[str] = None,
     saida_dir: Optional[str] = None,
+    metades: Optional[bool] = None,
 ):
-    """modo: 'E'/'S'/'C'/'A' (None = pergunta; A = análise: cruzado completo +
-    planilha .xlsx em saida_dir, padrão D:\\DAYTRADE\\ANALISES). periodo: texto aceito por
+    """modo: 'E'/'S'/'C'/'A'/'D' (None = pergunta; A = análise: cruzado completo +
+    planilha .xlsx em saida_dir, padrão D:\\DAYTRADE\\ANALISES; D = diagnóstico por
+    cenário, só leitura, com todos os cenários; metades=True mostra o que se repete
+    nas duas metades do período, None = pergunta). periodo: texto aceito por
     interpretar_periodo (None ou '' = tudo, o conteúdo do arquivo). simulacao: dict do
     simulador (modo/dias/semente/escala_vol/espelhar); None = pergunta a fonte;
     False = força o histórico real sem perguntar. cenario: nome de um cenário
@@ -1315,13 +1559,14 @@ def executar(
     if modo is None:
         modo = _perguntar_modo_ranking()
     modo = modo.upper()
-    if modo not in ("E", "S", "C", "A"):
-        raise ValueError(f"modo '{modo}' inválido; use E, S, C ou A")
+    if modo not in ("E", "S", "C", "A", "D"):
+        raise ValueError(f"modo '{modo}' inválido; use E, S, C, A ou D")
     rotulos_modo = {
         "E": "ENTRADA (pareado com saída titular)",
         "S": "SAÍDA (pareado com entrada titular)",
         "C": "CRUZADO (todas as combinações entrada × saída)",
         "A": "ANÁLISE (cruzado completo + planilha com rankings e apuração diária/mensal/anual)",
+        "D": "DIAGNÓSTICO DE CENÁRIOS (R$/operações por estratégia × cenário; só leitura)",
     }
     print(f"[MODO] Ranking escolhido: {modo} — {rotulos_modo[modo]}")
 
@@ -1365,6 +1610,8 @@ def executar(
         # Os candles fora do período continuam disponíveis só como aquecimento.
         candles, quantidade_aquecimento = preparar_aquecimento(candles_reais)
 
+    if modo == "D":
+        cenario = ""        # o diagnóstico já separa por cenário: nunca recorta nem pergunta
     if cenario is None:
         cenario = _perguntar_cenario()
     cenario = (cenario or "").strip().lower()
@@ -1431,6 +1678,13 @@ def executar(
 
     saidas = saidas_compativeis
     saida_titular = saida_titular_carregada
+
+    if modo == "D":
+        return _executar_diagnostico(
+            candles, rows, dias, dias_avaliacao, entradas, saidas, entrada_titular,
+            saida_titular, incompatíveis, fonte_arquivo,
+            rotulos_sim if simulacao else None, metades,
+        )
 
     # Só calcula o que o modo pede — evita produto cartesiano desnecessário
     # e impede que uma saída sem proteção inicial produza números enganosos.
@@ -1656,8 +1910,11 @@ def _ler_argumentos(argv=None):
     ap = argparse.ArgumentParser(
         description="Classificação de estratégias. Sem argumentos, pergunta tudo (comportamento original).")
     ap.add_argument("csv", nargs="?", help="histórico CSV (padrão: o configurado/mais recente)")
-    ap.add_argument("--modo", choices=["E", "S", "C", "A", "e", "s", "c", "a"],
-                    help="ranking: Entrada, Saída, Cruzado ou Análise (cruzado completo + planilha .xlsx)")
+    ap.add_argument("--modo", choices=["E", "S", "C", "A", "D", "e", "s", "c", "a", "d"],
+                    help="ranking: Entrada, Saída, Cruzado, Análise (cruzado completo + planilha .xlsx) "
+                         "ou Diagnóstico de cenários")
+    ap.add_argument("--metades", action="store_true",
+                    help="modo D: mostra o que se repete nas duas metades do período")
     ap.add_argument("--saida-dir", help="pasta da planilha do modo A (padrão: D:\\DAYTRADE\\ANALISES)")
     ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
     ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
@@ -1684,4 +1941,5 @@ if __name__ == "__main__":
     if cenario is None and (args.modo or args.periodo is not None or args.simular):
         cenario = ""        # rodou por linha de comando: não pergunta, vale todos os cenários
     executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao,
-             cenario=cenario, saida_dir=args.saida_dir)
+             cenario=cenario, saida_dir=args.saida_dir,
+             metades=True if args.metades else (False if args.modo else None))

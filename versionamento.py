@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V469"
+VERSAO = "V470"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1289,3 +1289,23 @@ VERSAO = "V469"
 # cartuchos; test_gabriel_entradas sem contagem fixa). O diagnostico_cenarios.py
 # chegou VAZIO na main (0 linhas) e foi restaurado da V468 porque test_cenario
 # depende dele - se o esvaziamento foi intencional, reverter este arquivo.
+
+# ---------------------------------------------------------------------------
+# V470 - Modo D (Diagnostico de cenarios) dentro de classificacao.py
+# ---------------------------------------------------------------------------
+# Pedido do dono: o diagnostico de cenarios deve ser uma opcao do
+# classificacao.py. O diagnostico_cenarios.py (que chegou VAZIO na main) foi
+# incorporado como modo "D" ao lado de E/S/C/A e o arquivo foi removido.
+# So leitura: R$/operacoes de cada entrada (x saida titular) e de cada saida
+# (x entrada titular) por cenario, distribuicao de cenarios, matriz de acerto do
+# reconhecedor (dados simulados em regimes) e, com --metades, o que se repete
+# nas duas metades do periodo. Nunca pergunta cenario (ja separa por cenario).
+#   python classificacao.py [csv] --modo D [--metades] [--simular regimes ...]
+# Grava logs/diagnostico_cenarios_c001_motor_<versao>[_fonte].csv.
+#
+# Funcoes: diagnosticar_cenarios, distribuicao_cenarios, matriz_confusao_cenarios,
+# acerto_geral_cenarios, nomes_curtos, consistencia_metades. Testes:
+# test_modo_diagnostico.py (novo) e test_cenario.py (importa classificacao).
+#
+# Arquivos: classificacao.py, diagnostico_cenarios.py (removido), dois testes,
+# versionamento.py e changelog.md. Nenhuma estrategia ou titular alterado.

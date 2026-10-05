@@ -4,6 +4,29 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V470 — modo D (Diagnóstico de cenários) dentro do `classificacao.py`
+
+O diagnóstico de cenários passou a ser uma opção do `classificacao.py`, ao lado
+de E/S/C/A. O antigo `diagnostico_cenarios.py` (que chegou vazio na main) foi
+incorporado e o arquivo removido.
+
+Só leitura: R$ e operações de cada entrada (× saída titular) e de cada saída
+(× entrada titular) por cenário; distribuição de cenários; matriz de acerto do
+reconhecedor quando os dados são simulados em regimes; e, com `--metades`, o que
+se repete nas duas metades do período. Não pergunta cenário (já separa por
+cenário). Grava `logs/diagnostico_cenarios_c001_motor_<versão>.csv`.
+
+`python classificacao.py [csv] --modo D [--metades]` ou, sem argumentos,
+escolher **D** na pergunta do ranking.
+
+### Arquivos alterados
+- `classificacao.py` (modo D)
+- `diagnostico_cenarios.py` (removido)
+- `estrategia/entrada/test_modo_diagnostico.py` (novo), `test_cenario.py`
+- `versionamento.py`, `changelog.md`
+
+---
+
 ## V469 — descoberta sem depender de sublinhado no nome do arquivo
 
 No disco do dono os arquivos `_*.py` perderam o `_` inicial. `_paulinho_just.py`,
