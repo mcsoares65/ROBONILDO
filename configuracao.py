@@ -28,7 +28,11 @@ PASTA_LOGS = RAIZ_PROJETO / "logs"
 ATIVO = "WINV26"          # contrato vigente - ATUALIZAR a cada rolagem (bimestral, meses pares)
 TIMEFRAME_MINUTOS = 15
 NOME_TELA_PROFIT = "ProfitPro"  # usado para confirmar foco antes de enviar ordem
-CAMINHO_HISTORICO_INICIAL = r"D:\DAYTRADE\HISTORICO\WINFUT_F_0_15min.csv"  # so para a carga UNICA inicial
+# V476 - historico por ano: uma pasta por ano (...\HISTORICO\2023, \2024, ... \2026).
+# O ROBO (principal.py) le so a pasta do ano corrente; o BACKTEST (classificacao.py)
+# le as pastas de ano sob PASTA_HISTORICO_BACKTEST e deixa escolher os anos.
+PASTA_HISTORICO_BACKTEST = r"D:\DAYTRADE\HISTORICO"
+CAMINHO_HISTORICO_INICIAL = r"D:\DAYTRADE\HISTORICO\2026\WINFUT_F_0_15min.csv"  # so para a carga UNICA inicial
 CAMINHO_HISTORICO_PERSISTENTE = str(PASTA_LOGS / "historico_acumulado.csv")  # o robo mantem sozinho
 CAMINHO_ESTADO_RISCO = str(PASTA_LOGS / "estado_risco.json")
 GAP_MAXIMO_HORAS_HISTORICO = 48   # se o robo ficar parado mais que isso, o historico
