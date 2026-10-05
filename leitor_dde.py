@@ -79,6 +79,12 @@ DERIVA_RELOGIO_MAXIMA_SEGUNDOS = 10  # diferenca tolerada entre o horario que o 
                                        # informa (campo Data/Hora) e o relógio real do
                                        # computador, FORA de replay - acima disso, o
                                        # vínculo DDE pode estar travado/atrasado
+AVISO_INTEGRIDADE_REPETIR_SEGUNDOS = 120  # V486: o MESMO tipo de aviso de integridade
+                                           # (salto / preco parado / deriva de relogio) so e
+                                           # impresso e narrado de novo depois disso. Antes
+                                           # saia um por iteracao (~2s): em 05/10/2026 foram
+                                           # 825 avisos em 27 min e a voz ficou lendo-os por
+                                           # mais de 2 horas (fila do SAPI sem descarte).
 CHECKPOINT_NARRACAO_SEGUNDOS = 600  # a cada 10 minutos, narra o preco atual em voz alta -
                                       # da pra voce conferir contra a tela do Profit sem
                                       # precisar ficar vigiando o tempo todo

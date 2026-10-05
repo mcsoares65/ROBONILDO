@@ -205,7 +205,7 @@ _narrador_local = threading.local()  # um objeto de voz POR THREAD - COM (usado 
                                       # diferentes (ex: a thread de noticias) e inseguro
 
 
-def narrar(texto: str):
+def narrar(texto: str, descartavel: bool = False):
     """
     Fala em voz alta um fato JA CALCULADO pelo robo (ex: 'posicao aberta',
     'cinco', 'quatro'...) - usa o motor de texto-pra-fala nativo do Windows
@@ -226,11 +226,22 @@ def narrar(texto: str):
                                    # inicializou (so incrementa um contador)
         if not hasattr(_narrador_local, "voz"):
             _narrador_local.voz = win32com.client.Dispatch("SAPI.SpVoice")
+        if descartavel:
+            # V486: aviso que perde o sentido se atrasar (integridade do DDE). Se a voz
+            # ainda esta falando outra coisa, NAO entra na fila - o SAPI enfileira sem
+            # limite e a voz ficava lendo avisos velhos horas depois.
+            try:
+                if _narrador_local.voz.Status.RunningState == 2:  # SRSEIsSpeaking
+                    return
+            except Exception:
+                pass
         SVSFlagAsync = 1  # nao bloqueia o robo esperando a fala terminar
         _narrador_local.voz.Speak(texto, SVSFlagAsync)
     except Exception as e:
         print(f"[NARRADOR] Falha ao falar '{texto}': {e}")
 
+
+_ultimo_aviso_integridade = {}  # V486: tipo de aviso -> quando foi emitido pela ultima vez
 
 HEARTBEAT_SEGUNDOS = 5   # tick a tick, como estava antes do ajuste de poluicao visual.
                           # CONFIRMADO em teste (18/09/2026): a leitura real do DDE
@@ -633,8 +644,16 @@ def rodar():
         # ---------- Prova real contra a tela do Profit ----------
         avisos_integridade = leitor.verificar_integridade(preco, agora, modo_replay=_MODO_REPLAY)
         for aviso in avisos_integridade:
+            # V486: no maximo um aviso de cada TIPO a cada AVISO_INTEGRIDADE_REPETIR_SEGUNDOS
+            # (o tipo e a primeira palavra: Salto / Preço / Horário).
+            tipo_aviso = aviso.split(" ", 1)[0]
+            ultimo_aviso = _ultimo_aviso_integridade.get(tipo_aviso)
+            if (ultimo_aviso is not None and
+                    (agora_real - ultimo_aviso).total_seconds() < _leitor_dde_mod.AVISO_INTEGRIDADE_REPETIR_SEGUNDOS):
+                continue
+            _ultimo_aviso_integridade[tipo_aviso] = agora_real
             print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE DDE] {aviso}")
-            narrar(aviso)
+            narrar(aviso, descartavel=True)
         if leitor.checkpoint_devido():
             narrar(f"Checagem de rotina: preço lido é {preco:.0f}. Confira na tela do Profit.")
             leitor.marcar_checkpoint_feito()

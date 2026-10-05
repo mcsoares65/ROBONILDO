@@ -4,6 +4,24 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V486 — avisos de integridade do DDE deixam de inundar a narração
+
+Log de 05/10/2026: na abertura (09:04–09:31) o DDE chegou em rajadas, com o horário
+congelado por até ~2,5 min, e o robô emitiu **825 avisos** (342 "Preço parado", 461
+"Horário do DDE distante", 22 "Salto suspeito"), um por iteração (~2 s), cada um
+falado em voz alta. A fila do SAPI não tem limite, então a voz continuou lendo avisos
+velhos depois das 11:40.
+- Um aviso de cada tipo a cada 120 s (`AVISO_INTEGRIDADE_REPETIR_SEGUNDOS`, impresso e
+  narrado).
+- `narrar(..., descartavel=True)`: se a voz ainda está falando, o aviso não entra na fila.
+  Usado só nos avisos de integridade; as demais narrações não mudam.
+- Não alterado: o robô continua **sem bloquear entradas** quando o vínculo está
+  atrasado/congelado (os avisos só informam). Pendente de decisão do dono.
+- Não testado em Windows/SAPI (ambiente de desenvolvimento é Linux): conferir no
+  próximo pregão.
+
+---
+
 ## V485 — pasta `estrategia/testes/` removida
 
 Decisão do dono: a pasta não faz parte do núcleo do projeto. Conferido que nada
