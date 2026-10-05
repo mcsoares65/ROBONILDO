@@ -4,6 +4,18 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V475 — limpeza do que não é usado por `classificacao.py` nem `principal.py`
+
+Removidos (continuam no histórico do git): `classificacao_teste.py`,
+`teste_email.py`, o arquivo vazio `python`, `estrategia/entrada/auxiliar/`,
+`estrategia/entrada/desclassificada/`, `estrategia/saida/antigas/` (cópias
+idênticas das saídas que seguem em `saida/`) e os testes de daytrader, paulinho
+(entradas) e gabriel (entradas), que testavam código já apagado. Mantidos:
+documentos, CI, CODEOWNERS e `sincronizar_github.bat`. O ranking não muda: 18
+entradas, 32 saídas.
+
+---
+
 ## V474 — testes fora das pastas de estratégia
 
 `estrategia/entrada/` e `estrategia/saida/` passam a conter só estratégias

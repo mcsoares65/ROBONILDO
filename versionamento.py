@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V474"
+VERSAO = "V475"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1353,3 +1353,22 @@ VERSAO = "V474"
 # (99 testes). CI atualizado: Regra 3 varre entrada/ e saida/ sem excecao e os
 # testes rodam de estrategia/testes. _listar_py continua ignorando test_* como
 # rede de seguranca. Nenhuma estrategia alterada.
+
+
+# ---------------------------------------------------------------------------
+# V475 — limpeza: removido o que nao faz parte de classificacao.py nem principal.py
+# ---------------------------------------------------------------------------
+# Criterio: cadeia de imports de principal.py e classificacao.py + cartuchos
+# carregados por eles (entrada/ e saida/ e titulares). Tudo continua no
+# historico do git.
+# Removidos: classificacao_teste.py (copia antiga do classificador),
+# teste_email.py (teste manual avulso), arquivo vazio `python`,
+# estrategia/entrada/auxiliar/ (daytrader_ohlc.py, paulinho_just.py; sem uso
+# desde que as entradas daytrader/paulinho foram apagadas),
+# estrategia/entrada/desclassificada/ (3 entradas fora do ranking),
+# estrategia/saida/antigas/ (13 copias identicas das saidas que seguem em
+# saida/) e os testes test_daytrader_entradas, test_paulinho_entradas e
+# test_gabriel_entradas (testavam codigo removido). Mantidos: documentos
+# (compliance, changelog, conselho/, diario/), CI, CODEOWNERS e
+# sincronizar_github.bat. Testes: 86 OK (6 pulados). Ranking inalterado
+# (18 entradas, 32 saidas).
