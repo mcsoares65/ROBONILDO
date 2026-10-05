@@ -12,6 +12,23 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V482 — adendo 2 da ata AA: histórico completo e causa da discrepância de 2026
+
+Só documentação (`conselho/2026-10-05-AA.txt`), nenhum código alterado. Substitui as
+estimativas do adendo 1 por números medidos nos 7 anos (2020-2026) e investiga por
+que 2026 rende R$ 79 por operação contra R$ -17 a +10 nos outros anos:
+- não é poucos trades, volatilidade, estrutura do preço, ajuste de preço ou escala
+  (entrada aleatória com a saída titular rende ~0 em 2026 também);
+- os filtros fixos de `entrada_grok_3_v1` (quinta-feira, janelas de horário, faixas
+  de amplitude em pontos) respondem por cerca de metade da vantagem em 2026 e quase
+  nada nos outros anos: assinatura de ajuste à amostra (Regra 11.3);
+- a vantagem da entrada composta se apagou em 2024-2026 (+173 em 3 anos);
+- o histórico tem preços ajustados (pontos antigos inflados) e o pregão fechava às
+  17:45 em 2/3 dos dias até 2023.
+Pede ao conselho a revisão do titular de entrada e limiares em ATR em vez de pontos.
+
+---
+
 ## V480 — Regra 15 (atas sempre consultadas) e adendo da ata AA
 
 Só documentação, nenhum código alterado.

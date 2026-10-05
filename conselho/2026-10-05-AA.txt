@@ -261,3 +261,127 @@ D) POSIÇÃO ATUALIZADA
  - Para o dono: o resultado recente da conta (+50% em poucos dias) se parece com 2026,
    não com o conjunto 2020-2025; não é evidência de edge e não justifica aumentar a
    posição.
+
+
+===========================================================================
+ADENDO 2 (05/10/2026, 03h) — histórico completo 2020-2026 (zip do dono), números
+medidos no lugar das estimativas e causa da discrepância de 2026
+===========================================================================
+
+Autoria: Claude (Anthropic), a pedido do dono. Motor V477. Atas consultadas
+(Regra 15): AA (com o adendo 1), Y, W, V. Onde este adendo corrige o adendo 1, diz.
+Legenda: MEDIDO = rodado no motor sobre o CSV; ESTIMADO = conta minha (indicado).
+
+A) OS DADOS (HISTORICO/AAAA/WINFUT_F_0_15min_*.csv, um arquivo por ano)
+
+ - 62.515 candles, 1.684 pregões, 02/01/2020 a 02/10/2026. Sem candles duplicados e
+   sem OHLC incoerente. Os 7 anos reproduzem ao centavo os rankings do dono (titular
+   18.191,32 / -6.113,41; entrada composta 20.402,06 / -5.525,59).
+ - PREÇOS AJUSTADOS (proporcional): os preços antigos têm casas decimais e níveis
+   muito acima do índice da época (30/12/2020: 209.647 na série; Ibovespa ~119 mil,
+   de memória). Fator ESTIMADO (série / índice): ~1,8 em 2020, ~1,7 em 2021, ~1,5-1,6
+   em 2022, ~1,4-1,5 em 2023, ~1,25-1,35 em 2024, ~1,1-1,2 em 2025, ~1,0 em 2026.
+   Cada ponto vale R$ 0,20: lucro, prejuízo e drawdown de 2020-2023 estão inflados
+   por esse fator. A ordem das estratégias muda pouco; os R$ e os drawdowns entre
+   anos não são comparáveis.
+ - HORÁRIO DO PREGÃO: em 2020-2023 cerca de 2/3 dos dias terminam em 17:45 (36
+   candles) e 1/3 em 18:15 (38); de 2024 em diante todos terminam em 18:15. Tudo que
+   depende de horário (fim de tarde, corte 18h, filtros de janela) age diferente.
+
+B) NÚMEROS MEDIDOS (R$ da série ajustada, 1 contrato, custo R$ 0,50/op, sem slippage)
+
+   ano    titular  ent.composta  modelo*   R1(saída lateral)
+   2020    -3.852      -3.310     -3.338        -3.880
+   2021     1.299         953      1.320         1.666
+   2022     2.299       3.572      3.552         2.280
+   2023       174         744      1.221           651
+   2024       476         973        970           474
+   2025     2.822       2.417      2.463         2.867
+   2026    14.973      15.054     15.903        15.822
+   total   18.191      20.402     22.090        19.880
+   * modelo = entrada composta + saída composta só em lateral (titular no resto).
+ Acumulado (resultado - |drawdown|) em 7 anos: titular 12.078 | entrada composta
+ 14.876 | modelo 16.677 | R1 13.879. 2026 responde por 82% do lucro do titular.
+ 2020-2025: titular 3.218 | entrada composta 5.349 | modelo 6.188 | R1 4.057.
+ CORRIJO o adendo 1: o modelo em 2020-2025 era ~6.900 (estimado) e o medido é 6.188;
+ em 7 anos ~22.900 estimado, 22.090 medido.
+ Maior drawdown do titular (-6.113): 17/01/2020 a 03/11/2020, a inflada de 2020.
+ Deflacionado pelo fator (ESTIMADO) ficaria em torno de -3.400, não 4x a banca.
+
+C) CORREÇÃO DA ENTRADA COMPOSTA (adendo 1, item B3, e ata acima, item B)
+
+ Diferença diária de resultado composta - titular (t de Student sobre os dias):
+   2020-2023: +2.038 em 994 dias (t = 2,10)   2024-2025: +92 em 501 dias (t = 0,19)
+   2026: +80 (t = 0,31)   7 anos: +2.211 (t = 1,99)
+ Cai de 2,05/dia em 2020-2023 para 0,25/dia em 2024-2026. Não é explicada pelos
+ dias que fecham em 17:45: nos pregões de 18:15, +4,13/dia em 2020-2023 e +0,25/dia
+ em 2024-2026. O que o adendo 1 chamou de "sinal consistente em todos os recortes"
+ vale para os anos antigos e se apagou nos 3 últimos. Célula fim_de_tarde (R$,
+ composta - titular) por ano: +542, -347, +1.273, +570, +497, -404, +80.
+ Saída composta em lateral (R1 - titular) por ano: -28, +541, -20, +392, -3, +87,
+ +513. Nunca perde de forma relevante, mas é pequena (t = 1,18 em 7 anos).
+ Modelo contra o titular: +3.899 em 7 anos (t = 2,16), +2.835 em 2020-2023
+ (t = 1,97), +135 em 2024-2025 (t = 0,25).
+
+D) POR QUE 2026 DESTOA TANTO (titular, MEDIDO)
+
+ Titular por ano: ops | acerto | R$/op | payoff | % alvo | % stop
+   2020 226 | 34,5% | -17,0 | 1,51 | 22 | 48
+   2021 237 | 41,4% |   5,5 | 1,53 | 22 | 39
+   2022 241 | 45,2% |   9,5 | 1,39 | 27 | 36
+   2023 236 | 46,2% |   0,7 | 1,18 | 25 | 41
+   2024 246 | 44,7% |   1,9 | 1,30 | 26 | 36
+   2025 288 | 45,5% |   9,8 | 1,56 | 29 | 40
+   2026 189 | 64,6% |  79,2 | 2,25 | 40 | 20
+ O que NÃO explica 2026:
+  - Poucos trades/dias: os 10 maiores trades são 30% do ano (em 2024 passavam de
+    100%); 100 dias positivos e 40 negativos; todos os meses com operação positivos
+    (R$ 744 a 2.343); compra +7.665 e venda +7.308 (não é viés direcional).
+  - Volatilidade: em unidades de ATR o resultado médio é +0,84 por operação contra
+    <= +0,12 nos outros anos. O ATR de 2026 é só ~1,5x o de 2024-25.
+  - Estrutura do preço: autocorrelação (+0,010), razão de variância VR(4) (1,009) e
+    eficiência de 12 candles (0,309) de 2026 estão na faixa dos outros anos.
+  - ENTRADA ALEATÓRIA + saída titular (5 sementes): ~R$ 0/op em todos os anos, em
+    2026 -3,6/op e 38% de acerto. A saída e o preço de 2026 não dão vantagem sozinhos.
+  - Ajuste de preço e escala: com cada ano reescalado para a volatilidade de 2026
+    (limiares em pontos passam a encaixar), o titular em 2020-2025 vai de R$ 2,2 para
+    R$ 4,5 por operação (acerto 43,5%); 2026 segue em 64,7% e R$ 80,6. A escala
+    explica pouco.
+  - Ambiguidade intrabar: 0-1 operação por ano.
+ O que explica (parte): FILTROS FIXOS da entrada. entrada_grok_3_v1 exclui a quinta-
+ feira, as janelas 12:00-13:15 e 15:00-16:59 (porta 1), 11:45-12:30 (porta 2) e
+ 12:30-13:15 (porta 3), as "faixas fracas" de amplitude 240-340 e 279-360 pontos e a
+ separação de médias de 75 a 175 pontos. Desligando-os numa cópia em memória
+ (titular de saída, 2020-2025 | 2026, R$/op e acerto):
+   original                      2,2 e 43,1%  |  79,2 e 64,6%
+   sem quinta                    0,6 e 42,6%  |  69,1 e 62,4%
+   sem janelas de horário        0,2 e 42,7%  |  47,8 e 55,3%
+   sem faixas de amplitude       2,6 e 43,4%  |  64,9 e 59,8%
+   sem faixa de separação        2,1 e 43,0%  |  76,3 e 64,6%
+   sem nenhum deles              0,3 e 42,5%  |  38,6 e 52,2%
+ Os filtros dão ~R$ 2/op em 2020-2025 e ~R$ 40/op em 2026: assinatura de ajuste à
+ amostra. Isso toca a Regra 11.3 (dependência de estrutura do dataset: dia da
+ semana, janelas de horário e faixas em pontos absolutos). O código da saída titular
+ também usa limiar em pontos (PERDA_MINIMA_V3_PONTOS = 275).
+ O que NÃO consigo separar: sem filtros ainda sobram +38,6/op e 52% de acerto em
+ 2026, contra +0,3/op e 42,5% antes. Pode ser ajuste das regras de gatilho (distância
+ à MA21 em pontos, limiares do estocástico/MACD) ou um regime de 2026 que casa com
+ elas. O recorte jul-out (62,3% de acerto, R$ 71,2/op) não decaiu em relação a
+ jan-jun (65,6%, R$ 83,0/op), o que pesa a favor de algo persistente, mas esse
+ período já foi consumido como Holdout (item 4 da ata) e o histórico git só começa
+ em 26/09/2026, então não sei com que dados o titular foi desenhado.
+
+E) CONCLUSÕES E PEDIDOS AO CONSELHO
+
+ 1) Não projetar 2026 para frente. Como piso, usar 2023-2025 (dados mais limpos e
+    horário igual ao atual): R$ 0,7 a 9,8 por operação, ~R$ 1 a 11 por dia.
+ 2) Revisão de conformidade (Regra 11.3) de entrada_grok_3_v1: quinta-feira,
+    janelas de horário e faixas em pontos precisam de justificativa mecânica ou
+    ser retiradas. A variante "sem nenhum filtro" rende ~R$ 0,3/op em 2020-2025 e
+    deve ser a linha de base para qualquer afirmação de ganho.
+ 3) Cartuchos devem expressar limiares em múltiplos de ATR ou razões, não em pontos
+    absolutos; novas candidatas passam por teste com preços reescalados.
+ 4) Reexportar o histórico sem ajuste proporcional (ou ajustado por diferença, que
+    preserva os pontos), se o Profit permitir.
+ 5) A medição à frente (item 4.1 da ata) continua sendo a única prova válida.
+
