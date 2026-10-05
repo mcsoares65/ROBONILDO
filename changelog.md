@@ -4,6 +4,40 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V479 — candidatas ChatGPT com novas fontes de retorno
+
+Meta de pesquisa: superar os R$ 15.909,65 de melhor cruzamento conhecido em
+2026 e investigar se R$ 20 mil de Acumulado é alcançável sem aumentar contratos.
+O valor é uma meta, não resultado prometido.
+
+Foram adicionadas três entradas independentes:
+
+- `entrada_chatgpt_abertura_expansao_v1.py`: primeiro fechamento confirmado
+  fora da faixa formada entre 09:00 e 10:00;
+- `entrada_chatgpt_compressao_rompimento_v1.py`: primeiro rompimento após oito
+  candles comprimidos em múltiplos de ATR;
+- `entrada_chatgpt_gap_continuacao_v1.py`: continuação matinal de gap moderado
+  que permaneceu aberto.
+
+Também foi adicionada `saida_chatgpt_tempo_sem_progresso_v1.py`, que conserva
+o stop estrutural e o alvo 1,55R da saída titular, mas encerra uma operação após
+quatro candles quando ela continua negativa e nunca avançou 0,45 ATR.
+
+Todas são candidatas. Nenhum titular ou motor foi alterado. Em cumprimento à
+Regra 12 do `compliance.md`, não houve ranking oficial antes da revisão do PR.
+A verificação foi sintética: seis testes novos e suíte completa com 109 testes
+OK e seis pulados, além de `py_compile` e `git diff --check`.
+
+### Arquivos
+
+- três `estrategia/entrada/entrada_chatgpt_*_v1.py`;
+- `estrategia/saida/saida_chatgpt_tempo_sem_progresso_v1.py`;
+- `estrategia/testes/test_chatgpt_meta20k.py`;
+- `conselho/2026-10-05-AB.txt`;
+- `versionamento.py`, `changelog.md`.
+
+---
+
 ## V478 — ata AA do conselho: rankings de 7 anos (2020-2026)
 
 Documentação (`conselho/2026-10-05-AA.txt`) e ajuste dos testes. Registra os
