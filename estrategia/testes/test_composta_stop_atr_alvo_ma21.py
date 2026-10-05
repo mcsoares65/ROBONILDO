@@ -1,7 +1,7 @@
 """Laboratorio (saida composta): stop estrutural limitado a 1,80 ATR, alvo na MA21 quando
 ha 1R de distancia (senao 1,55R) e corte das 18h so depois das 18:00.
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/saida -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 import importlib.util
 import sys
 import unittest

@@ -1,7 +1,7 @@
 """LABORATORIO (entradas): cada candidata dispara no setup certo, em compra e em venda
 (espelho), e fica quieta fora dele. Linhas montadas a mao, sem dados reais.
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/entrada -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 import importlib.util
 import sys
 import unittest

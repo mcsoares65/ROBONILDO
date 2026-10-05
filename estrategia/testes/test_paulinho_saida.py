@@ -1,6 +1,6 @@
 """V466 (laboratorio, saidas): saida percentual 2R do metodo Just (Paulinho).
 Arquivo `test_*`: o classificador nao o trata como candidata.
-Rodar (da raiz do projeto): python -m unittest discover -s estrategia/saida -p 'test_*.py'"""
+Rodar (da raiz do projeto): python -m unittest discover -s estrategia/testes -p 'test_*.py'"""
 
 import sys
 import unittest
