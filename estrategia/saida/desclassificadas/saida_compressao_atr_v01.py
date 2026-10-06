@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: stop/alvo de compressao + breakeven + trava de lucro + tempo sem progresso (partes ainda nao extraidas). Ver conselho/2026-10-05-AG.txt.
 """
 saida_compressao_atr_v01.py
 
