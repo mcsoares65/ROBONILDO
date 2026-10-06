@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V490"
+VERSAO = "V491"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1505,3 +1505,8 @@ VERSAO = "V490"
 #   estrategia/entrada/ : 11 agregadores (familia "3 portas") movidos para
 #                  desclassificada/; copia duplicada de entrada_grok_3_v1 na raiz removida.
 #   Titular nao trocado (so comentario de cabecalho). Nenhum codigo de motor/ordem alterado.
+
+# ---------------------------------------------------------------------------
+# V491 - nomenclatura por estrategia: <lado>_<estrategia>_v<NN>.py, sem nome de IA
+#   Documentacao apenas (compliance.md, Regras 6 e 7, Termo itens 5 e 6, adendo 4).
+#   Regra repetida e eliminada. Nenhum codigo alterado; cartuchos existentes nao renomeados.

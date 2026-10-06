@@ -165,26 +165,36 @@ que o código **pode** fazer, não sobre o que a pessoa/IA diz que ele faz.
   incompleto e devolvido ao autor antes de qualquer revisão de conteúdo** —
   já aconteceu de um documento do conselho chegar sem indicação de autoria
   e gerar atribuição errada.
-- Quando o nome de um arquivo incluir um número de versão próprio do autor
-  (padrão `entrada_<assinatura>_v<NN>.py` / `saida_<assinatura>_v<NN>.py`),
-  o docstring deixa explícito que esse número é a contagem própria do
-  autor — **não** a `VERSAO` do projeto (`versionamento.py`) e não
-  necessariamente sequencial com entregas anteriores do mesmo autor. Isso
-  evita confundir "v21 de uma estratégia" com "V445 do projeto".
+- A autoria fica no docstring (e no histórico do git), **não** no nome do
+  arquivo (Regra 7). O número `v<NN>` do nome é a versão da própria
+  estratégia — **não** a `VERSAO` do projeto (`versionamento.py`). Isso evita
+  confundir "v02 de uma estratégia" com "V445 do projeto".
 
 ## 7. Nomenclatura e duplicatas
 
 - Arquivo novo: `estrategia/entrada/nome_da_estrategia.py` ou
   `estrategia/saida/nome_da_estrategia.py`, conforme o lado.
-- Padrão recomendado de nome: `entrada_<assinatura>_v<NN>.py` /
-  `saida_<assinatura>_v<NN>.py`, onde `<assinatura>` identifica o autor
-  (ver Regra 6 sobre o que o número de versão significa nesse padrão).
+- **Padrão de nome (a partir da V491):** `entrada_<estrategia>_v<NN>.py` /
+  `saida_<estrategia>_v<NN>.py`, onde `<estrategia>` é o nome da ideia — os
+  indicadores ou o conceito, em minúsculas, sem acento, palavras separadas por
+  `_` — e **nunca** o nome de uma IA ou de um autor. `<NN>` tem dois dígitos e
+  é a versão da estratégia (`v01`, `v02`...). Exemplos: `entrada_macd_v01.py`,
+  `entrada_ma_estocastico_v01.py`, `saida_stop_atr_v01.py`. A autoria vai no
+  docstring (Regra 6). Mudou regra ou limiar da mesma ideia: sobe o `<NN>` (e
+  vale a Regra 11.2). Ideia diferente: nome diferente. Um nome diz uma ideia
+  (Regra 16): o nome revela as regras que o arquivo contém.
+- Os cartuchos que já existem com assinatura de autor no nome não são
+  renomeados só por isso (as atas citam esses nomes); o padrão vale para
+  tudo o que for criado ou renomeado daqui em diante.
 - Nome de arquivo começando com `_` é reservado para arquivos internos —
   a descoberta automática ignora esses arquivos.
-- **Antes de submeter, confira se o conteúdo não é idêntico (ou quase) a
-  um arquivo já existente com outro nome.** Se duas estratégias no ranking
-  têm `resultado`, `drawdown` e `dias` idênticos, é duplicata até prova em
-  contrário.
+- **Regra repetida é eliminada.** Antes de submeter, confira se a regra (as
+  mesmas condições e limiares) já existe em outro arquivo, inclusive como
+  parte de um cartucho maior. Se duas estratégias no ranking têm `resultado`,
+  `drawdown` e `dias` idênticos, é duplicata até prova em contrário. Duplicata
+  não entra: o PR que a traz é devolvido, e uma já existente é removida do
+  laboratório (não movida), ficando só a versão mais antiga, com o nome
+  pelo padrão acima.
 
 ## 8. Execução em ambiente controlado
 
@@ -600,10 +610,12 @@ Ao adicionar um arquivo em `estrategia/`, o participante declara:
 >    nem qualquer outro módulo do projeto;
 > 4. não afirma validação que não foi comprovada rodando o motor real, e
 >    qualquer benchmark citado vem com o período exato do dataset;
-> 5. identifica sua própria autoria (humana, IA, ou ambas), e, se usar o
->    padrão `v<NN>` no nome do arquivo, deixa claro que é numeração
->    própria do autor, não a VERSAO do projeto;
-> 6. não duplica, com outro nome, um arquivo já existente no laboratório;
+> 5. identifica sua própria autoria (humana, IA, ou ambas) no docstring e
+>    nomeia o arquivo pela estratégia (`<lado>_<estrategia>_v<NN>.py`, sem
+>    nome de IA ou autor), com `v<NN>` sendo a versão da estratégia, não a
+>    VERSAO do projeto (Regras 6 e 7);
+> 6. não repete, com outro nome ou dentro de outro cartucho, uma regra já
+>    existente no laboratório (regra repetida é eliminada, Regra 7);
 > 7. declara quantas variações relevantes foram testadas antes desta
 >    versão (Regra 11.2), e não depende de nenhuma data ou estrutura
 >    específica do dataset (Regra 11.3);
@@ -627,6 +639,12 @@ importado no laboratório.
 
 ## Histórico de mudanças
 
+- **v8, adendo 4 de 05/10/2026** (por pedido do dono do laboratório): arquivos
+  passam a ser nomeados pela estratégia, `<lado>_<estrategia>_v<NN>.py`
+  (ex.: `entrada_macd_v01.py`), sem nome de IA ou autor; autoria só no
+  docstring. `v<NN>` é a versão da estratégia. Regra repetida é eliminada
+  (Regra 7). Regras 6 e 7 e itens 5 e 6 do Termo ajustados; os cartuchos
+  existentes não são renomeados.
 - **v8, adendo 3 de 05/10/2026** (por pedido do dono do laboratório): nova Regra 16
   — um cartucho de entrada implementa uma só ideia; confirmação encadeada (E) é
   permitida, OU entre ideias é proibido; o titular é de ideia única; agregadores só
