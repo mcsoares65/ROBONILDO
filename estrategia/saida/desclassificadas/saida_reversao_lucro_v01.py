@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_reversao_estocastico_v01 + saida_protecao_encerramento_v01 + saida_corte_18h_v01. Ver conselho/2026-10-05-AG.txt.
 """Saída Claude V6 — encerra no lucro quando o movimento reverte.
 
 Candidata S001. NÃO é titular.

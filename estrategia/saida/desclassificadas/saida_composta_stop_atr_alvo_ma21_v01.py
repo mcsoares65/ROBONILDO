@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_stop_atr_alvo_ma21_v01 + saida_corte_18h_v01. Ver conselho/2026-10-05-AG.txt.
 """Saída Composta (stop ATR + alvo na MA21 + corte 18h) — Claude V1.
 
 Autoria: Claude (Anthropic), em sessão operada por Marcio Soares; revisão

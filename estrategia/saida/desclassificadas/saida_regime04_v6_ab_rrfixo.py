@@ -1,4 +1,6 @@
-﻿"""SaÃ­da Regime 04 / V6 V2 â€” hÃ­brida Manus V1 + proteÃ§Ã£o final ChatGPT V4.
+﻿# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_stop_atr_v01 + saida_protecao_encerramento_v01 + saida_corte_18h_v01. Ver conselho/2026-10-05-AG.txt.
+"""SaÃ­da Regime 04 / V6 V2 â€” hÃ­brida Manus V1 + proteÃ§Ã£o final ChatGPT V4.
 
 CHALLENGER DE PESQUISA
 ----------------------

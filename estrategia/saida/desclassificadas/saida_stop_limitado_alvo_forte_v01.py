@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_stop_limitado_alvo_forte_v02 + saida_protecao_encerramento_v01. Ver conselho/2026-10-05-AG.txt.
 """Saída Manus V1 — candidata para revisão e ranking oficial.
 
 Autoria: gerada por Manus AI em sessão operada por Marcio Soares; revisão

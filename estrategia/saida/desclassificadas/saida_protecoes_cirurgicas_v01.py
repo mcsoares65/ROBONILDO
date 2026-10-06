@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_perda_tardia_v01 + saida_perda_final_1700_v01 + saida_desastre_rsi_v01 + saida_giveback_v01. Ver conselho/2026-10-05-AG.txt.
 """
 saida_protecoes_cirurgicas_v01.py — proteções cirúrgicas (migrado V445).
 
