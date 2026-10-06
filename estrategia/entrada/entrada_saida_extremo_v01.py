@@ -1,8 +1,9 @@
-"""Entrada Saída de Extremo — Claude V1.
+"""Entrada Saída de Extremo — v01.
 
 Autoria: Claude (Anthropic), em sessão operada por Marcio Soares; revisão
-humana antes do teste oficial: pendente. A numeração v1 é a contagem própria
-do autor, não a VERSAO do projeto.
+humana antes do teste oficial: pendente. Renomeada na V492 para o padrão
+`entrada_<estrategia>_v<NN>.py` (antes: entrada_saida_extremo_claude_v1); o
+conteúdo não mudou. O `v01` é a versão da estratégia, não a VERSAO do projeto.
 
 Entra a favor da tendência quando o estocástico sai da zona extrema (cruza 20
 para cima na alta, 80 para baixo na baixa) num candle sem exaustão de corpo.

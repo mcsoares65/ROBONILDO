@@ -4,6 +4,21 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V492 — candidata `entrada_saida_extremo_v02` (saída de extremo com vetos)
+
+Pedido do dono (05/10/2026), a partir do `entrada_regime_04_v6` que ele enviou.
+- `estrategia/entrada/entrada_saida_extremo_v02.py`: a porta 3 (saída de extremo) isolada, mais os dois
+  vetos do arquivo enviado (V5: cruzamento fraco e tendência fraca; V6: extremo raso e mercado já
+  expandido). Ideia única (Regra 16): as portas 1 e 2 do arquivo original repetiam o grok_3 e ficaram
+  de fora. Limiares copiados, nada ajustado.
+- `entrada_saida_extremo_v01.py`: a porta 3 sem vetos, que estava em `desclassificada/` como
+  `entrada_saida_extremo_claude_v1`, renomeada pelo padrão da V491 e posta no ranking como base de comparação.
+- Medição prévia (saída v4, preços reescalados): 2026 sobe de 4.167 para 4.812 de acumulado; de 2020 a 2025
+  o resultado cai de 1.947 para 445 e o acumulado fica igual. Sem base para promover; é para o teste oficial.
+- Paridade com a lógica original: 0 divergências em 32.533 candles (2020, 2023, 2025, 2026).
+
+---
+
 ## V491 — nomes de arquivo pela estratégia, sem nome de IA; regra repetida é eliminada
 
 Pedido do dono (05/10/2026). `compliance.md` (CODEOWNERS):
