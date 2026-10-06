@@ -4,6 +4,17 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V491 — nomes de arquivo pela estratégia, sem nome de IA; regra repetida é eliminada
+
+Pedido do dono (05/10/2026). `compliance.md` (CODEOWNERS):
+- Padrão `<lado>_<estrategia>_v<NN>.py` (ex.: `entrada_macd_v01.py`, `entrada_ma_estocastico_v01.py`,
+  `saida_stop_atr_v01.py`): o nome diz a ideia; `v<NN>` é a versão da estratégia; autoria só no docstring.
+- Regra 7: regra repetida (inclusive dentro de cartucho maior) é eliminada; duplicata não entra no
+  laboratório. Regra 6 e itens 5 e 6 do Termo ajustados; adendo 4 no histórico.
+- Cartuchos já existentes não são renomeados (as atas citam esses nomes). Só documentação.
+
+---
+
 ## V490 — Regra 16: uma estratégia, uma ideia (sem OU interno)
 
 Pergunta do dono (05/10/2026): o titular reúne várias estratégias dentro dele? Conferido: as
