@@ -1,0 +1,87 @@
+# Denúncia ao conselho — V496 — saídas com regras de encerramento soltas no mesmo arquivo (Regra 16)
+
+Autoria: Claude (Anthropic), 05/10/2026, a pedido de Marcio Soares (dono do laboratório).
+Atas consultadas (Regra 15): AA a AF, em especial AE (entradas) e AF (nomes).
+
+1. PEDIDO DO DONO
+---------------------------------------------------------------------------
+Mesma regra das entradas: funil encadeado (aninhado) pode; regras soltas no mesmo arquivo não;
+cada regra vira um .py separado. Nas saídas, o que toda saída precisa fazer (definir stop e alvo
+na abertura, Regra 1) é a base de qualquer cartucho e não conta como regra solta; stop e alvo
+em que o alvo depende do risco do stop são um funil só. Regra solta, aqui, é um gatilho de
+encerramento antecipado que dispara sozinho (corte por horário, reversão do estocástico,
+giveback, breakeven, perda de força do MACD).
+
+2. LEVANTAMENTO (33 cartuchos de saída, lidos um a um)
+---------------------------------------------------------------------------
+Uma regra de encerramento (ou só geometria), ficam: saida_baseline, alvo_media, alvo_meio_range,
+alvo_risco_baixo, alvo_tendencia_forte, estrutura_assimetrica, stop_atr, tendencia_trailing,
+tempo_sem_progresso, giveback, histograma_macd, macd_contrario, perda_tardia,
+protecao_encerramento_v01 (corte 17h15), corte_18h, reversao_estocastico, desastre_rsi,
+breakeven, atr_fixo, percentual_just, daytrader_rr2, e as novas abaixo.
+Regras soltas juntas (movidas para estrategia/saida/desclassificadas/), com o que cada uma é:
+  saida_protecao_encerramento_v02 (TITULAR)   = corte 17h15 + corte 18h   (continua; item 5)
+  saida_perda_fim_tarde_v01                   = perda_leve_1630 + protecao_encerramento_v01
+  saida_protecoes_cirurgicas_v01 (4 regras)   = perda_tardia + perda_final_1700 + desastre_rsi + giveback
+  saida_composta_stop_atr_alvo_ma21_v01       = stop_atr_alvo_ma21 + corte_18h
+  saida_stop_limitado_alvo_forte_v01          = stop_limitado_alvo_forte_v02 + protecao_encerramento_v01
+  saida_reversao_lucro_v01                    = reversao_estocastico + 17h15 + 18h
+  saida_alvo_risco_curto_v01                  = alvo_risco_baixo + 17h15 + 18h
+  saida_perda_forca_macd_v01                  = histograma_macd + 17h15
+  saida_regime04_v6_ab_rrfixo                 = stop_atr + 17h15 + 18h
+  saida_compressao_atr_v01                    = stop/alvo de compressão + breakeven + trava de lucro +
+                                                tempo sem progresso (partes AINDA NÃO extraídas)
+  desclassificadas/saida_reversao_estocastico_618r_v01 (já estava lá) = reversão após 0,618R + 17h15 + 18h
+Observação: o corte 17h15 aparece em 9 arquivos e o das 18h em 7; eram a mesma regra copiada.
+
+3. O QUE FOI CRIADO (extração literal, nenhum limiar alterado)
+---------------------------------------------------------------------------
+ - saida_perda_leve_1630_v01    : 16:30 a 17:14, perda >= max(80 pts, 0,20 ATR) (1ª camada de perda_fim_tarde)
+ - saida_perda_final_1700_v01   : a partir das 17:00, perda >= 150 pts (camada final de protecoes_cirurgicas)
+ - saida_stop_atr_alvo_ma21_v01 : geometria da composta, sem o corte 18h
+ - saida_stop_limitado_alvo_forte_v02 : geometria do Manus V1, sem o corte 17h15
+Conferência de paridade: para cada agregador, o fechamento do original foi comparado com o OU das
+partes isoladas em 4.000 estados aleatórios (candle real de 2026, lado, candles decorridos, resultado
+flutuante, máximas/mínimas), e a abertura (stop/alvo) com a geometria isolada: 0 divergências em
+todas as comparações (v10, titular, cirúrgicas, composta, manus_v1, reversão, alvo_risco_curto,
+perda_forca_macd, regime04). Os próprios testes disparam o fechamento em 1% a 30% dos estados, não
+são vazios.
+
+4. MEDIÇÃO: o que vale cada parte da saída titular
+---------------------------------------------------------------------------
+Entrada titular (entrada_tres_portas_v01), 2020-2026, preços reescalados à volatilidade de 2026,
+custo R$ 0,50 por operação, sem slippage, trava de 25% desligada (V483), motor V496.
+Acumulado por ano (resultado - |drawdown|):
+                                          2020   2021   2022   2023   2024   2025 | 2020-25 | 2026
+ titular (17h15 + 18h)                    -5211   1258  -1946  -2279  -1871    790 |  -9259  | 17160
+ só 17h15 (protecao_encerramento_v01)     -5211   1392  -1946  -2341  -1950    878 |  -9178  | 17104
+ só 18h (corte_18h_v01)                   -5281   1620  -2120  -1647  -1543   1228 |  -7742  | 17060
+ sem corte (saida_baseline)               -5180   1642  -1637  -1601  -1752   1300 |  -7229  | 16695
+ reversao_lucro (reversão+17h15+18h)      -6993   2246  -1695  -1401  -1755   1161 |  -8438  | 15219
+ só reversão (reversao_estocastico_v01)   -6799   2404  -1491  -1379  -1549   1748 |  -7066  | 14725
+Leitura honesta:
+ - Em 2020-2025 os cortes da titular não ajudam: o acumulado é o pior da tabela (-9.259) e o de
+   "sem corte" é o melhor entre os que têm stop e alvo (-7.229). Em 2026 os cortes ajudam pouco
+   (17.160 contra 16.695, +465). Quase todo o efeito em 2026 vem do 17h15.
+ - Separar o corte 18h do 17h15 deixa a saída com uma só regra; só o 18h teria acumulado de -7.742 em
+   2020-25 e 17.060 em 2026. Não é recomendação de troca: é a base para o dono decidir (item 6).
+ - A reversão sozinha é a melhor em 2020-25 (-7.066) e a pior em 2026 (14.725): inverte o padrão do corte.
+ - Toda a tabela é o mesmo regime dependente de 2026 da ata AE; nada aqui prova vantagem fora dele.
+ - Medido: tudo acima. Não medido: custo/slippage maior, Regra 10, as partes extraídas isoladamente
+   sobre outras entradas.
+
+5. DECISÕES DESTE PR
+---------------------------------------------------------------------------
+ a) Regra 16 estendida às saídas (itens 7 e 8 do compliance) e item 12 do Termo ajustado.
+ b) 9 saídas agregadas movidas para saida/desclassificadas/ (conteúdo intacto; só comentário no topo).
+ c) 4 saídas isoladas novas (item 3), todas com paridade conferida.
+ d) O titular de saída NÃO foi trocado (opera com dinheiro real). Ganhou só um comentário.
+
+6. PENDÊNCIAS (nada foi feito)
+---------------------------------------------------------------------------
+ 1) Escolha do novo titular de saída entre as regras isoladas (17h15, 18h, sem corte...) por PR do dono.
+ 2) Extrair as partes de saida_compressao_atr_v01 e de reversao_estocastico_618r (se interessar).
+ 3) Casos de fronteira que deixei como estão: saida_rsi_realizacao_v01 (dois níveis de RSI, 75/25 com
+    lucro >= 250 e 82/18 sempre) e saida_estrutura_assimetrica_v01 (stop limitado a 2,1 ATR e alvo
+    diferente por lado): tratados como uma ideia cada. O dono pode mandar separar.
+ 4) O mesmo critério de empilhar saídas (cortes juntos) como regra própria, com modo sombra (item 5 da Regra 16).

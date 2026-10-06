@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_perda_leve_1630_v01 + saida_protecao_encerramento_v01. Ver conselho/2026-10-05-AG.txt.
 """saida_perda_fim_tarde_v01.py — candidata (não titular)
 
 Autoria: Grok (xAI). Versão própria do autor: v10 (não é a VERSAO do projeto).

@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_alvo_risco_baixo_v01 + saida_protecao_encerramento_v01 + saida_corte_18h_v01. Ver conselho/2026-10-05-AG.txt.
 """Saída Manus V4 — alvo estendido somente quando o risco estrutural é curto.
 
 Autoria: gerada por Manus AI em sessão operada por Marcio Soares; revisão

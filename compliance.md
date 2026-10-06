@@ -561,7 +561,8 @@ duas. A medição está na ata `conselho/2026-10-05-AE.txt`.
 3. **Titular.** O titular de entrada é um cartucho de ideia única.
 4. **Agregadores.** Podem existir apenas como ferramenta de paridade (reproduzir a
    ordem histórica de ideias já desmembradas), fora do ranking e nunca como
-   candidata ou titular. Ficam em `estrategia/entrada/desclassificada/`.
+   candidata ou titular. Ficam em `estrategia/entrada/desclassificada/` (entradas) e
+   `estrategia/saida/desclassificadas/` (saídas).
 5. **Combinar ideias é regra própria.** Confluência, votação ou seleção dinâmica
    entre cartuchos não é escondida dentro de um cartucho de entrada. Exige hipótese
    pré-registrada, teste em memória, modo sombra e depois Holdout cego (ver
@@ -569,11 +570,19 @@ duas. A medição está na ata `conselho/2026-10-05-AE.txt`.
 6. **Variações de uma porta** (por exemplo, um filtro novo só na retomada da MA21)
    entram como derivadas por desmembramento da ideia a que pertencem, com a
    divulgação de variações da Regra 11.2, e nunca como uma nova união.
-7. **Escopo e transição.** Esta regra vale para cartuchos de entrada. A aplicação a
-   saídas (stop, alvo e proteção de horário compõem um único desenho de saída) não
-   é alterada nesta versão. O titular agregador atual continua em operação até o dono
-   trocá-lo por merge de PR (Regra 12); os agregadores candidatos existentes foram
-   movidos para `desclassificada/` na V490.
+7. **Saídas: a mesma regra.** Toda saída define o stop e o alvo na abertura (Regra 1);
+   isso é a base de qualquer cartucho de saída e não conta como regra solta. Stop e alvo
+   encadeados (o alvo calculado a partir do risco do stop, ou a condição que escolhe o
+   alvo) são um funil só e podem ficar juntos. O que não pode ficar no mesmo arquivo são
+   regras de encerramento antecipado soltas (corte por horário, reversão do estocástico,
+   giveback, breakeven, perda de força do MACD etc.): cada uma é um arquivo. Teste prático:
+   se cada uma dispara o fechamento sem depender da outra, são regras soltas. Combinar
+   saídas (empilhar cortes) segue o item 5: regra própria, com modo sombra e Holdout cego.
+8. **Escopo e transição.** Os titulares atuais (`entrada_tres_portas_v01`, que une três
+   ideias, e `saida_protecao_encerramento_v02`, que une o corte das 17h15 e o das 18h)
+   continuam em operação até o dono trocá-los por merge de PR (Regra 12). Os agregadores
+   candidatos existentes foram movidos para `desclassificada/` (entradas na V490 e V493,
+   saídas na V496), com a tabela do que cada um equivale em `conselho/2026-10-05-AG.txt`.
 
 ---
 
@@ -630,7 +639,8 @@ Ao adicionar um arquivo em `estrategia/`, o participante declara:
 >    calcula nem garante nenhum piso de segurança (Regra 1);
 > 11. leu as atas do conselho pertinentes (`conselho/`) antes de submeter, e
 >    cita quais no Pull Request (Regra 15);
-> 12. implementa uma única ideia, sem OU entre ideias dentro do arquivo (Regra 16)."
+> 12. implementa uma única ideia, sem OU entre ideias ou regras soltas dentro do arquivo
+>    (Regra 16)."
 
 Sem essa declaração — implícita ou explícita — o arquivo não deve ser
 importado no laboratório.
@@ -639,6 +649,9 @@ importado no laboratório.
 
 ## Histórico de mudanças
 
+- **v8, adendo 5 de 05/10/2026** (por pedido do dono do laboratório): a Regra 16 passa a valer
+  também para saídas: stop e alvo encadeados são um funil só; regras de encerramento antecipado
+  soltas vão cada uma para o seu arquivo. Item 7 novo (saídas) e item 8 (transição dos titulares).
 - **v8, adendo 4 de 05/10/2026** (por pedido do dono do laboratório): arquivos
   passam a ser nomeados pela estratégia, `<lado>_<estrategia>_v<NN>.py`
   (ex.: `entrada_macd_v01.py`), sem nome de IA ou autor; autoria só no

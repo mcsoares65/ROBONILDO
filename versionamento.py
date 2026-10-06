@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V494"
+VERSAO = "V496"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1535,3 +1535,17 @@ VERSAO = "V494"
 #   Titulares: entrada_grok_3_v1 -> entrada_tres_portas_v01; saida_chatgpt_v4 ->
 #   saida_protecao_encerramento_v02 (carregados pela pasta; nenhum codigo de motor alterado).
 #   Removida a copia identica de saida_chatgpt_v4 que ficava na raiz de saida/.
+
+# ---------------------------------------------------------------------------
+# V495 - candidata entrada_compressao_amplitude_v02 (v01 corrigida)
+#   estrategia/entrada/entrada_compressao_amplitude_v02.py : o intervalo rompido passa a ser
+#                  as 12 velas ANTERIORES ao candle atual (na v01 incluia o proprio candle, entao
+#                  o fechamento nunca o superava e a estrategia jamais emitia sinal). Nada mais mudou.
+#   Paridade com a variante A medida: 0 divergencias (2022, 2024, 2026).
+
+# ---------------------------------------------------------------------------
+# V496 - Regra 16 estendida as saidas: uma regra de encerramento por arquivo
+#   9 saidas agregadas movidas para saida/desclassificadas/; 4 saidas isoladas novas
+#   (perda_leve_1630_v01, perda_final_1700_v01, stop_atr_alvo_ma21_v01,
+#   stop_limitado_alvo_forte_v02); paridade 0 divergencias em 4.000 estados por comparacao.
+#   Titular de saida nao trocado (so comentario). Ata conselho/2026-10-05-AG.txt.

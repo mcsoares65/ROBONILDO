@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V496): regras de encerramento soltas no mesmo arquivo. Fora do ranking.
+# Equivale a: saida_histograma_macd_v01 + saida_protecao_encerramento_v01. Ver conselho/2026-10-05-AG.txt.
 """Saída por perda de força do MACD — versão V06 (aula Massuda).
 
 Autoria: DeepSeek (assistido). Revisão humana: pendente (Regra 8).

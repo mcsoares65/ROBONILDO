@@ -4,6 +4,37 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V496 — saídas: uma regra de encerramento por arquivo (Regra 16)
+
+Pedido do dono (05/10/2026): a mesma regra das entradas. Funil encadeado pode; regra solta no mesmo arquivo
+não. Stop e alvo da abertura (Regra 1) são a base de toda saída e não contam.
+- 9 saídas agregadas movidas para `estrategia/saida/desclassificadas/` (perda_fim_tarde, protecoes_cirurgicas,
+  composta, stop_limitado_alvo_forte_v01, reversao_lucro, alvo_risco_curto, perda_forca_macd,
+  regime04_v6_ab_rrfixo, compressao_atr). O corte 17h15 estava copiado em 9 arquivos e o das 18h em 7.
+- 4 saídas isoladas novas por extração literal: `perda_leve_1630_v01`, `perda_final_1700_v01`,
+  `stop_atr_alvo_ma21_v01`, `stop_limitado_alvo_forte_v02`. Paridade: 0 divergências em 4.000 estados
+  por comparação (fechamento e abertura).
+- Titular de saída (`saida_protecao_encerramento_v02` = 17h15 + 18h) não foi trocado; só comentário.
+- Medição na ata AG: de 2020 a 2025 os cortes da titular pioram o acumulado (−9.259 contra −7.229 sem corte);
+  em 2026 ajudam pouco (+465).
+- `compliance.md`: itens 7 e 8 da Regra 16, item 12 do Termo, adendo 5. Ata `conselho/2026-10-05-AG.txt`.
+
+---
+
+## V495 — candidata `entrada_compressao_amplitude_v02` (v01 corrigida)
+
+Pedido do dono (05/10/2026). A v01 (DeepSeek, hoje em `desclassificada/`) nunca emitia sinal: o máximo da
+compressão incluía o próprio candle atual. A v02 usa as 12 velas anteriores; nenhum limiar mudou.
+- Medição (saída titular, preços reescalados, 2020–2025): 211 operações, R$ 37,7 por operação, t = 3,01;
+  2026: −274 de acumulado. Variante B (compressão também só nas velas anteriores): t = 2,92. Declaradas as
+  duas variações (Regra 11.2).
+- Entradas quase não coincidem com a compressão por faixa em ATR (2 a 9 por ano): não é regra repetida.
+- Leitura honesta: t alto fora de 2026, mas 2020–2025 já foi visto em ranking agregado, 2026 é negativo e são
+  poucas operações; pede Regra 10 e acompanhamento à frente antes de qualquer promoção.
+- Paridade com a variante medida: 0 divergências.
+
+---
+
 ## V494 — sem nome de IA nos nomes de arquivo
 
 Pedido do dono (05/10/2026). 54 cartuchos de entrada e saída renomeados para
