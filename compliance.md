@@ -531,6 +531,42 @@ a substitui.)
 
 ---
 
+## 16. Uma estratégia, uma ideia — sem OU interno
+
+**O problema que esta regra resolve:** um cartucho que reúne várias ideias
+independentes ("portas" em ordem de prioridade, em que a primeira que sinalizar
+decide) disputa o ranking como se fosse uma ideia só. O resultado de uma união
+não diz qual das partes tem vantagem, esconde as que não têm e gera quase-clones:
+mexer num limiar de uma porta vira uma "nova estratégia" que repete as outras
+duas. A medição está na ata `conselho/2026-10-05-AE.txt`.
+
+1. **Ideia única.** Um cartucho de entrada implementa uma só ideia. Condições
+   internas só são permitidas como confirmação encadeada (E): todas precisam valer
+   para o sinal existir (por exemplo, retomada da MA21 e estocástico na mesma
+   direção). Os dois lados espelhados da mesma ideia (compra e venda) são uma ideia.
+2. **Proibido o OU entre ideias.** Nenhum cartucho une ideias por prioridade,
+   "a primeira que sinalizar decide", união ou portas alternativas, mesmo sem
+   criar limiar novo. Teste prático: se uma parte pode disparar a ordem sem a
+   outra, são ideias distintas e vão em arquivos distintos.
+3. **Titular.** O titular de entrada é um cartucho de ideia única.
+4. **Agregadores.** Podem existir apenas como ferramenta de paridade (reproduzir a
+   ordem histórica de ideias já desmembradas), fora do ranking e nunca como
+   candidata ou titular. Ficam em `estrategia/entrada/desclassificada/`.
+5. **Combinar ideias é regra própria.** Confluência, votação ou seleção dinâmica
+   entre cartuchos não é escondida dentro de um cartucho de entrada. Exige hipótese
+   pré-registrada, teste em memória, modo sombra e depois Holdout cego (ver
+   "Estratégias derivadas por desmembramento"), e só então vira mecanismo.
+6. **Variações de uma porta** (por exemplo, um filtro novo só na retomada da MA21)
+   entram como derivadas por desmembramento da ideia a que pertencem, com a
+   divulgação de variações da Regra 11.2, e nunca como uma nova união.
+7. **Escopo e transição.** Esta regra vale para cartuchos de entrada. A aplicação a
+   saídas (stop, alvo e proteção de horário compõem um único desenho de saída) não
+   é alterada nesta versão. O titular agregador atual continua em operação até o dono
+   trocá-lo por merge de PR (Regra 12); os agregadores candidatos existentes foram
+   movidos para `desclassificada/` na V490.
+
+---
+
 ## Termo de concordância
 
 ### Estratégias derivadas por desmembramento
@@ -547,7 +583,7 @@ contribuição isolada. Isso não é considerado duplicação indevida se o arqu
 - não substituir automaticamente a titular apenas por vencer um recorte.
 
 Um agregador pode preservar a ordem histórica dessas estratégias para fins de
-paridade. Seleção dinâmica entre estratégias exige validação separada, sem
+paridade, fora do ranking e nunca como titular (Regra 16). Seleção dinâmica entre estratégias exige validação separada, sem
 informação futura, primeiro em modo sombra e depois em holdout cego.
 
 ---
@@ -581,7 +617,8 @@ Ao adicionar um arquivo em `estrategia/`, o participante declara:
 >    definir o stop e o alvo da posição desde a abertura — o motor não
 >    calcula nem garante nenhum piso de segurança (Regra 1);
 > 11. leu as atas do conselho pertinentes (`conselho/`) antes de submeter, e
->    cita quais no Pull Request (Regra 15)."
+>    cita quais no Pull Request (Regra 15);
+> 12. implementa uma única ideia, sem OU entre ideias dentro do arquivo (Regra 16)."
 
 Sem essa declaração — implícita ou explícita — o arquivo não deve ser
 importado no laboratório.
@@ -590,6 +627,12 @@ importado no laboratório.
 
 ## Histórico de mudanças
 
+- **v8, adendo 3 de 05/10/2026** (por pedido do dono do laboratório): nova Regra 16
+  — um cartucho de entrada implementa uma só ideia; confirmação encadeada (E) é
+  permitida, OU entre ideias é proibido; o titular é de ideia única; agregadores só
+  como paridade, fora do ranking; combinar ideias (confluência, votação, seleção)
+  é regra própria com modo sombra e Holdout cego. Item 12 acrescentado ao Termo de
+  concordância e frase de agregador ajustada na seção de desmembramento.
 - **v8, adendo 2 de 05/10/2026** (por pedido do dono do laboratório): a Regra 12
   deixa de exigir aprovação do conselho. Só o dono faz o merge de PRs e o merge é a
   aprovação; a revisão por outros participantes passa a ser consultiva. O resto do

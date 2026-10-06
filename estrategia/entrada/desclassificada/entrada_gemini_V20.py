@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V490): agregador de ideias por OU. Fora do ranking.
+# Ver conselho/2026-10-05-AE.txt. Mantida so como referencia/paridade; nao alterada.
 """
 GEMINI 3 PORTAS SUPREMA V20
 Evolucao otimizada da base chatgpt_3_portas_robusta_v19.

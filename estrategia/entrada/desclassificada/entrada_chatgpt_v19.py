@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V490): agregador de ideias por OU. Fora do ranking.
+# Ver conselho/2026-10-05-AE.txt. Mantida so como referencia/paridade; nao alterada.
 """ChatGPT 3 Portas Robusta V19 — candidata a revisao humana.
 
 Autoria: gerada por OpenAI Codex, em sessao operada por Marcio Soares.

@@ -4,6 +4,24 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V490 — Regra 16: uma estratégia, uma ideia (sem OU interno)
+
+Pergunta do dono (05/10/2026): o titular reúne várias estratégias dentro dele? Conferido: as
+três portas do `entrada_grok_3_v1` são livres, ligadas por OU com prioridade fixa, e as portas
+1 e 2 nunca disparam juntas. Quase toda a família "3 portas" é assim. O dono: confirmação
+encadeada (E, ex.: MA + estocástico) fica; OU entre ideias não.
+- `compliance.md`: Regra 16 (ideia única; E permitido, OU proibido; titular de ideia única;
+  agregador só como paridade, fora do ranking; combinar ideias exige modo sombra e Holdout
+  cego), item 12 no Termo, adendo 3 no histórico.
+- 11 agregadores candidatos movidos para `estrategia/entrada/desclassificada/`; cópia duplicada
+  de `entrada_grok_3_v1` na raiz removida. O titular não foi trocado.
+- Ata `conselho/2026-10-05-AE.txt`: denúncia, levantamento e medição das portas isoladas
+  (2020-2026): nenhuma tem vantagem fora de 2026; em 2026 a melhor é a MACD+estocástico
+  (acumulado 6.335, contra 17.160 do agregador).
+- Nenhum código de motor, risco ou ordem alterado.
+
+---
+
 ## V489 — Regra 12: só o dono aprova; revisão do conselho vira consultiva
 
 Pedido do dono (05/10/2026): só ele faz o merge dos PRs, então a exigência de aprovação
