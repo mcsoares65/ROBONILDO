@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V496"
+VERSAO = "V497"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1549,3 +1549,12 @@ VERSAO = "V496"
 #   (perda_leve_1630_v01, perda_final_1700_v01, stop_atr_alvo_ma21_v01,
 #   stop_limitado_alvo_forte_v02); paridade 0 divergencias em 4.000 estados por comparacao.
 #   Titular de saida nao trocado (so comentario). Ata conselho/2026-10-05-AG.txt.
+
+# ---------------------------------------------------------------------------
+# V497 - escalacao de titulares de entrada (Regra 17)
+#   escalacao.py (novo): junta N titulares de entrada e se apresenta ao motor como um cartucho
+#                  (gerar_sinal + radar); lados opostos no mesmo candle = nao entra.
+#   principal.py : estrategia/entrada/titular/ aceita 1 ou mais arquivos (a saida segue com 1).
+#   classificacao.py : idem; com 2+ titulares o time aparece como linha de comparacao fora do
+#                  ranking (modo E) e como parceiro das saidas (modos S e A). Com 1 titular nada muda.
+#   Ata conselho/2026-10-06-AH.txt (medicoes de cenarios e de saidas livres).

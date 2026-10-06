@@ -33,6 +33,7 @@ from statistics import median
 from typing import Callable, Iterable, Optional
 
 import cenario as cen_mod
+from escalacao import Escalacao, Membro
 from historico_csv import (
     csvs_do_ano, dias_pos_buraco, intervalo_minutos, interpretar_anos, listar_anos,
 )
@@ -231,6 +232,9 @@ class CartuchoEntrada:
     caminho: Path
     gerar_sinal: Callable
     titular: bool = False
+    modulo: object = None            # módulo importado (a escalação lê o radar dele)
+    time: bool = False               # True = escalação dos titulares (não é cartucho; Regra 17)
+    caminhos_time: tuple = ()        # arquivos dos titulares que formam o time
 
 
 @dataclass
@@ -262,7 +266,7 @@ def listar_cartuchos_disco() -> dict:
     """
     Estrutura oficial (sem pasta laboratorio):
 
-      estrategia/entrada/titular/   → exatamente 1 .py  (entrada de produção)
+      estrategia/entrada/titular/   → 1 ou mais .py (titulares de entrada; 2+ formam a escalação, Regra 17)
       estrategia/entrada/*.py      → candidatas de ranking de ENTRADA
 
       estrategia/saida/titular/     → exatamente 1 .py  (saída de produção)
@@ -293,18 +297,17 @@ def listar_cartuchos_disco() -> dict:
 
 
 def descobrir_entradas() -> tuple[list[CartuchoEntrada], list[tuple[str, str]]]:
-    """Todas as entradas: titular + candidatas na raiz de entrada/."""
+    """Todas as entradas: titulares (1 ou mais) + candidatas na raiz de entrada/."""
     inv = listar_cartuchos_disco()
     titulares = inv["entrada_titular"]
-    if len(titulares) != 1:
+    if not titulares:
         raise RuntimeError(
-            "A pasta estrategia/entrada/titular/ deve conter exatamente um arquivo. "
-            f"Encontrados: {[p.name for p in titulares]}"
+            "A pasta estrategia/entrada/titular/ deve conter pelo menos um arquivo."
         )
-    caminho_titular = titulares[0]
+    caminhos_titulares = {p.resolve() for p in titulares}
 
-    caminhos = [caminho_titular]
-    vistos = {caminho_titular.stem.casefold()}
+    caminhos = list(titulares)
+    vistos = {p.stem.casefold() for p in titulares}
     for caminho in inv["entrada_candidatas"]:
         if caminho.stem.casefold() in vistos:
             continue
@@ -314,10 +317,11 @@ def descobrir_entradas() -> tuple[list[CartuchoEntrada], list[tuple[str, str]]]:
     carregadas = []
     falhas = []
     for indice, caminho in enumerate(caminhos):
+        e_titular = caminho.resolve() in caminhos_titulares
         try:
             modulo = _importar_arquivo(caminho, f"ent_{indice}")
         except Exception as erro:
-            if caminho.resolve() == caminho_titular.resolve():
+            if e_titular:
                 raise
             falhas.append(
                 (caminho.stem, f"falha na importação: {type(erro).__name__}: {erro}")
@@ -329,11 +333,32 @@ def descobrir_entradas() -> tuple[list[CartuchoEntrada], list[tuple[str, str]]]:
                 nome=caminho.stem,
                 caminho=caminho,
                 gerar_sinal=gerar,
-                titular=(caminho.resolve() == caminho_titular.resolve()),
+                titular=e_titular,
+                modulo=modulo,
             ))
+        elif e_titular:
+            raise RuntimeError(f"O titular {caminho.stem}.py não fornece gerar_sinal(row).")
         else:
             falhas.append((caminho.stem, "função gerar_sinal(row) ausente"))
     return carregadas, falhas
+
+
+def montar_time(entradas: list[CartuchoEntrada]) -> Optional[CartuchoEntrada]:
+    """Escalação dos titulares de entrada (Regra 17). Com menos de 2 titulares não há time."""
+    titulares = [e for e in entradas if e.titular]
+    if len(titulares) < 2:
+        return None
+    escalacao = Escalacao([Membro(e.nome, e.modulo) for e in titulares])
+    caminho_por_nome = {e.nome: e.caminho for e in titulares}
+    return CartuchoEntrada(
+        nome=escalacao.nome,
+        caminho=titulares[0].caminho.parent,
+        gerar_sinal=escalacao.gerar_sinal,
+        titular=True,
+        modulo=escalacao,
+        time=True,
+        caminhos_time=tuple(caminho_por_nome[m.nome] for m in escalacao.membros),
+    )
 
 
 def descobrir_saidas() -> tuple[list[CartuchoSaida], list[tuple[str, str]]]:
@@ -1520,9 +1545,17 @@ def processos_padrao() -> int:
 def _carregar_cartucho_no_processo(tipo: str, nome: str, caminho: str):
     chave = (tipo, caminho)
     if chave not in _CARTUCHOS_DO_PROCESSO:
-        modulo = _importar_arquivo(Path(caminho), f"par_{tipo}_{nome}")
-        _CARTUCHOS_DO_PROCESSO[chave] = getattr(
-            modulo, "gerar_sinal" if tipo == "entrada" else "avaliar_saida")
+        if tipo == "time":
+            # `caminho` = arquivos dos titulares separados por "|": o processo remonta a escalação.
+            membros = []
+            for arquivo in caminho.split("|"):
+                arq = Path(arquivo)
+                membros.append(Membro(arq.stem, _importar_arquivo(arq, f"par_time_{arq.stem}")))
+            _CARTUCHOS_DO_PROCESSO[chave] = Escalacao(membros).gerar_sinal
+        else:
+            modulo = _importar_arquivo(Path(caminho), f"par_{tipo}_{nome}")
+            _CARTUCHOS_DO_PROCESSO[chave] = getattr(
+                modulo, "gerar_sinal" if tipo == "entrada" else "avaliar_saida")
     return _CARTUCHOS_DO_PROCESSO[chave]
 
 
@@ -1535,7 +1568,7 @@ def _bloco_worker(tarefa):
     for (e_tipo, e_nome, e_caminho), (s_tipo, s_nome, s_caminho) in pares_def:
         gerar = _carregar_cartucho_no_processo(e_tipo, e_nome, e_caminho)
         avaliar = _carregar_cartucho_no_processo(s_tipo, s_nome, s_caminho)
-        estrategia = CartuchoEntrada(nome=e_nome, caminho=Path(e_caminho), gerar_sinal=gerar)
+        estrategia = CartuchoEntrada(nome=e_nome, caminho=Path(e_caminho.split('|')[0]), gerar_sinal=gerar)
         try:
             trades = executar_jogo(candles_fatia, rows, estrategia, dias_bloco,
                                    avaliar_saida=avaliar, cenario=cenario or None)
@@ -1570,7 +1603,8 @@ def executar_pares_em_paralelo(candles, dias_avaliacao, pares, cenario, processo
     na ordem dos pares, [("ok", trades) | ("erro", texto)] — o mesmo que a execução em série."""
     blocos = _dividir_em_blocos(candles, dias_avaliacao, processos * BLOCOS_POR_PROCESSO)
     pares_def = [
-        (("entrada", e.nome, str(e.caminho)), ("saida", s.nome, str(s.caminho)))
+        (("time", e.nome, "|".join(str(c) for c in e.caminhos_time)) if e.time
+         else ("entrada", e.nome, str(e.caminho)), ("saida", s.nome, str(s.caminho)))
         for e, s in pares
     ]
     tarefas = [(i, fatia, dias_bloco, pares_def, cenario) for i, (fatia, dias_bloco) in enumerate(blocos)]
@@ -1601,6 +1635,27 @@ def _row_de_validacao(candles: list[Candle], dias_avaliacao: set) -> list[Option
         if candles[indice].horario.date() in dias_avaliacao:
             return [construir_row(candles[max(0, indice + 1 - JANELA_INDICADORES):indice + 1])]
     return [None]
+
+
+def _imprimir_time(pares_ok: list[dict], rank_entrada: list[dict], nome_saida: str) -> None:
+    """Linha de comparação (fora do ranking): a escalação contra cada titular individual."""
+    linhas = []
+    for r in pares_ok:
+        if r.get("time") and r.get("titular_saida"):
+            item = dict(r)
+            item["estrategia"] = "ESCALAÇÃO (time)"
+            item["titular"] = True
+            linhas.append(item)
+    linhas += [dict(r) for r in rank_entrada if r.get("titular_entrada")]
+    if not linhas:
+        return
+    linhas.sort(key=lambda r: (r["acumulado"], r["resultado"], r["drawdown"]), reverse=True)
+    for i, r in enumerate(linhas, 1):
+        r["pos"] = i
+    _imprimir_ranking_simples(
+        f"ESCALAÇÃO x TITULARES INDIVIDUAIS (fora do ranking; saída titular: {nome_saida})",
+        linhas, chave_nome="estrategia")
+    print("Regra 17: o time só se justifica se superar o melhor titular individual fora da amostra.")
 
 
 def executar(
@@ -1738,7 +1793,9 @@ def executar(
     if not saidas:
         raise RuntimeError("Nenhuma saída compatível foi encontrada.")
 
-    entrada_titular = next(e for e in entradas if e.titular)
+    titulares_entrada = [e for e in entradas if e.titular]
+    time = montar_time(entradas)          # None com 1 titular só (comportamento de sempre)
+    entrada_titular = time or titulares_entrada[0]
     saida_titular_carregada = next(s for s in saidas if s.titular)
 
     print("=" * 100)
@@ -1754,7 +1811,11 @@ def executar(
         print(f"Aquecimento externo: {quantidade_aquecimento} candles (fora da pontuação)")
     if pastas_ano:
         print(f"Base de dados  : {rotulo_base}")
-    print(f"Entrada titular: {entrada_titular.nome}.py")
+    if time:
+        print(f"Entrada titular: ESCALAÇÃO de {len(titulares_entrada)} titulares "
+              f"({', '.join(e.nome for e in titulares_entrada)})")
+    else:
+        print(f"Entrada titular: {entrada_titular.nome}.py")
     print(f"Saída titular  : {saida_titular_carregada.nome}.py")
     print(f"Entradas no ranking: {len(entradas)} | Saídas no ranking: {len(saidas)}")
     print("=" * 100)
@@ -1801,10 +1862,14 @@ def executar(
     # e impede que uma saída sem proteção inicial produza números enganosos.
     if modo == "E":
         pares_a_rodar = [(ent, saida_titular) for ent in entradas]
+        if time:
+            pares_a_rodar.append((time, saida_titular))
     elif modo == "S":
         pares_a_rodar = [(entrada_titular, sai) for sai in saidas]
     else:  # C e A: todas as combinações (E e S do modo A são fatias do cruzado)
         pares_a_rodar = [(ent, sai) for ent in entradas for sai in saidas]
+        if time and modo == "A":
+            pares_a_rodar += [(time, sai) for sai in saidas]   # fatia S: saídas × escalação
 
     pares_ok = []  # list of dict resultados
     trades_titular: list[dict] = []
@@ -1841,7 +1906,8 @@ def executar(
             entrada_titular=ent.titular, saida_titular=sai.titular,
         )
         res["_por_dia"] = _resultado_por_dia(trades)    # modo A; não vai para o CSV
-        if ent.titular and sai.titular:
+        res["time"] = ent.time
+        if (ent.time if time else ent.titular) and sai.titular:
             trades_titular = sorted(trades, key=lambda t: t["horario_execucao"])
         pares_ok.append(res)
     if resultados_pares is None:
@@ -1857,6 +1923,8 @@ def executar(
         for r in pares_ok:
             if not r["titular_saida"]:
                 continue        # só entradas pareadas com a saída titular
+            if r.get("time"):
+                continue        # a escalação não é cartucho: fica fora do ranking (Regra 17)
             item = dict(r)
             item["estrategia"] = r["entrada"]
             item["titular"] = r["titular_entrada"]
@@ -1888,12 +1956,14 @@ def executar(
             rank_entrada,
             chave_nome="estrategia",
         )
+        if time:
+            _imprimir_time(pares_ok, rank_entrada, saida_titular.nome)
 
     # ----- Ranking SAÍDA (modo S) -----
     if modo in ("S", "A"):
         for r in pares_ok:
-            if not r["titular_entrada"]:
-                continue        # só saídas pareadas com a entrada titular
+            if not (r.get("time") if time else r["titular_entrada"]):
+                continue        # só saídas pareadas com a entrada titular (ou com a escalação)
             item = dict(r)
             item["estrategia"] = r["saida"]
             item["titular"] = r["titular_saida"]
@@ -1928,7 +1998,7 @@ def executar(
 
     # ----- Ranking CRUZADO (modo C) -----
     if modo in ("C", "A"):
-        rank_cruzado = [dict(r) for r in pares_ok]
+        rank_cruzado = [dict(r) for r in pares_ok if not r.get("time")]
         rank_cruzado.sort(
             key=lambda r: (
                 r["acumulado"],

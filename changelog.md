@@ -4,6 +4,24 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V497 — escalação de titulares de entrada (Regra 17)
+
+Pedido do dono (06/10/2026): o "cenário" é o radar do terminal (Retomada MA21, MACD + Estocástico, Saída de
+Extremo...), só que agora escalando entre estratégias titulares, cada uma num arquivo.
+- `escalacao.py` (novo): `estrategia/entrada/titular/` aceita 1 ou mais cartuchos. A cada candle todos são
+  consultados; só um lado sinalizando, entra o de maior prioridade (`PRIORIDADE_ESCALACAO`, depois ordem
+  alfabética); lados opostos no mesmo candle, não entra. Uma posição por vez, regras de risco inalteradas.
+- `principal.py` e `classificacao.py` usam a mesma escalação. Com 1 titular nada muda (o `tres_portas` segue
+  como titular em transição). Com 2 ou mais, o juiz mostra "ESCALAÇÃO x TITULARES INDIVIDUAIS" no modo E, fora
+  do ranking, e usa o time como entrada titular nos modos S e A.
+- Saída: continua 1 titular (radar de saída fica para depois).
+- Medições na ata `conselho/2026-10-06-AH.txt`: cenários de mercado (6) não escolhem par de forma estável
+  (só "esticado" e "fim de tarde" repetem); saídas livres (sem alvo, stop de segurança largo) não vencem o esqueleto
+  atual; a `tendencia_trailing_v01` lidera o acumulado 2020–2026.
+- `compliance.md`: Regra 17, adendo 6.
+
+---
+
 ## V496 — saídas: uma regra de encerramento por arquivo (Regra 16)
 
 Pedido do dono (05/10/2026): a mesma regra das entradas. Funil encadeado pode; regra solta no mesmo arquivo
