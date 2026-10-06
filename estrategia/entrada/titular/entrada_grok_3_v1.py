@@ -1,3 +1,5 @@
+# TITULAR EM TRANSICAO (V490, Regra 16): agregador de tres ideias por OU. Segue em operacao
+# ate o dono trocar o titular por merge de PR. Ver conselho/2026-10-05-AE.txt.
 """Agregador compatível das três estratégias Grok desmembradas na V448.
 
 `gerar_sinal` preserva os limiares e a prioridade histórica das antigas

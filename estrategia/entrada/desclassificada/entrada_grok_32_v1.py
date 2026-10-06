@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V490): agregador de ideias por OU. Fora do ranking.
+# Ver conselho/2026-10-05-AE.txt. Mantida so como referencia/paridade; nao alterada.
 """Grok 3 Portas Segunda V1 — candidata a competicao.
 
 Autoria: Grok (xAI), sessao operada no laboratorio ROBONILDO.

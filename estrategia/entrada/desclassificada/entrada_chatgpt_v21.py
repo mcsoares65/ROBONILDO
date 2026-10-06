@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V490): agregador de ideias por OU. Fora do ranking.
+# Ver conselho/2026-10-05-AE.txt. Mantida so como referencia/paridade; nao alterada.
 """Entrada ChatGPT V21 — estratégia DiNapoli candidata para o Robonildo.
 
 Base: Grok 3 Portas Assimétrica V2, titular da V443.

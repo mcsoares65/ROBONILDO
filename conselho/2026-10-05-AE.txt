@@ -1,0 +1,108 @@
+# Denúncia ao conselho — V490 — cartuchos de entrada que reúnem ideias por OU (Regra 16)
+
+Autoria: Claude (Anthropic), 05/10/2026, a pedido de Marcio Soares (dono do laboratório).
+Atas consultadas (Regra 15): AA e adendos, AB, AC e AD; texto "Estratégias derivadas por
+desmembramento" do compliance. Revisão de outros participantes: consultiva (Regra 12).
+
+1. DENÚNCIA
+---------------------------------------------------------------------------
+O titular de entrada (entrada_grok_3_v1) é um agregador de TRÊS ideias independentes por
+OU, e quase toda a família "3 portas" do laboratório é feita da mesma forma. O dono
+perguntou se as partes são encadeadas (uma depende da outra para confirmar o sinal) ou
+livres. Conferido no código:
+ - Cada porta tem seus próprios filtros e sua própria confirmação; nenhuma depende de outra.
+ - gerar_sinal percorre as portas em ordem de prioridade e devolve o sinal da primeira que
+   disparou: é um OU com prioridade fixa, não um E.
+ - As portas 1 (retomada MA21, distancia_ma21 <= 90) e 2 (MACD+estocástico,
+   distancia_ma21 > 200) são mutuamente exclusivas: nunca disparam juntas, então nunca
+   "confirmam" uma à outra.
+Consequência: o ranking compara uma união de três regras com candidatas de ideia única, e
+cada variação de limiar numa porta vira um quase-clone que repete as outras duas. O
+compliance permitia agregador "para fins de paridade", mas ele virou titular e base das
+candidatas. Distinção que o dono pede: confirmação encadeada (E, ex.: MA + estocástico) é
+legítima e fica; OU entre ideias dentro de um arquivo não.
+
+2. LEVANTAMENTO (cartuchos de entrada com OU entre ideias)
+---------------------------------------------------------------------------
+Todos usam as mesmas portas: P1 retomada MA21 -> P2 MACD+estocástico -> P3 saída de extremo.
+O que cada um mexe (segundo o docstring do próprio cartucho; não foi medido nesta ata):
+  entrada_grok_3_v1 (TITULAR)    base
+  entrada_chatgpt_v19            base, P4 removida
+  entrada_grok_32_v1             P1 bloqueia segunda até 12:00 (dois lados); P2 variação mín. 4,5
+  entrada_claude_v1              P1 bloqueia só COMPRA na segunda até 12:00
+  entrada_grok_4_v1              P1 assimétrica + filtro RSI (>=48 compra / <=52 venda); P2 4,5
+  entrada_chatgpt_v21            P1 assimétrica; P2 4,5; P3 com veto DiNapoli 3x3
+  entrada_deepseek_v5            P2 piso 5,0; P1 ATR relativo <= 1,20
+  entrada_gemini_V20             P1 com filtro de RSI neutro
+  entrada_manus_v2               P1 exige fechamento do lado da MA21 coerente com a tendência
+  entrada_grok_v6                P3 bloqueada depois de 16:00
+  entrada_manus_v1               + 4ª ideia: rompimento dos 3 candles anteriores do pregão
+  entrada_composta_grok_fim_tarde + 4ª ideia: rompimento de fim de tarde (já existe isolada)
+Saídas: a única que se declara reunião de cartuchos é saida_composta_stop_atr_alvo_ma21
+(stop, alvo e corte 18h). As demais combinam stop, alvo e trailing como partes de um
+desenho de saída. Nada mudou em saídas; ver pendência 4 (item 6).
+
+3. MEDIÇÃO — as três portas isoladas contra o agregador
+---------------------------------------------------------------------------
+Método (o mesmo das atas AA/AD): 2020-2026 (62.515 candles), preços reescalados à
+volatilidade de 2026 (a saída v4 usa pontos absolutos), 1 contrato, custo R$ 0,50 por
+operação, sem slippage, trava de 25% desligada (V483), saída titular saida_chatgpt_v4,
+motor V489. Portas isoladas = cartuchos entrada_retomada_ma21_claude_v1,
+entrada_macd_estocastico_claude_v1 e desclassificada/entrada_saida_extremo_claude_v1
+(extrações literais, V448). Acumulado = resultado - |drawdown|, drawdown da curva de
+operações do ano. Rodada única de 4 cartuchos x 7 anos; nenhum limiar ajustado (Regra 11.2).
+
+ Acumulado por ano (R$)   2020   2021   2022   2023   2024   2025 |  2026
+ Agregador grok_3        -5211   1258  -1946  -2279  -1871    790 | 17160
+ P1 retomada MA21         1853   -706  -2949  -1999    549   -146 |  4469
+ P2 MACD+estocástico     -3813   -474  -1326  -2391   -898   -162 |  6335
+ P3 saída de extremo     -5826    708   -125    693  -1962  -1083 |  4167
+
+ Resultado 2020-25: agregador R$ 6.184 em 1.525 ops (R$ 4,1/op, t = 1,04);
+ P1 R$ 2.898 em 564 ops (R$ 5,1/op, t = 0,94); P2 R$ 2.060 em 518 ops (R$ 4,0/op, t = 0,47);
+ P3 R$ 1.946 em 721 ops (R$ 2,7/op, t = 0,59).
+ Resultado 2026: agregador R$ 17.494 em 190 ops; P1 R$ 4.693 em 85; P2 R$ 6.760 em 58;
+ P3 R$ 4.463 em 90.
+
+4. LEITURA HONESTA
+---------------------------------------------------------------------------
+ - Nenhuma porta isolada tem vantagem fora de 2026: acumulado positivo em 2 de 6 anos
+   (P1, P3) e em 0 de 6 (P2); t por operação de 0,5 a 0,9, sem significância.
+ - Em 2026 as três são positivas, e a P2 é a melhor (R$ 6.335 em 58 operações). O agregador
+   faz R$ 17.160 porque soma as três e ocupa o mercado em ordem; 190 operações contra 58 a 90.
+   Desmembrar o titular reduz o número de operações e o acumulado de 2026 a cerca de um
+   quarto a pouco mais de um terço do atual. Isso não prova que havia edge a perder: o que as
+   tabelas mostram é uma soma de três partes sem vantagem comprovada que só aparece forte em
+   um regime (2026).
+ - O ganho do agregador não decorre de confluência: as portas 1 e 2 nunca concordam.
+ - Medido: tudo da tabela acima. Estimado: nada. Não medido: variações de cada porta
+   (item 2), custo/slippage maior, Regra 10 das portas isoladas.
+ - Períodos consumidos (Regra 15.5): nenhum novo; 2020-2026 já eram vistos em ranking
+   agregado. Só o futuro continua cego.
+
+5. DECISÕES DESTE PR
+---------------------------------------------------------------------------
+ a) Regra 16 no compliance.md: uma ideia por cartucho; E permitido; OU entre ideias
+    proibido; titular de ideia única; agregador só como paridade, fora do ranking;
+    combinar ideias é regra própria com modo sombra e Holdout cego.
+ b) Onze agregadores candidatos movidos para estrategia/entrada/desclassificada/ (nenhum
+    conteúdo alterado, só um comentário de cabeçalho): chatgpt_v19, chatgpt_v21, claude_v1,
+    composta_grok_fim_tarde, deepseek_v5, gemini_V20, grok_32, grok_4, grok_v6, manus_v1,
+    manus_v2. A cópia antiga e duplicada de entrada_grok_3_v1 na raiz de entrada/ (já
+    ignorada pelo ranking por nome igual ao do titular) foi removida (Regra 7).
+ c) O titular entrada_grok_3_v1 NÃO foi trocado: opera com dinheiro real e a escolha é do
+    dono. Ganhou só um comentário de "titular em transição".
+ d) Nenhuma ordem, risco ou motor foi alterado.
+
+6. PENDÊNCIAS (nada disto foi feito)
+---------------------------------------------------------------------------
+ 1) Escolha do novo titular de entrada entre as ideias isoladas (ou outra), por PR do dono.
+    Efeito prático: o radar de oportunidades (diagnosticar_oportunidades) e a narração
+    "porta X de 3" existem só no agregador; os cartuchos isolados não os têm.
+ 2) Variações por porta (item 2) como derivadas por desmembramento, uma a uma, com Regra 11.2.
+ 3) Confluência (duas ou mais entradas independentes concordando no mesmo candle e lado):
+    hipótese a pré-registrar; medir em memória quantas vezes concordam e o resultado por
+    operação contra sinais únicos; depois modo sombra e Holdout cego. Não implementada.
+ 4) Saídas: decidir se saida_composta_* (e quais outras) contam como OU entre ideias.
+ 5) Rodar o modo E de 2020 a 2025 para as candidatas Keltner/CCI/Aroon da ata AD, que
+    competem com as ideias isoladas.

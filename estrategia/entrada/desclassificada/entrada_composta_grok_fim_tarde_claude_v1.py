@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V490): agregador de ideias por OU. Fora do ranking.
+# Ver conselho/2026-10-05-AE.txt. Mantida so como referencia/paridade; nao alterada.
 """Entrada Composta (três portas Grok + rompimento de fim de tarde) — Claude V1.
 
 Autoria: Claude (Anthropic), em sessão operada por Marcio Soares; revisão

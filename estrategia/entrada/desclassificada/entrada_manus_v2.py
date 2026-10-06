@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V490): agregador de ideias por OU. Fora do ranking.
+# Ver conselho/2026-10-05-AE.txt. Mantida so como referencia/paridade; nao alterada.
 """Entrada Manus V2 — retomada confirmada pelo lado estrutural da MA21.
 
 Autoria: gerada por Manus AI em sessão operada por Marcio Soares; revisão

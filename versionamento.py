@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V489"
+VERSAO = "V490"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1498,3 +1498,10 @@ VERSAO = "V489"
 # ---------------------------------------------------------------------------
 # V489 - Regra 12 do compliance: so o dono aprova (merge); conselho consultivo
 #   Documentacao apenas (compliance.md, CODEOWNERS). Nenhum codigo alterado.
+
+# ---------------------------------------------------------------------------
+# V490 - Regra 16 do compliance: uma estrategia, uma ideia (sem OU interno)
+#   compliance.md : Regra 16 + item 12 do Termo; conselho/2026-10-05-AE.txt (ata).
+#   estrategia/entrada/ : 11 agregadores (familia "3 portas") movidos para
+#                  desclassificada/; copia duplicada de entrada_grok_3_v1 na raiz removida.
+#   Titular nao trocado (so comentario de cabecalho). Nenhum codigo de motor/ordem alterado.
