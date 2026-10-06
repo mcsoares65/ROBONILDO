@@ -1,0 +1,93 @@
+# Mapa de nomes — V494 — cartuchos renomeados pelo padrão sem nome de IA (Regras 6 e 7)
+
+Autoria: Claude (Anthropic), 05/10/2026, a pedido de Marcio Soares (dono do laboratório).
+Atas consultadas (Regra 15): AA a AE e o texto das Regras 6, 7 e 16 do compliance.
+
+1. POR QUE EXISTE ESTA ATA
+---------------------------------------------------------------------------
+O dono pediu para retirar o nome da IA (assinatura) dos nomes de arquivo. As atas
+anteriores (A a AE), o changelog, o versionamento e o diário citam os nomes antigos e NÃO
+foram reescritos (Regra 15.4). Esta tabela é a ponte: para ler uma ata antiga, troque o
+nome antigo pelo novo ao procurar o arquivo.
+
+2. REGRA APLICADA
+---------------------------------------------------------------------------
+`<lado>_<estrategia>_v<NN>.py`: o nome diz a ideia, sem IA nem autor; a autoria fica no
+docstring. Os conteúdos não mudaram; só o nome do arquivo e as referências a esses nomes
+dentro dos comentários e das constantes NOME dos cartuchos. Títulos e linhas de autoria
+dos docstrings ("— Claude V1", "Autoria: ...") foram mantidos.
+Onde o nome antigo era só "IA + número" (sem a ideia), o novo nome foi escolhido pela
+descrição do próprio docstring do cartucho; é uma escolha de rótulo e pode ser corrigida
+pelo dono sem efeito nenhum sobre as regras.
+Onde um cartucho tinha versões numeradas da mesma ideia (chatgpt_v3 e chatgpt_v4:
+proteção de encerramento), a numeração passou a ser a versão da ideia (v01 e v02).
+Agregadores OU (Regra 16, já desclassificados): ficam com "tres_portas"/"quatro_portas" no
+nome só para sinalizar o que são, até serem desmembrados.
+
+3. TABELA (nome antigo -> nome novo)
+---------------------------------------------------------------------------
+  entrada_aroon_forte_claude_v1                  -> entrada_aroon_forte_v01
+  entrada_cci_100_claude_v1                      -> entrada_cci_100_v01
+  entrada_keltner_rompimento_claude_v1           -> entrada_keltner_rompimento_v01
+  entrada_macd_estocastico_claude_v1             -> entrada_macd_estocastico_v01
+  entrada_retomada_ma21_claude_v1                -> entrada_retomada_ma21_v01
+  entrada_grok_3_v1                              -> entrada_tres_portas_v01
+  entrada_chatgpt_abertura_expansao_v1           -> entrada_abertura_expansao_v01
+  entrada_chatgpt_compressao_rompimento_v1       -> entrada_compressao_faixa_v01
+  entrada_chatgpt_gap_continuacao_v1             -> entrada_gap_continuacao_v01
+  entrada_chatgpt_v19                            -> entrada_tres_portas_robusta_v01
+  entrada_chatgpt_v21                            -> entrada_tres_portas_dinapoli_v01
+  entrada_claude_v1                              -> entrada_tres_portas_assimetrica_v01
+  entrada_composta_grok_fim_tarde_claude_v1      -> entrada_tres_portas_fim_tarde_v01
+  entrada_deepseek_compressao_rompimento_V99     -> entrada_compressao_amplitude_v01
+  entrada_deepseek_v5                            -> entrada_tres_portas_apertada_v01
+  entrada_fim_tarde_rompimento_claude_v1         -> entrada_fim_tarde_rompimento_v01
+  entrada_gemini_V20                             -> entrada_tres_portas_rsi_neutro_v01
+  entrada_grok_32_v1                             -> entrada_tres_portas_segunda_v01
+  entrada_grok_4_v1                              -> entrada_tres_portas_rsi_assimetrica_v01
+  entrada_grok_v6                                -> entrada_tres_portas_corte_16h_v01
+  entrada_manus_v1                               -> entrada_quatro_portas_rompimento_v01
+  entrada_manus_v2                               -> entrada_tres_portas_ma21_estrutural_v01
+  entrada_pausa_apos_impulso_claude_v1           -> entrada_pausa_apos_impulso_v01
+  entrada_pullback_tendencia_claude_v1           -> entrada_pullback_tendencia_v01
+  saida_alvo_media_claude_v1                     -> saida_alvo_media_v01
+  saida_alvo_meio_range_claude_v1                -> saida_alvo_meio_range_v01
+  saida_alvo_risco_baixo_claude_v1               -> saida_alvo_risco_baixo_v01
+  saida_alvo_tendencia_forte_claude_v1           -> saida_alvo_tendencia_forte_v01
+  saida_chatgpt_estrutura_assimetrica_v1         -> saida_estrutura_assimetrica_v01
+  saida_chatgpt_tempo_sem_progresso_v1           -> saida_tempo_sem_progresso_v01
+  saida_chatgpt_v2                               -> saida_perda_tardia_v01
+  saida_chatgpt_v3                               -> saida_protecao_encerramento_v01
+  saida_chatgpt_v4                               -> saida_protecao_encerramento_v02
+  saida_claude_v2                                -> saida_macd_contrario_v01
+  saida_claude_v6                                -> saida_reversao_lucro_v01
+  saida_composta_stop_atr_alvo_ma21_claude_v1    -> saida_composta_stop_atr_alvo_ma21_v01
+  saida_corte_18h_claude_v1                      -> saida_corte_18h_v01
+  saida_deepseek_V06                             -> saida_perda_forca_macd_v01
+  saida_deepseek_compressao_atr_V99              -> saida_compressao_atr_v01
+  saida_deepseek_v03                             -> saida_protecoes_cirurgicas_v01
+  saida_gemini_v01                               -> saida_rsi_realizacao_v01
+  saida_giveback_claude_v1                       -> saida_giveback_v01
+  saida_grok_v10                                 -> saida_perda_fim_tarde_v01
+  saida_histograma_macd_claude_v1                -> saida_histograma_macd_v01
+  saida_manus_v1                                 -> saida_stop_limitado_alvo_forte_v01
+  saida_manus_v4                                 -> saida_alvo_risco_curto_v01
+  saida_reversao_estocastico_claude_v1           -> saida_reversao_estocastico_v01
+  saida_stop_atr_claude_v1                       -> saida_stop_atr_v01
+  saida_tendencia_trailing_claude_v1             -> saida_tendencia_trailing_v01
+  saida_atr_fixo_claude_v1                       -> saida_atr_fixo_v01
+  saida_breakeven_claude_v1                      -> saida_breakeven_v01
+  saida_desastre_rsi_claude_v1                   -> saida_desastre_rsi_v01
+  saida_grok_reverso_v3                          -> saida_reversao_estocastico_618r_v01
+  saida_paulinho_just_rr2_V01                    -> saida_percentual_just_v01
+
+4. OUTRAS ALTERAÇÕES DESTE PR
+---------------------------------------------------------------------------
+ - Titulares renomeados: entrada_grok_3_v1 -> entrada_tres_portas_v01 e
+   saida_chatgpt_v4 -> saida_protecao_encerramento_v02. O robô continua carregando o titular
+   pela pasta (estrategia/entrada/titular/ e estrategia/saida/titular/); nenhum código de motor,
+   risco ou ordem foi alterado. O nome novo aparecerá nos logs e no ranking a partir daqui.
+ - Removida a cópia de saida_chatgpt_v4 que ficava na raiz de saida/ (byte a byte igual à
+   titular e já ignorada pelo ranking por nome igual; Regra 7).
+ - Não renomeados por não terem nome de IA ou autor: saida_baseline, entrada_regime_04_v6,
+   saida_regime04_v6_ab_rrfixo, saida_daytrader_rr2_v1.

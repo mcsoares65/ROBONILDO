@@ -183,9 +183,9 @@ que o código **pode** fazer, não sobre o que a pessoa/IA diz que ele faz.
   docstring (Regra 6). Mudou regra ou limiar da mesma ideia: sobe o `<NN>` (e
   vale a Regra 11.2). Ideia diferente: nome diferente. Um nome diz uma ideia
   (Regra 16): o nome revela as regras que o arquivo contém.
-- Os cartuchos que já existem com assinatura de autor no nome não são
-  renomeados só por isso (as atas citam esses nomes); o padrão vale para
-  tudo o que for criado ou renomeado daqui em diante.
+- Os cartuchos que tinham assinatura de autor no nome foram renomeados na
+  V494. As atas não são reescritas (Regra 15.4); a tabela "nome antigo -> novo"
+  está em `conselho/2026-10-05-AF.txt`.
 - Nome de arquivo começando com `_` é reservado para arquivos internos —
   a descoberta automática ignora esses arquivos.
 - **Regra repetida é eliminada.** Antes de submeter, confira se a regra (as
