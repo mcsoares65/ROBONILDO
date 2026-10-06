@@ -4,6 +4,20 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V495 — candidata `entrada_compressao_amplitude_v02` (v01 corrigida)
+
+Pedido do dono (05/10/2026). A v01 (DeepSeek, hoje em `desclassificada/`) nunca emitia sinal: o máximo da
+compressão incluía o próprio candle atual. A v02 usa as 12 velas anteriores; nenhum limiar mudou.
+- Medição (saída titular, preços reescalados, 2020–2025): 211 operações, R$ 37,7 por operação, t = 3,01;
+  2026: −274 de acumulado. Variante B (compressão também só nas velas anteriores): t = 2,92. Declaradas as
+  duas variações (Regra 11.2).
+- Entradas quase não coincidem com a compressão por faixa em ATR (2 a 9 por ano): não é regra repetida.
+- Leitura honesta: t alto fora de 2026, mas 2020–2025 já foi visto em ranking agregado, 2026 é negativo e são
+  poucas operações; pede Regra 10 e acompanhamento à frente antes de qualquer promoção.
+- Paridade com a variante medida: 0 divergências.
+
+---
+
 ## V494 — sem nome de IA nos nomes de arquivo
 
 Pedido do dono (05/10/2026). 54 cartuchos de entrada e saída renomeados para
