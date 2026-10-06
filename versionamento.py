@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V491"
+VERSAO = "V492"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1510,3 +1510,12 @@ VERSAO = "V491"
 # V491 - nomenclatura por estrategia: <lado>_<estrategia>_v<NN>.py, sem nome de IA
 #   Documentacao apenas (compliance.md, Regras 6 e 7, Termo itens 5 e 6, adendo 4).
 #   Regra repetida e eliminada. Nenhum codigo alterado; cartuchos existentes nao renomeados.
+
+# ---------------------------------------------------------------------------
+# V492 - candidata entrada_saida_extremo_v02 (porta 3 isolada + vetos V5/V6)
+#   estrategia/entrada/entrada_saida_extremo_v02.py : ideia unica, limiares copiados do
+#                  arquivo enviado pelo dono (entrada_regime_04_v6), sem as portas 1 e 2.
+#   estrategia/entrada/entrada_saida_extremo_v01.py : antes desclassificada/
+#                  entrada_saida_extremo_claude_v1.py, renomeada pelo padrao V491 e colocada
+#                  no ranking como base de comparacao. Conteudo identico.
+#   Paridade: 0 divergencias em 32.533 candles (2020, 2023, 2025, 2026) contra a logica original.
