@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V492"
+VERSAO = "V493"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1519,3 +1519,11 @@ VERSAO = "V492"
 #                  entrada_saida_extremo_claude_v1.py, renomeada pelo padrao V491 e colocada
 #                  no ranking como base de comparacao. Conteudo identico.
 #   Paridade: 0 divergencias em 32.533 candles (2020, 2023, 2025, 2026) contra a logica original.
+
+# ---------------------------------------------------------------------------
+# V493 - ranking de entrada limpo: dois cartuchos saem da raiz de entrada/
+#   entrada_regime_04_v6 -> desclassificada/ : agregador OU (Regra 16); a parte nova (vetos
+#                  da porta 3) ja esta isolada em entrada_saida_extremo_v02.
+#   entrada_deepseek_compressao_rompimento_V99 -> desclassificada/ : nunca emite sinal (0 em
+#                  2024 e 2026); o extremo da compressao inclui o candle atual.
+#   Documentacao/organizacao apenas; nenhum codigo de motor ou ordem alterado.
