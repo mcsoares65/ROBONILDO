@@ -1,3 +1,5 @@
+# DESCLASSIFICADA pela Regra 16 (V493): agregador de ideias por OU (portas 1 e 2 repetem o grok_3).
+# A parte nova (vetos da porta 3) foi isolada em entrada_saida_extremo_v02. Ver conselho/2026-10-05-AE.txt.
 """Entrada Regime 04 V6 — V5 + veto temporalmente validado na Saída de Extremo.
 
 BASE

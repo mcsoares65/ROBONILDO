@@ -1,3 +1,5 @@
+# DESCLASSIFICADA (V493): nunca emite sinal. O maximo/minimo da "compressao" inclui o candle atual
+# (ohlc_recentes[-1]), entao o fechamento nunca supera o maximo + folga. Ver CHANGELOG V493.
 """
 entrada_deepseek_compressao_rompimento_V99.py
 

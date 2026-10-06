@@ -4,6 +4,20 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V493 — ranking de entrada: dois cartuchos saem da raiz
+
+Pedido do dono (05/10/2026). Movidos para `estrategia/entrada/desclassificada/` (só um comentário de
+cabeçalho; conteúdo intacto):
+- `entrada_regime_04_v6`: agregador OU, contra a Regra 16 (as portas 1 e 2 repetem o grok_3). A parte nova,
+  os vetos da porta 3, já está isolada em `entrada_saida_extremo_v02`.
+- `entrada_deepseek_compressao_rompimento_V99`: **nunca emite sinal** (0 sinais em 2024 e em 2026, contra
+  81 e 38 da compressão do ChatGPT). Causa: o máximo/mínimo da compressão inclui o candle atual
+  (`ohlc_recentes[-1]`), então o fechamento nunca supera o máximo mais a folga. Não é duplicata da
+  compressão do ChatGPT; é um cartucho quebrado. Uma versão corrigida entraria como `v02`, com a Regra 11.2.
+- Nenhum código de motor, risco ou ordem alterado.
+
+---
+
 ## V492 — candidata `entrada_saida_extremo_v02` (saída de extremo com vetos)
 
 Pedido do dono (05/10/2026), a partir do `entrada_regime_04_v6` que ele enviou.
