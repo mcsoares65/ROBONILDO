@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V493"
+VERSAO = "V494"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1527,3 +1527,11 @@ VERSAO = "V493"
 #   entrada_deepseek_compressao_rompimento_V99 -> desclassificada/ : nunca emite sinal (0 em
 #                  2024 e 2026); o extremo da compressao inclui o candle atual.
 #   Documentacao/organizacao apenas; nenhum codigo de motor ou ordem alterado.
+
+# ---------------------------------------------------------------------------
+# V494 - sem nome de IA nos nomes de arquivo (Regras 6 e 7)
+#   54 cartuchos de entrada e saida renomeados para <lado>_<estrategia>_v<NN>.py; tabela
+#   antigo->novo em conselho/2026-10-05-AF.txt. Referencias nos comentarios/NOME atualizadas.
+#   Titulares: entrada_grok_3_v1 -> entrada_tres_portas_v01; saida_chatgpt_v4 ->
+#   saida_protecao_encerramento_v02 (carregados pela pasta; nenhum codigo de motor alterado).
+#   Removida a copia identica de saida_chatgpt_v4 que ficava na raiz de saida/.

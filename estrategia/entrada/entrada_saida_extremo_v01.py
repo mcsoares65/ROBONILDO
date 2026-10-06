@@ -8,7 +8,7 @@ conteúdo não mudou. O `v01` é a versão da estratégia, não a VERSAO do proj
 Entra a favor da tendência quando o estocástico sai da zona extrema (cruza 20
 para cima na alta, 80 para baixo na baixa) num candle sem exaustão de corpo.
 
-Origem: Porta 3 de estrategia/entrada/titular/entrada_grok_3_v1.py. Extração LITERAL: nenhum limiar, horário ou condição foi
+Origem: Porta 3 de estrategia/entrada/titular/entrada_tres_portas_v01.py. Extração LITERAL: nenhum limiar, horário ou condição foi
 alterado. Isola uma única ideia que hoje só existe combinada com outras num
 agregador; não duplica nenhum arquivo existente (Regra 6) porque, sozinha, ela
 produz sinais diferentes dos do agregador.

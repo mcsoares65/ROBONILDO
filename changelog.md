@@ -4,6 +4,21 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V494 — sem nome de IA nos nomes de arquivo
+
+Pedido do dono (05/10/2026). 54 cartuchos de entrada e saída renomeados para
+`<lado>_<estrategia>_v<NN>.py` (ex.: `saida_chatgpt_v4` → `saida_protecao_encerramento_v02`,
+`entrada_aroon_forte_claude_v1` → `entrada_aroon_forte_v01`). Conteúdo e regras intactos; só o nome do
+arquivo e as referências a esses nomes nos comentários e na constante `NOME`.
+- Titulares: `entrada_grok_3_v1` → `entrada_tres_portas_v01`; `saida_chatgpt_v4` →
+  `saida_protecao_encerramento_v02`. Carregados pela pasta `titular/`; nenhum código de motor, risco ou ordem
+  foi alterado. Os nomes novos aparecem nos logs e no ranking.
+- Tabela antigo → novo em `conselho/2026-10-05-AF.txt`; atas, changelog e diário antigos não foram reescritos.
+- Removida a cópia de `saida_chatgpt_v4` da raiz de `saida/` (idêntica à titular).
+- `compliance.md`: Regra 7 deixa de dizer que os existentes não são renomeados.
+
+---
+
 ## V493 — ranking de entrada: dois cartuchos saem da raiz
 
 Pedido do dono (05/10/2026). Movidos para `estrategia/entrada/desclassificada/` (só um comentário de

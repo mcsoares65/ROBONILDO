@@ -25,7 +25,7 @@ o período dessas operações não foi informado.
 Variações testadas antes desta versão (Regra 11.2): 4 sobre a porta isolada, todas
 no mesmo rodízio de 2020-2026 (v01; v01+V5; v01+V6; v01+V5+V6), mais o arquivo
 original completo (agregador com vetos). Nenhum limiar foi ajustado.
-Medição (saída titular saida_chatgpt_v4, preços reescalados à volatilidade de 2026,
+Medição (saída titular saida_protecao_encerramento_v02, preços reescalados à volatilidade de 2026,
 custo R$ 0,50 por operação, sem slippage; acumulado = resultado - |drawdown|):
                          2026    2020-25 resultado    2020-25 acumulado (soma de 6 anos)
   v01                    4.167        1.947                 -7.595
