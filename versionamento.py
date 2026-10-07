@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V498"
+VERSAO = "V499"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1572,3 +1572,11 @@ VERSAO = "V498"
 # leitor_dde.py: falhas de leitura impressas no maximo a cada 30 s; busca da planilha
 # por nome na ROT (instancia propria do Excel), com fallback para GetActiveObject.
 #   Ata conselho/2026-10-07-AI.txt.
+
+# ---------------------------------------------------------------------------
+# V499 - recuperacao de buraco pelo export do Profit tambem antes da abertura
+# ---------------------------------------------------------------------------
+# principal.py: a conferencia do export (a cada 30 s) roda antes dos desvios "aguardando
+# abertura" e "mercado encerrado": exportar o historico de madrugada libera na hora.
+# configuracao.py: BURACO_MAX_CANDLES_PREENCHER 37 -> 38 (um pregao tem 38 candles, 09:00..18:15).
+# configuracao.py: historico acumulado em D:\DAYTRADE\HISTORICO\ACUMULADO (fora da pasta do robo); principal.py copia o antigo na 1a vez.

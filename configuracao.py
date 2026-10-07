@@ -33,7 +33,13 @@ NOME_TELA_PROFIT = "ProfitPro"  # usado para confirmar foco antes de enviar orde
 # le as pastas de ano sob PASTA_HISTORICO_BACKTEST e deixa escolher os anos.
 PASTA_HISTORICO_BACKTEST = r"D:\DAYTRADE\HISTORICO"
 CAMINHO_HISTORICO_INICIAL = r"D:\DAYTRADE\HISTORICO\2026\WINFUT_F_0_15min.csv"  # so para a carga UNICA inicial
-CAMINHO_HISTORICO_PERSISTENTE = str(PASTA_LOGS / "historico_acumulado.csv")  # o robo mantem sozinho
+# V499: o historico que o robo acumula candle a candle fica FORA da pasta do robo, numa pasta
+# fixa da maquina. Assim, rodar o script de outra pasta (copia de seguranca, versao de teste)
+# usa e alimenta o MESMO historico, sem buraco ao trocar de pasta. Nao use o mesmo arquivo em
+# dois robos AO MESMO TEMPO (ordens duplicadas e gravacao concorrente).
+PASTA_HISTORICO_ACUMULADO = r"D:\DAYTRADE\HISTORICO\ACUMULADO"
+CAMINHO_HISTORICO_PERSISTENTE = str(Path(PASTA_HISTORICO_ACUMULADO) / "historico_acumulado.csv")  # o robo mantem sozinho
+CAMINHO_HISTORICO_PERSISTENTE_LEGADO = str(PASTA_LOGS / "historico_acumulado.csv")  # local antigo (V498 e antes): copiado 1 vez
 CAMINHO_ESTADO_RISCO = str(PASTA_LOGS / "estado_risco.json")
 GAP_MAXIMO_HORAS_HISTORICO = 48   # se o robo ficar parado mais que isso, o historico
                                    # acumulado e descartado (misturar cenarios de
@@ -150,7 +156,7 @@ VALOR_PONTO_REAIS = 0.20  # fixo, WIN
 # janela do indicador mais longo (MA50) nao se renovar, NAO abre posicao nova
 # (posicao ja aberta continua sendo gerida normalmente).
 CANDLES_AQUECIMENTO_APOS_BURACO = 50
-BURACO_MAX_CANDLES_PREENCHER = 37   # V498: buraco ate este tamanho (1 pregao) e PREENCHIDO por aproximacao
+BURACO_MAX_CANDLES_PREENCHER = 38   # V498: buraco ate este tamanho (1 pregao = 38 candles) e PREENCHIDO por aproximacao
                                     # (reta entre os precos antes e depois) e as entradas seguem liberadas.
                                     # Acima disso (robo desligado por dias) nao ha base: bloqueia por
                                     # CANDLES_AQUECIMENTO_APOS_BURACO. Para nunca bloquear, ponha um valor enorme.

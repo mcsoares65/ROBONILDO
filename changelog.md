@@ -4,6 +4,25 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V499 — recuperação do buraco pelo export também antes da abertura
+
+Log do dono (07/10, 02:42): o robô V498 partiu com o histórico persistente terminando em 05/10 18:00, avisou "buraco de
+39 candles, entradas bloqueadas" (correto: o dia 06/10 inteiro não está no arquivo), mas disse que conferia a pasta a
+cada 30 s e isso só acontecia depois que o mercado abrisse ("Bom dia! Aguardando abertura" desviava o laço).
+- A conferência do export do Profit agora roda antes dos desvios "aguardando abertura" e "mercado encerrado". Exportar
+  o histórico de madrugada libera na hora (simulado: partida com o mesmo buraco, export às 02:59, "Entradas LIBERADAS").
+- `BURACO_MAX_CANDLES_PREENCHER` 37 → 38: um pregão tem 38 candles (09:00 a 18:15), não 37.
+- Histórico acumulado fora da pasta do robô (ideia do dono): `D:\DAYTRADE\HISTORICO\ACUMULADO\historico_acumulado.csv`
+  (`PASTA_HISTORICO_ACUMULADO`). Rodar o script de outra pasta (cópia de segurança, versão de teste) usa e alimenta o
+  mesmo histórico, sem buraco ao trocar de pasta (foi o caso de 06/10: o dia ficou gravado na outra pasta). Na 1ª
+  partida copia o arquivo do local antigo (`logs\`). A pasta não atrapalha o backtest (só enxerga pastas de ano).
+  A cópia da outra pasta precisa ter a mesma linha em `configuracao.py`; e nunca dois robôs ao mesmo tempo.
+- O ROT funcionou no Windows do dono ("planilha encontrada pelo nome").
+- Pendente de entender: o arquivo persistente não tem nenhum candle de 06/10 (último: 05/10 18:00) embora o robô tenha
+  rodado o dia todo.
+
+---
+
 ## V498 — integridade da base de dados: checar na partida, narrar, recuperar sozinho
 
 Incidente de 06/10/2026: a entrada das 15:15 foi bloqueada por "buraco" e o robô não tinha dito nada o dia todo.
