@@ -1560,7 +1560,7 @@ VERSAO = "V498"
 #   Ata conselho/2026-10-06-AH.txt (medicoes de cenarios e de saidas livres).
 
 # ---------------------------------------------------------------------------
-# V498 - integridade da base de dados (incidente de 06/10/2026)
+# V498 - integridade da base de dados (incidente de 06/10/2026); buraco aproximado, nao bloqueia
 # ---------------------------------------------------------------------------
 # integridade_historico.py (novo): analisar_historico (buracos de pregao + bloqueio
 # restante), RecuperadorCSV (preenche buraco com o export do Profit sem reiniciar),

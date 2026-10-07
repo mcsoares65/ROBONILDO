@@ -37,9 +37,19 @@ primeiro candle fechava, e o "sinal bloqueado" era narrado como "regra de risco"
    recuperador pelo CSV (só insere candle que não existe, nunca troca o montado ao vivo) e vigia da leitura do DDE.
  - Partida: continuidade é a PRIMEIRA checagem, nos dois caminhos de carga, falada ("Base de dados íntegra" ou o
    buraco, o bloqueio e como liberar) e e-mail se houver bloqueio.
- - Buraco: avisado na hora; "ENTRADAS BLOQUEADAS" na linha de status; lembrete falado a cada 5 min (LEMBRETE_BLOQUEIO_SEGUNDOS) e aviso na hora em que o radar chega a 100% com a entrada bloqueada;
-   o export do Profit na pasta de histórico é conferido a cada 30 s e libera a entrada sozinho, sem reiniciar.
-   Reiniciar não re-bloqueia buraco com 50+ candles depois dele. Sinal bloqueado por buraco é narrado como tal.
+ - Buraco NÃO bloqueia mais (pedido do dono, 07/10: o bloqueio repetiria a falha do dia). O robô avisa na hora,
+   tenta o export do Profit e, no que faltar, preenche por aproximação (reta entre o preço de antes e de depois;
+   candle plano; só em memória, nunca no arquivo persistente) e segue operando. O DDE só entrega o preço de agora,
+   então não recupera os candles perdidos; os aproximados são trocados pelos reais quando o export do Profit os
+   cobrir (conferido a cada 30 s). Linha de status: "dados aproximados (N candles)".
+   Custo medido da aproximação (2025-26): sinal diferente em ~53% no 1º candle depois do buraco, ~12% no 10º, ~0%
+   no 30º (ignorar o buraco: 78% / 50% / 4%).
+ - EXCEÇÃO mantida e declarada: buraco maior que 37 candles (BURACO_MAX_CANDLES_PREENCHER, um pregão) não é
+   aproximado, porque não há base (é o caso de 01/10: 80 candles, MA21 a 3.000 pts do preço, stop de R$ 707). Esse
+   caso ainda bloqueia por 50 candles, com lembrete falado a cada 5 min, aviso quando o radar chega a 100% e
+   liberação automática ao exportar o histórico. O dono pode desligar com um valor enorme na constante.
+ - No instante em que um candle inteiro se perde durante a queda (relógio real, só ao vivo) o robô fala "buraco" e
+   manda e-mail; ao voltar a leitura, confere e preenche na hora.
  - Fim do pregão: depois de 18:20:58 o robô segue alimentando o construtor, sem operar, até o candle das 18:15
    fechar (DDE em 18:30, ou 60 s com o DDE parado) e o salva. Só vale se o robô acompanhou o 18:15 ao vivo
    (evita gravar candle falso de uma partida depois do encerramento).
@@ -64,8 +74,7 @@ primeiro candle fechava, e o "sinal bloqueado" era narrado como "regra de risco"
 
 6. PENDÊNCIAS E DECISÕES DO DONO
 ---------------------------------------------------------------------------
- - Política de bloqueio para buraco que o export não cobre: manter 50 candles (recomendado, mais seguro), reduzir
-   para ~30 (medido: divergência ~4% em 30 candles), ou interpolar e bloquear pouco. Mantido em 50 até o dono dizer.
+ - Limite de 37 candles para aproximar (e bloquear acima): o dono decide se mantém, sobe ou desliga.
  - Operação: abrir o Excel do DDE em instância própria (abrir o Excel por um novo atalho, não por duplo clique num
    arquivo com outro Excel aberto) e, antes do pregão, exportar o histórico do Profit para a pasta de histórico.
  - A máquina do dono roda a V489; precisa atualizar para a V498.

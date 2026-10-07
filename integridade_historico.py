@@ -89,6 +89,59 @@ def analisar_historico(candles, referencia_tempo: datetime, minutos: int,
     return analise
 
 
+def horarios_pregao_faltantes(a: datetime, b: datetime, minutos: int, primeiro: str,
+                              ultimo_rotulo: str, feriados=()) -> list:
+    """Horarios (inicio de candle) de pregao que faltam entre a e b, ambos exclusivos."""
+    h0, m0 = (int(x) for x in primeiro.split(":"))
+    h1, m1 = (int(x) for x in ultimo_rotulo.split(":"))
+    out = []
+    dia = a.date()
+    while dia <= b.date():
+        if dia.weekday() < 5 and dia.isoformat() not in feriados:
+            t = datetime(dia.year, dia.month, dia.day, h0, m0)
+            fim = datetime(dia.year, dia.month, dia.day, h1, m1)
+            while t <= fim:
+                if a < t < b:
+                    out.append(t)
+                t += timedelta(minutes=minutos)
+        dia += timedelta(days=1)
+    return out
+
+
+def interpolar_buracos(candles, analise: "Analise", preco_atual: Optional[float],
+                       minutos: int, primeiro: str, ultimo_rotulo: str, feriados=(),
+                       max_candles: int = 37) -> list:
+    """Candles APROXIMADOS para os buracos de ate `max_candles` candles: reta entre o
+    fechamento do candle anterior ao buraco e a abertura do candle seguinte (ou o preco
+    atual, se o buraco vai ate o candle em formacao). Candle plano (O=H=L=C), sem volume.
+    Buraco maior que `max_candles` NAO e preenchido (nao ha base: robo desligado por dias).
+    Medido em 2025-26: preencher assim erra o sinal em ~53% no 1o candle depois do buraco,
+    ~12% no 10o e ~0% no 30o (ignorar o buraco erra 78% / 50% / 4%)."""
+    from motor import Candle
+    por_horario = {c.horario: c for c in candles}
+    novos = []
+    for b in analise.buracos:
+        if b.faltam > max_candles:
+            continue
+        antes = por_horario.get(b.depois_de)
+        if antes is None:
+            continue
+        depois = por_horario.get(b.antes_de)
+        p0 = float(antes.fechamento)
+        p1 = float(depois.abertura) if depois is not None else (
+            float(preco_atual) if preco_atual is not None else None)
+        if p1 is None:
+            continue
+        slots = horarios_pregao_faltantes(b.depois_de, b.antes_de, minutos, primeiro,
+                                          ultimo_rotulo, feriados)
+        n = len(slots)
+        for k, t in enumerate(slots, start=1):
+            preco = round(p0 + (p1 - p0) * k / (n + 1))
+            novos.append(Candle(horario=t, abertura=preco, maxima=preco, minima=preco,
+                                fechamento=preco, quantidade=None))
+    return novos
+
+
 def descrever_buracos(analise: Analise, limite: int = 3) -> str:
     """Texto curto, para console e voz."""
     partes = []
@@ -251,5 +304,5 @@ class VigiaLeituraDDE:
 
 
 __all__ = ["Analise", "Buraco", "RecuperadorCSV", "VigiaLeituraDDE",
-           "analisar_historico", "candles_para_preencher", "candles_perdidos_na_queda", "descrever_buracos",
+           "analisar_historico", "candles_para_preencher", "interpolar_buracos", "horarios_pregao_faltantes", "candles_perdidos_na_queda", "descrever_buracos",
            "JANELA_CANDLES_PADRAO"]

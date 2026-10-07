@@ -15,7 +15,7 @@ import queue
 import frases_narracao as frases
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 try:
     import colorama
@@ -373,18 +373,65 @@ from executor_ordem import ExecutorOrdem
 import email_notificacao
 
 
+_horarios_sinteticos = set()   # V498: candles APROXIMADOS (nao persistidos) presentes no historico
+
+
+def _interpolar_e_registrar(historico_candles: List[Candle], referencia_tempo: datetime,
+                            ja_vistos=(), preco_atual: Optional[float] = None) -> int:
+    """V498: preenche por aproximacao (reta entre o preco antes e depois) os buracos de ate
+    cfg.BURACO_MAX_CANDLES_PREENCHER candles. Os candles aproximados ficam so na memoria
+    (nunca no arquivo persistente) e sao trocados pelos reais quando o export do Profit
+    os cobrir. Devolve quantos candles criou."""
+    base = list(historico_candles) + list(ja_vistos)
+    analise = _integridade.analisar_historico(
+        base, referencia_tempo, cfg.TIMEFRAME_MINUTOS,
+        cfg.HORARIO_PRIMEIRO_CANDLE, cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3,
+        aquecimento=cfg.CANDLES_AQUECIMENTO_APOS_BURACO)
+    if analise.integro:
+        return 0
+    novos = _integridade.interpolar_buracos(
+        base, analise, preco_atual, cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
+        cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3, cfg.BURACO_MAX_CANDLES_PREENCHER)
+    if novos:
+        historico_candles.extend(novos)
+        historico_candles.sort(key=lambda c: c.horario)
+        _horarios_sinteticos.update(c.horario for c in novos)
+    return len(novos)
+
+
+def _trocar_sinteticos_por_reais(historico_candles: List[Candle], referencia_tempo: datetime,
+                                 recuperador, agora_real: datetime) -> int:
+    """V498: se o export do Profit passou a cobrir candles aproximados, troca pelos reais."""
+    if not _horarios_sinteticos or recuperador is None:
+        return 0
+    so_reais = [c for c in historico_candles if c.horario not in _horarios_sinteticos]
+    novos = [c for c in recuperador.tentar(so_reais, referencia_tempo, agora_real,
+                                           cfg.TIMEFRAME_MINUTOS)
+             if c.horario in _horarios_sinteticos]
+    if not novos:
+        return 0
+    trocados = {c.horario for c in novos}
+    historico_candles[:] = sorted(
+        [c for c in historico_candles if c.horario not in trocados] + novos,
+        key=lambda c: c.horario)
+    _horarios_sinteticos.difference_update(trocados)
+    _salvar_historico_persistente(novos)
+    return len(novos)
+
+
 def _conferir_integridade_historico(historico_candles: List[Candle], referencia_tempo: datetime,
                                     recuperador, agora_real: datetime, forcar: bool = False,
-                                    ja_vistos=()):
+                                    ja_vistos=(), preco_atual: Optional[float] = None):
     """V498: continuidade do historico contra o horario do mercado, nos dois caminhos de
     carga (arquivo persistente e CSV) e depois a cada tentativa de recuperacao.
 
     1) Se houver buraco de pregao, tenta preencher com o export mais recente do Profit
        (so insere candle que NAO existe; nunca troca o candle montado ao vivo).
-    2) Devolve (analise, n_preenchidos). `historico_candles` e alterado no proprio lugar.
+    2) O que o export nao cobrir, ate BURACO_MAX_CANDLES_PREENCHER candles, e preenchido por
+       aproximacao e as entradas seguem liberadas. Maior que isso, fica como buraco (bloqueia).
+    Devolve (analise, n_do_export, n_aproximados). `historico_candles` e alterado no lugar.
+    `ja_vistos`: candles que o robo ja tem mas ainda nao estao na lista (candle em formacao).
     Quem chama imprime/narra - esta funcao so decide e grava."""
-    # `ja_vistos`: candles que o robo ja tem mas ainda nao entraram na lista (o candle em
-    # formacao do construtor); contam como presentes na analise, sem serem inseridos.
     def _analisar():
         return _integridade.analisar_historico(
             list(historico_candles) + list(ja_vistos), referencia_tempo, cfg.TIMEFRAME_MINUTOS,
@@ -393,15 +440,25 @@ def _conferir_integridade_historico(historico_candles: List[Candle], referencia_
     analise = _analisar()
     preenchidos = 0
     if analise.faltam_total > 0 and recuperador is not None:
-        novos = recuperador.tentar(list(historico_candles) + list(ja_vistos), referencia_tempo,
+        reais = [c for c in historico_candles if c.horario not in _horarios_sinteticos]
+        novos = recuperador.tentar(reais + list(ja_vistos), referencia_tempo,
                                    agora_real, cfg.TIMEFRAME_MINUTOS, forcar=forcar)
         if novos:
-            historico_candles.extend(novos)
-            historico_candles.sort(key=lambda c: c.horario)
+            trocados = {c.horario for c in novos}
+            historico_candles[:] = sorted(
+                [c for c in historico_candles if c.horario not in trocados] + novos,
+                key=lambda c: c.horario)
+            _horarios_sinteticos.difference_update(trocados)
             _salvar_historico_persistente(novos)
             preenchidos = len(novos)
             analise = _analisar()
-    return analise, preenchidos
+    aproximados = 0
+    if analise.faltam_total > 0:
+        aproximados = _interpolar_e_registrar(historico_candles, referencia_tempo,
+                                              ja_vistos, preco_atual)
+        if aproximados:
+            analise = _analisar()
+    return analise, preenchidos, aproximados
 
 
 def _texto_buraco(analise) -> str:
@@ -630,10 +687,18 @@ def rodar():
         _ler_csv_candles, intervalo_segundos=30.0)
     candles_aquecimento_restantes = 0
     narrar("Verificando a integridade da base de dados.")
-    analise_inicial, preenchidos = _conferir_integridade_historico(
-        historico_candles, horario_inicial, recuperador_csv, datetime.now(), forcar=True)
+    preco_inicial = leitor.ler_preco()
+    analise_inicial, preenchidos, aproximados = _conferir_integridade_historico(
+        historico_candles, horario_inicial, recuperador_csv, datetime.now(), forcar=True,
+        preco_atual=preco_inicial)
     if preenchidos:
         msg = (f"Preenchi {preenchidos} candle(s) faltantes com o arquivo exportado do Profit.")
+        print(f"[INTEGRIDADE] {msg}")
+        narrar(msg)
+    if aproximados:
+        msg = (f"Havia buraco na base de dados. Preenchi {aproximados} candle(s) por aproximação, "
+               f"uma reta entre o preço antes e depois. Entradas LIBERADAS. Os primeiros sinais "
+               f"podem divergir um pouco; se exportar o histórico do Profit, troco pelos candles reais.")
         print(f"[INTEGRIDADE] {msg}")
         narrar(msg)
     if not historico_candles:
@@ -642,16 +707,17 @@ def rodar():
         print(f"[INTEGRIDADE] {msg}")
         narrar(msg)
     elif analise_inicial.integro:
-        print(f"[INTEGRIDADE] Base de dados íntegra: {analise_inicial.n_candles} candles, "
-              f"último em {analise_inicial.ultimo_candle}.")
-        narrar("Base de dados íntegra. Histórico completo até o mercado agora.")
+        if not aproximados:
+            print(f"[INTEGRIDADE] Base de dados íntegra: {analise_inicial.n_candles} candles, "
+                  f"último em {analise_inicial.ultimo_candle}.")
+            narrar("Base de dados íntegra. Histórico completo até o mercado agora.")
     else:
         candles_aquecimento_restantes = analise_inicial.restantes
         detalhe = _texto_buraco(analise_inicial)
         if candles_aquecimento_restantes > 0:
-            msg = (f"ATENÇÃO. A base de dados tem buraco: {detalhe}. Novas entradas estão "
-                   f"BLOQUEADAS por mais {candles_aquecimento_restantes} candles. "
-                   f"{_instrucao_liberar()}")
+            msg = (f"ATENÇÃO. A base de dados tem um buraco grande demais para aproximar: "
+                   f"{detalhe}. Novas entradas estão BLOQUEADAS por mais "
+                   f"{candles_aquecimento_restantes} candles. {_instrucao_liberar()}")
         else:
             msg = (f"Aviso. Há buraco antigo na base de dados ({detalhe}), mas as médias "
                    f"já foram renovadas depois dele. Entradas liberadas.")
@@ -736,23 +802,19 @@ def rodar():
                 if perdidos > candles_perdidos_queda:
                     primeiro_buraco = candles_perdidos_queda == 0
                     candles_perdidos_queda = perdidos
-                    if candles_aquecimento_restantes == 0:
-                        candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
-                    ultimo_lembrete_bloqueio = agora_real
                     if primeiro_buraco:
                         msg = (f"BURACO NOS DADOS AGORA. Um candle inteiro se perdeu sem leitura do "
-                               f"Profit. Novas entradas BLOQUEADAS por "
-                               f"{candles_aquecimento_restantes} candles. Pare de mexer nas "
-                               f"planilhas. {_instrucao_liberar()}")
+                               f"Profit. Assim que a leitura voltar eu preencho o buraco. "
+                               f"Pare de mexer nas planilhas.")
                     else:
                         msg = f"Mais um candle perdido. Já são {perdidos} candles sem leitura."
-                    print(f"[{agora_real.strftime('%H:%M:%S')}] [BLOQUEIO V498] {msg}")
+                    print(f"[{agora_real.strftime('%H:%M:%S')}] [BURACO V498] {msg}")
                     narrar(msg)
                     if primeiro_buraco:
                         try:
                             email_notificacao.notificar("ROBONILDO: BURACO NOS DADOS (leitura caiu)", msg)
                         except Exception as e:
-                            print(f"[BLOQUEIO] E-mail de aviso nao enviado: {e}")
+                            print(f"[BURACO] E-mail de aviso nao enviado: {e}")
             time.sleep(2)
             continue  # instabilidade pontual do DDE - pula este ciclo, tenta de novo
         aviso_volta = vigia_dde.sucesso(agora_real)
@@ -763,22 +825,29 @@ def rodar():
             # Conferencia IMEDIATA: nao espera o proximo candle fechar para descobrir o
             # buraco (em 06/10 o dono so soube na hora do sinal).
             em_formacao = construtor.candle_em_formacao()
-            analise_volta, preenchidos = _conferir_integridade_historico(
+            analise_volta, preenchidos, aproximados = _conferir_integridade_historico(
                 historico_candles, agora, recuperador_csv, agora_real, forcar=True,
-                ja_vistos=[em_formacao] if em_formacao is not None else ())
+                ja_vistos=[em_formacao] if em_formacao is not None else (), preco_atual=preco)
             if preenchidos:
                 narrar(f"Preenchi {preenchidos} candles faltantes com o export do Profit.")
+            if aproximados:
+                msg = (f"Buraco de {aproximados} candle(s) preenchido por aproximação, uma reta "
+                       f"entre o preço de antes da queda e o de agora. Entradas LIBERADAS. "
+                       f"Exporte o histórico do Profit para eu trocar pelos candles reais.")
+                print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                narrar(msg)
             if not analise_volta.integro and analise_volta.restantes > 0:
                 candles_aquecimento_restantes = max(candles_aquecimento_restantes,
                                                     analise_volta.restantes)
                 ultimo_lembrete_bloqueio = agora_real
                 ultima_recuperacao_csv = agora_real
-                msg = (f"BLOQUEIO. A queda de leitura abriu buraco: {_texto_buraco(analise_volta)}. "
-                       f"Novas entradas BLOQUEADAS por {candles_aquecimento_restantes} candles; "
-                       f"posição aberta segue gerida. {_instrucao_liberar()}")
+                msg = (f"BLOQUEIO. A queda de leitura abriu buraco grande demais para aproximar: "
+                       f"{_texto_buraco(analise_volta)}. Novas entradas BLOQUEADAS por "
+                       f"{candles_aquecimento_restantes} candles; posição aberta segue gerida. "
+                       f"{_instrucao_liberar()}")
                 print(f"[{agora.strftime('%H:%M:%S')}] [BLOQUEIO V498] {msg}")
                 narrar(msg)
-            elif analise_volta.integro:
+            elif analise_volta.integro and not aproximados:
                 narrar("Conferi: nenhum candle foi perdido. Segue normal.")
 
         # ---------- DDE ainda nao atualizou para hoje (antes do leilao abrir) ----------
@@ -854,35 +923,41 @@ def rodar():
         if _noticias is not None:
             _noticias.retomar()
 
-        # ---------- V498: bloqueio por buraco - tenta liberar sozinho e lembra o dono ----------
-        # Enquanto houver bloqueio, a cada 30 s procura no export mais recente do Profit
-        # os candles que faltam. Se o dono exportou o historico (sem reiniciar o robo),
-        # o buraco fecha e a entrada e liberada na hora. O lembrete falado a cada 5 min
+        # ---------- V498: buraco - troca aproximados por reais e tenta liberar bloqueio ----------
+        # A cada 30 s olha o export mais recente do Profit: candles reais substituem os
+        # aproximados e fecham buraco grande. O lembrete falado a cada 5 min (so com bloqueio)
         # existe para o dono NUNCA descobrir o bloqueio so na hora do sinal.
-        if candles_aquecimento_restantes > 0:
+        if candles_aquecimento_restantes > 0 or _horarios_sinteticos:
             if (agora_real - ultima_recuperacao_csv).total_seconds() >= 30:
                 ultima_recuperacao_csv = agora_real
-                analise_rec, preenchidos = _conferir_integridade_historico(
-                    historico_candles, agora, recuperador_csv, agora_real)
-                if preenchidos:
-                    print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {preenchidos} candle(s) "
-                          f"faltantes preenchidos com o export do Profit.")
-                    if analise_rec.restantes < candles_aquecimento_restantes:
-                        candles_aquecimento_restantes = analise_rec.restantes
-                    if candles_aquecimento_restantes == 0:
-                        msg = ("Base de dados corrigida com o export do Profit. "
-                               "Entradas LIBERADAS.")
-                        print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
-                        narrar(msg)
-                        ultimo_lembrete_bloqueio = agora_real
-                    else:
-                        narrar(f"Preenchi {preenchidos} candles, mas ainda há buraco: "
-                               f"{_texto_buraco(analise_rec)}.")
+                trocados = _trocar_sinteticos_por_reais(historico_candles, agora, recuperador_csv,
+                                                        agora_real)
+                if trocados:
+                    msg = (f"Troquei {trocados} candle(s) aproximados pelos candles reais do "
+                           f"Profit. Base de dados mais precisa.")
+                    print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                    narrar(msg)
+                if candles_aquecimento_restantes > 0:
+                    analise_rec, preenchidos, aproximados = _conferir_integridade_historico(
+                        historico_candles, agora, recuperador_csv, agora_real, preco_atual=preco)
+                    if preenchidos or aproximados:
+                        print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {preenchidos} candle(s) "
+                              f"do export e {aproximados} aproximados preencheram o buraco.")
+                        if analise_rec.restantes < candles_aquecimento_restantes:
+                            candles_aquecimento_restantes = analise_rec.restantes
+                        if candles_aquecimento_restantes == 0:
+                            msg = ("Base de dados corrigida. Entradas LIBERADAS.")
+                            print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                            narrar(msg)
+                            ultimo_lembrete_bloqueio = agora_real
+                        else:
+                            narrar(f"Preenchi parte do buraco, mas ainda há buraco grande: "
+                                   f"{_texto_buraco(analise_rec)}.")
             if candles_aquecimento_restantes > 0 and \
                     (agora_real - ultimo_lembrete_bloqueio).total_seconds() >= cfg.LEMBRETE_BLOQUEIO_SEGUNDOS:
                 ultimo_lembrete_bloqueio = agora_real
-                msg = (f"Lembrete: o robô NÃO vai entrar. Entradas BLOQUEADAS por buraco na base de "
-                       f"dados, faltam {candles_aquecimento_restantes} candles. "
+                msg = (f"Lembrete: o robô NÃO vai entrar. Entradas BLOQUEADAS por buraco grande na "
+                       f"base de dados, faltam {candles_aquecimento_restantes} candles. "
                        f"Exporte o histórico do Profit para liberar agora.")
                 print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
                 narrar(msg)
@@ -1255,7 +1330,9 @@ def rodar():
                         sustentacao = f" | há {segundos_100}s"
                     aviso_bloqueio = (
                         f" | {COR_BAIXA}ENTRADAS BLOQUEADAS (buraco, {candles_aquecimento_restantes} candles)"
-                        f"{COR_RESET}" if candles_aquecimento_restantes > 0 else ""
+                        f"{COR_RESET}" if candles_aquecimento_restantes > 0
+                        else (f" | dados aproximados ({len(_horarios_sinteticos)} candles)"
+                              if _horarios_sinteticos else "")
                     )
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
                           f"{tendencia_colorida} | Radar {status_sinal} | "
@@ -1398,8 +1475,7 @@ def rodar():
                     if not ja_bloqueado:
                         narrar(f"Atenção. Buraco nos dados: faltam {faltam} candles entre "
                                f"{ultimo_conhecido.strftime('%H:%M')} e "
-                               f"{candle_fechado.horario.strftime('%H:%M')}. Vou tentar preencher "
-                               f"com o histórico exportado do Profit.")
+                               f"{candle_fechado.horario.strftime('%H:%M')}. Vou preencher agora.")
                     novos_csv = recuperador_csv.tentar(
                         historico_candles + [candle_fechado], agora, agora_real,
                         cfg.TIMEFRAME_MINUTOS, forcar=True)
@@ -1414,6 +1490,17 @@ def rodar():
                         print(f"[{agora}] [AVISO] Nao foi possivel preencher o buraco (export do "
                               f"Profit nao cobre esse trecho) - MA21/RSI/ATR podem estar "
                               f"incorretos ate a media 'esquentar' de novo com candles novos.")
+                    # V498: o que o export nao cobriu e aproximado (ate BURACO_MAX_CANDLES_PREENCHER
+                    # candles) e as entradas seguem liberadas. So buraco maior que isso bloqueia.
+                    aproximados = _interpolar_e_registrar(historico_candles, agora,
+                                                          ja_vistos=[candle_fechado])
+                    if aproximados:
+                        msg = (f"Buraco preenchido por aproximação: {aproximados} candle(s), uma "
+                               f"reta entre o preço de antes e o de depois. Entradas LIBERADAS. "
+                               f"Exporte o histórico do Profit para eu trocar pelos candles reais.")
+                        print(f"[{agora}] [INTEGRIDADE] {msg}")
+                        if not ja_bloqueado:
+                            narrar(msg)
                     # V462 (achado C do Manus): a decisao de bloquear vem DEPOIS de qualquer
                     # tentativa, olhando o que AINDA falta - preenchimento parcial nao libera.
                     faltam = candles_faltando(
@@ -1425,9 +1512,9 @@ def rodar():
                             candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
                         ultimo_lembrete_bloqueio = agora_real
                         ultima_recuperacao_csv = agora_real
-                        msg = (f"BLOQUEIO. Ainda faltam {faltam} candles no histórico. Novas "
-                               f"entradas BLOQUEADAS por {candles_aquecimento_restantes} candles; "
-                               f"posição aberta segue gerida. {_instrucao_liberar()}")
+                        msg = (f"BLOQUEIO. Buraco de {faltam} candles, grande demais para aproximar. "
+                               f"Novas entradas BLOQUEADAS por {candles_aquecimento_restantes} "
+                               f"candles; posição aberta segue gerida. {_instrucao_liberar()}")
                         print(f"[{agora}] [BLOQUEIO V462] {msg}")
                         if not ja_bloqueado:
                             narrar(msg)
@@ -1435,7 +1522,7 @@ def rodar():
                                 email_notificacao.notificar("ROBONILDO: entradas bloqueadas por buraco", msg)
                             except Exception as e:
                                 print(f"[BLOQUEIO] E-mail de aviso nao enviado: {e}")
-                    else:
+                    elif novos_csv and not aproximados:
                         msg = "Buraco preenchido com dados reais. Entradas liberadas."
                         print(f"[{agora}] [INTEGRIDADE] {msg}")
                         narrar(msg)
@@ -1446,6 +1533,8 @@ def rodar():
             historico_candles = [c for c in historico_candles if c.horario != candle_fechado.horario]
             historico_candles.append(candle_fechado)
             historico_candles.sort(key=lambda c: c.horario)
+            if _horarios_sinteticos:   # so conta aproximado dentro da janela dos indicadores
+                _horarios_sinteticos.intersection_update(c.horario for c in historico_candles[-120:])
             if candles_aquecimento_restantes > 0:
                 candles_aquecimento_restantes -= 1
                 if candles_aquecimento_restantes == 0:
