@@ -37,7 +37,7 @@ primeiro candle fechava, e o "sinal bloqueado" era narrado como "regra de risco"
    recuperador pelo CSV (só insere candle que não existe, nunca troca o montado ao vivo) e vigia da leitura do DDE.
  - Partida: continuidade é a PRIMEIRA checagem, nos dois caminhos de carga, falada ("Base de dados íntegra" ou o
    buraco, o bloqueio e como liberar) e e-mail se houver bloqueio.
- - Buraco: avisado na hora; "ENTRADAS BLOQUEADAS" na linha de status; lembrete falado a cada 30 min;
+ - Buraco: avisado na hora; "ENTRADAS BLOQUEADAS" na linha de status; lembrete falado a cada 5 min (LEMBRETE_BLOQUEIO_SEGUNDOS) e aviso na hora em que o radar chega a 100% com a entrada bloqueada;
    o export do Profit na pasta de histórico é conferido a cada 30 s e libera a entrada sozinho, sem reiniciar.
    Reiniciar não re-bloqueia buraco com 50+ candles depois dele. Sinal bloqueado por buraco é narrado como tal.
  - Fim do pregão: depois de 18:20:58 o robô segue alimentando o construtor, sem operar, até o candle das 18:15

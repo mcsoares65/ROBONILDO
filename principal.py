@@ -829,7 +829,7 @@ def rodar():
         # ---------- V498: bloqueio por buraco - tenta liberar sozinho e lembra o dono ----------
         # Enquanto houver bloqueio, a cada 30 s procura no export mais recente do Profit
         # os candles que faltam. Se o dono exportou o historico (sem reiniciar o robo),
-        # o buraco fecha e a entrada e liberada na hora. O lembrete falado a cada 30 min
+        # o buraco fecha e a entrada e liberada na hora. O lembrete falado a cada 5 min
         # existe para o dono NUNCA descobrir o bloqueio so na hora do sinal.
         if candles_aquecimento_restantes > 0:
             if (agora_real - ultima_recuperacao_csv).total_seconds() >= 30:
@@ -851,11 +851,11 @@ def rodar():
                         narrar(f"Preenchi {preenchidos} candles, mas ainda há buraco: "
                                f"{_texto_buraco(analise_rec)}.")
             if candles_aquecimento_restantes > 0 and \
-                    (agora_real - ultimo_lembrete_bloqueio).total_seconds() >= 1800:
+                    (agora_real - ultimo_lembrete_bloqueio).total_seconds() >= cfg.LEMBRETE_BLOQUEIO_SEGUNDOS:
                 ultimo_lembrete_bloqueio = agora_real
-                msg = (f"Lembrete: novas entradas continuam BLOQUEADAS por buraco na base de "
+                msg = (f"Lembrete: o robô NÃO vai entrar. Entradas BLOQUEADAS por buraco na base de "
                        f"dados, faltam {candles_aquecimento_restantes} candles. "
-                       f"{_instrucao_liberar()}")
+                       f"Exporte o histórico do Profit para liberar agora.")
                 print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
                 narrar(msg)
 
@@ -913,6 +913,12 @@ def rodar():
             if radar_100_chave != chave_100_atual:
                 radar_100_chave = chave_100_atual
                 radar_100_desde = agora_real
+                if candles_aquecimento_restantes > 0:   # V498: nunca deixar o dono esperando em vao
+                    msg = (f"Atenção: oportunidade de {oportunidade_prioritaria.get('estrategia')} "
+                           f"em 100%, mas as entradas estão BLOQUEADAS por buraco na base de "
+                           f"dados. O robô não vai entrar.")
+                    print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                    narrar(msg)
         else:
             radar_100_chave = None
             radar_100_desde = None

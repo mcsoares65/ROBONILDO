@@ -150,6 +150,8 @@ VALOR_PONTO_REAIS = 0.20  # fixo, WIN
 # janela do indicador mais longo (MA50) nao se renovar, NAO abre posicao nova
 # (posicao ja aberta continua sendo gerida normalmente).
 CANDLES_AQUECIMENTO_APOS_BURACO = 50
+LEMBRETE_BLOQUEIO_SEGUNDOS = 300   # V498: enquanto as entradas estiverem bloqueadas por buraco, a voz
+                                    # lembra a cada 5 min (30 min era pouco: o dono perdeu um dia esperando)
 HORARIO_PRIMEIRO_CANDLE = "09:00"   # rotulo do 1o candle do pregao regular
 HORARIO_ULTIMO_CANDLE = "18:15"     # rotulo do ultimo candle do pregao regular
 # Dias sem pregao em dia util (conferir/atualizar a cada ano). Sem isso, um

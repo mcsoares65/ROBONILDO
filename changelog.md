@@ -14,7 +14,7 @@ NÃO participou (removido na V483).
 - `integridade_historico.py` (novo): análise de buracos de pregão, recuperador pelo CSV e vigia de leitura do DDE.
 - Partida: a continuidade do histórico é a primeira checagem, nos dois caminhos de carga (persistente e CSV), com
   voz e e-mail se houver bloqueio. Antes só rodava no caminho do CSV e só imprimia.
-- Buraco: avisado na hora (voz), "ENTRADAS BLOQUEADAS" na linha de status, lembrete falado a cada 30 min, e
+- Buraco: avisado na hora (voz), "ENTRADAS BLOQUEADAS" na linha de status, lembrete falado a cada 5 min (`LEMBRETE_BLOQUEIO_SEGUNDOS`) e aviso na hora em que o radar chega a 100% bloqueado, e
   liberação automática (sem reiniciar) quando o export do Profit na pasta de histórico cobrir o buraco (conferido a
   cada 30 s). Reiniciar não re-bloqueia buraco com 50+ candles depois.
 - Fim do pregão: o robô segue acompanhando sem operar até o candle das 18:15 fechar (relógio do DDE em 18:30, ou 60 s
