@@ -355,6 +355,7 @@ diagnosticar_saida = getattr(_modulo_saida, "diagnosticar_saida", None)
 print(f"Cartucho de saída: {_nome_saida}.py  [estrategia/saida/titular/]")
 
 from construtor_candle import ConstrutorCandle, candles_faltando
+import integridade_historico as _integridade
 from historico_csv import ler_csv_candles as _ler_csv_candles
 from historico_csv import resolver_csv_historico
 from registrador import Registrador
@@ -370,6 +371,47 @@ _MODO_REPLAY = False          # idem - definido em __main__ pela mesma resposta 
                                # sobre limpeza de historico acumulado - fixa em False)
 from executor_ordem import ExecutorOrdem
 import email_notificacao
+
+
+def _conferir_integridade_historico(historico_candles: List[Candle], referencia_tempo: datetime,
+                                    recuperador, agora_real: datetime, forcar: bool = False,
+                                    ja_vistos=()):
+    """V498: continuidade do historico contra o horario do mercado, nos dois caminhos de
+    carga (arquivo persistente e CSV) e depois a cada tentativa de recuperacao.
+
+    1) Se houver buraco de pregao, tenta preencher com o export mais recente do Profit
+       (so insere candle que NAO existe; nunca troca o candle montado ao vivo).
+    2) Devolve (analise, n_preenchidos). `historico_candles` e alterado no proprio lugar.
+    Quem chama imprime/narra - esta funcao so decide e grava."""
+    # `ja_vistos`: candles que o robo ja tem mas ainda nao entraram na lista (o candle em
+    # formacao do construtor); contam como presentes na analise, sem serem inseridos.
+    def _analisar():
+        return _integridade.analisar_historico(
+            list(historico_candles) + list(ja_vistos), referencia_tempo, cfg.TIMEFRAME_MINUTOS,
+            cfg.HORARIO_PRIMEIRO_CANDLE, cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3,
+            aquecimento=cfg.CANDLES_AQUECIMENTO_APOS_BURACO)
+    analise = _analisar()
+    preenchidos = 0
+    if analise.faltam_total > 0 and recuperador is not None:
+        novos = recuperador.tentar(list(historico_candles) + list(ja_vistos), referencia_tempo,
+                                   agora_real, cfg.TIMEFRAME_MINUTOS, forcar=forcar)
+        if novos:
+            historico_candles.extend(novos)
+            historico_candles.sort(key=lambda c: c.horario)
+            _salvar_historico_persistente(novos)
+            preenchidos = len(novos)
+            analise = _analisar()
+    return analise, preenchidos
+
+
+def _texto_buraco(analise) -> str:
+    return _integridade.descrever_buracos(analise)
+
+
+def _instrucao_liberar() -> str:
+    return (f"Para liberar agora: exporte o histórico atualizado do Profit para a pasta de "
+            f"'{_Path(cfg.CAMINHO_HISTORICO_INICIAL).parent}'. O robô confere a pasta a cada "
+            f"30 segundos e libera sozinho, sem reiniciar.")
 
 
 def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> List[Candle]:
@@ -423,23 +465,8 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
     candles = _ler_csv_candles(caminho)
     candles = _remover_candles_futuros(candles, referencia_tempo)
     print(f"Carga inicial (unica vez): {len(candles)} candles de '{caminho}'.")
-    # V461: o arquivo precisa chegar ate o candle que acabou de fechar. Em
-    # 01/10/2026 o robo leu um export ANTIGO (terminava em 28/09 18:15) porque o
-    # export novo foi salvo com outro nome.
-    if candles:
-        try:
-            faltam = candles_faltando(
-                candles[-1].horario, referencia_tempo - timedelta(minutes=cfg.TIMEFRAME_MINUTOS),
-                cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
-                cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
-        except Exception:
-            faltam = 0
-        if faltam > 0:
-            dica = (" Confira se o export mais recente do Profit foi salvo na pasta "
-                    "e se o nome comeca com o mesmo ativo (ex.: WINFUT...csv).")
-            print(f"[AVISO V461] O arquivo termina em {candles[-1].horario} mas o mercado "
-                  f"esta em {referencia_tempo}: faltam {faltam} candle(s) de pregao.{dica} "
-                  f"Novas entradas serao bloqueadas ao detectar o buraco.")
+    # V498: a conferencia de continuidade (V461) agora e feita por
+    # _conferir_integridade_historico(), nos DOIS caminhos de carga, narrada.
     _salvar_historico_persistente(candles, sobrescrever=True)
     return candles
 
@@ -515,6 +542,7 @@ def rodar():
     # relevante. NUNCA entra na decisao de entrada/saida (ver aviso no topo
     # de noticias.py) - falha silenciosamente se a rede/RSS der problema,
     # sem derrubar o robo.
+    _noticias = None  # V498: sem isto, falha ao importar o modulo deixava a variavel indefinida
     try:
         from noticias import NoticiasMercado
         _noticias = NoticiasMercado(callback_narracao=fila_noticias.put)
@@ -592,6 +620,49 @@ def rodar():
         cfg.CAMINHO_HISTORICO_INICIAL, referencia_tempo=horario_inicial
     )
 
+    # ---------- V498: PRIMEIRA COISA - integridade da base de dados ----------
+    # Em 06/10/2026 o robo so descobriu o buraco quando o sinal ja tinha disparado. Agora
+    # a continuidade e conferida AQUI, na partida, nos dois caminhos de carga, e o
+    # resultado e narrado em voz alta. Se houver buraco que o export do Profit nao
+    # cubra, as novas entradas ja nascem bloqueadas e o robo diz isso agora.
+    recuperador_csv = _integridade.RecuperadorCSV(
+        lambda: resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL, cfg.TIMEFRAME_MINUTOS),
+        _ler_csv_candles, intervalo_segundos=30.0)
+    candles_aquecimento_restantes = 0
+    narrar("Verificando a integridade da base de dados.")
+    analise_inicial, preenchidos = _conferir_integridade_historico(
+        historico_candles, horario_inicial, recuperador_csv, datetime.now(), forcar=True)
+    if preenchidos:
+        msg = (f"Preenchi {preenchidos} candle(s) faltantes com o arquivo exportado do Profit.")
+        print(f"[INTEGRIDADE] {msg}")
+        narrar(msg)
+    if not historico_candles:
+        msg = ("Não há histórico de candles. O robô vai calcular as médias só depois de "
+               "acumular candles ao vivo; exporte o histórico do Profit para começar já.")
+        print(f"[INTEGRIDADE] {msg}")
+        narrar(msg)
+    elif analise_inicial.integro:
+        print(f"[INTEGRIDADE] Base de dados íntegra: {analise_inicial.n_candles} candles, "
+              f"último em {analise_inicial.ultimo_candle}.")
+        narrar("Base de dados íntegra. Histórico completo até o mercado agora.")
+    else:
+        candles_aquecimento_restantes = analise_inicial.restantes
+        detalhe = _texto_buraco(analise_inicial)
+        if candles_aquecimento_restantes > 0:
+            msg = (f"ATENÇÃO. A base de dados tem buraco: {detalhe}. Novas entradas estão "
+                   f"BLOQUEADAS por mais {candles_aquecimento_restantes} candles. "
+                   f"{_instrucao_liberar()}")
+        else:
+            msg = (f"Aviso. Há buraco antigo na base de dados ({detalhe}), mas as médias "
+                   f"já foram renovadas depois dele. Entradas liberadas.")
+        print(f"[INTEGRIDADE] {msg}")
+        narrar(msg)
+        if candles_aquecimento_restantes > 0:
+            try:
+                email_notificacao.notificar("ROBONILDO: base de dados com buraco", msg)
+            except Exception as e:
+                print(f"[INTEGRIDADE] E-mail de aviso nao enviado: {e}")
+
     # V458: a reconciliacao de OHLC no Replay foi REMOVIDA. Ela substituia o
     # OHLC amostrado pelo DDE pelo OHLC consolidado do arquivo - um artificio
     # que existia so no Replay e que, por isso, fazia o Replay produzir um
@@ -622,9 +693,15 @@ def rodar():
     # Paridade com o motor: se uma posição for encerrada durante um candle,
     # o backtest não permite reentrada usando o fechamento desse mesmo candle.
     saida_desde_ultimo_fechamento = False
-    # V461: candles que ainda precisam fechar antes de liberar NOVA entrada
+    # V461/V498: candles que ainda precisam fechar antes de liberar NOVA entrada
     # depois de um buraco nao preenchido no historico (posicao aberta segue gerida).
-    candles_aquecimento_restantes = 0
+    # Ja foi calculado na checagem de integridade da partida (acima).
+    vigia_dde = _integridade.VigiaLeituraDDE()
+    ultima_recuperacao_csv = datetime.now()
+    ultimo_lembrete_bloqueio = datetime.now()
+    ultimo_dia_candle_final = None   # data do dia cujo ultimo candle (18:15) ja foi fechado/salvo
+    ultimo_candle_final_visto = None  # data do dia em que o robo acompanhou o candle 18:15 ao vivo
+    ultima_hora_dde_vista = None     # (horario DDE, quando vimos) - detecta DDE parado no fim do dia
 
     while True:
         agora_real = datetime.now()
@@ -633,8 +710,48 @@ def rodar():
                                                # nao do relogio do computador
 
         if preco is None or agora is None:
+            # V498: antes era silencio total. Em 06/10/2026 a planilha ficou ~1 hora sem
+            # leitura (outra planilha em uso) e o robo nao disse nada. Agora a falha vira
+            # aviso falado (prazo curto se houver posicao aberta) e, com posicao aberta,
+            # tambem e-mail.
+            aviso_falha = vigia_dde.falha(
+                agora_real, posicao_aberta=gestor.posicao_aberta is not None,
+                erro=leitor.ultimo_erro_leitura)
+            if aviso_falha:
+                print(f"[{agora_real.strftime('%H:%M:%S')}] [FALHA DDE] {aviso_falha}")
+                narrar(aviso_falha)
+                if gestor.posicao_aberta is not None:
+                    try:
+                        email_notificacao.notificar("ROBONILDO: SEM LEITURA COM POSICAO ABERTA",
+                                                    aviso_falha)
+                    except Exception as e:
+                        print(f"[FALHA DDE] E-mail de aviso nao enviado: {e}")
             time.sleep(2)
             continue  # instabilidade pontual do DDE - pula este ciclo, tenta de novo
+        aviso_volta = vigia_dde.sucesso(agora_real)
+        if aviso_volta:
+            print(f"[{agora_real.strftime('%H:%M:%S')}] [FALHA DDE] {aviso_volta}")
+            narrar(aviso_volta)
+            # Conferencia IMEDIATA: nao espera o proximo candle fechar para descobrir o
+            # buraco (em 06/10 o dono so soube na hora do sinal).
+            em_formacao = construtor.candle_em_formacao()
+            analise_volta, preenchidos = _conferir_integridade_historico(
+                historico_candles, agora, recuperador_csv, agora_real, forcar=True,
+                ja_vistos=[em_formacao] if em_formacao is not None else ())
+            if preenchidos:
+                narrar(f"Preenchi {preenchidos} candles faltantes com o export do Profit.")
+            if not analise_volta.integro and analise_volta.restantes > 0:
+                candles_aquecimento_restantes = max(candles_aquecimento_restantes,
+                                                    analise_volta.restantes)
+                ultimo_lembrete_bloqueio = agora_real
+                ultima_recuperacao_csv = agora_real
+                msg = (f"BLOQUEIO. A queda de leitura abriu buraco: {_texto_buraco(analise_volta)}. "
+                       f"Novas entradas BLOQUEADAS por {candles_aquecimento_restantes} candles; "
+                       f"posição aberta segue gerida. {_instrucao_liberar()}")
+                print(f"[{agora.strftime('%H:%M:%S')}] [BLOQUEIO V498] {msg}")
+                narrar(msg)
+            elif analise_volta.integro:
+                narrar("Conferi: nenhum candle foi perdido. Segue normal.")
 
         # ---------- DDE ainda nao atualizou para hoje (antes do leilao abrir) ----------
         # O campo de horario do DDE pode continuar mostrando o ultimo tick do
@@ -669,12 +786,78 @@ def rodar():
                 if _noticias is not None:
                     _noticias.pausar()
                 mercado_encerrado_avisado = data_hoje
+
+            # V498: o ultimo candle do dia (18:15) NUNCA fechava: o construtor so fecha um
+            # candle quando chega leitura de um periodo novo (18:30), e o robo parava de
+            # ler as 18:20:58. Resultado: o candle 18:15 nao era salvo e a manha seguinte
+            # abria com buraco falso (e 50 candles de bloqueio). Mantemos o construtor
+            # alimentado (sem operar) ate o candle fechar - pelo relogio do DDE (>= 18:30)
+            # ou, se o DDE parar de andar depois do encerramento, forcado.
+            if ultimo_dia_candle_final != data_hoje and ultimo_candle_final_visto != data_hoje:
+                # o robo nao acompanhou o ultimo candle ao vivo (iniciou depois das 18:15):
+                # um candle montado so com leituras de depois do encerramento seria falso.
+                ultimo_dia_candle_final = data_hoje
+            if ultimo_dia_candle_final != data_hoje:
+                candle_final = construtor.nova_leitura(preco, agora)
+                if ultima_hora_dde_vista is None or ultima_hora_dde_vista[0] != agora:
+                    ultima_hora_dde_vista = (agora, agora_real)
+                elif candle_final is None and \
+                        (agora_real - ultima_hora_dde_vista[1]).total_seconds() >= 60:
+                    candle_final = construtor.fechar_em_formacao()
+                if candle_final is not None:
+                    ultimo_dia_candle_final = data_hoje
+                    ultima_hora_dde_vista = None
+                    if candle_final.horario.strftime("%H:%M") == cfg.HORARIO_ULTIMO_CANDLE and \
+                            candle_final.horario.date() == agora.date():
+                        historico_candles = [c for c in historico_candles
+                                             if c.horario != candle_final.horario]
+                        historico_candles.append(candle_final)
+                        historico_candles.sort(key=lambda c: c.horario)
+                        _salvar_historico_persistente([candle_final])
+                        print(f"[HISTÓRICO] Candle de {candle_final.horario.strftime('%H:%M')} "
+                              f"fechado e salvo no fim do pregão (evita buraco falso amanhã).")
+                else:
+                    time.sleep(5)
+                    continue
             time.sleep(300)
             continue
 
         # Ao detectar um novo pregão, reativa o painel de notícias.
         if _noticias is not None:
             _noticias.retomar()
+
+        # ---------- V498: bloqueio por buraco - tenta liberar sozinho e lembra o dono ----------
+        # Enquanto houver bloqueio, a cada 30 s procura no export mais recente do Profit
+        # os candles que faltam. Se o dono exportou o historico (sem reiniciar o robo),
+        # o buraco fecha e a entrada e liberada na hora. O lembrete falado a cada 30 min
+        # existe para o dono NUNCA descobrir o bloqueio so na hora do sinal.
+        if candles_aquecimento_restantes > 0:
+            if (agora_real - ultima_recuperacao_csv).total_seconds() >= 30:
+                ultima_recuperacao_csv = agora_real
+                analise_rec, preenchidos = _conferir_integridade_historico(
+                    historico_candles, agora, recuperador_csv, agora_real)
+                if preenchidos:
+                    print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {preenchidos} candle(s) "
+                          f"faltantes preenchidos com o export do Profit.")
+                    if analise_rec.restantes < candles_aquecimento_restantes:
+                        candles_aquecimento_restantes = analise_rec.restantes
+                    if candles_aquecimento_restantes == 0:
+                        msg = ("Base de dados corrigida com o export do Profit. "
+                               "Entradas LIBERADAS.")
+                        print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                        narrar(msg)
+                        ultimo_lembrete_bloqueio = agora_real
+                    else:
+                        narrar(f"Preenchi {preenchidos} candles, mas ainda há buraco: "
+                               f"{_texto_buraco(analise_rec)}.")
+            if candles_aquecimento_restantes > 0 and \
+                    (agora_real - ultimo_lembrete_bloqueio).total_seconds() >= 1800:
+                ultimo_lembrete_bloqueio = agora_real
+                msg = (f"Lembrete: novas entradas continuam BLOQUEADAS por buraco na base de "
+                       f"dados, faltam {candles_aquecimento_restantes} candles. "
+                       f"{_instrucao_liberar()}")
+                print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                narrar(msg)
 
         # ---------- Prova real contra a tela do Profit ----------
         avisos_integridade = leitor.verificar_integridade(preco, agora, modo_replay=_MODO_REPLAY)
@@ -1036,11 +1219,15 @@ def rodar():
                     if radar_100_desde is not None and progresso_radar >= 1.0:
                         segundos_100 = max(0, int((agora_real - radar_100_desde).total_seconds()))
                         sustentacao = f" | há {segundos_100}s"
+                    aviso_bloqueio = (
+                        f" | {COR_BAIXA}ENTRADAS BLOQUEADAS (buraco, {candles_aquecimento_restantes} candles)"
+                        f"{COR_RESET}" if candles_aquecimento_restantes > 0 else ""
+                    )
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
                           f"{tendencia_colorida} | Radar {status_sinal} | "
                           f"{confirmacoes_radar:^3} | {campo_detalhe}"
                           f"{sustentacao}"
-                          f" | {progresso_radar_pct:3.0f}% {quadro}")
+                          f" | {progresso_radar_pct:3.0f}% {quadro}{aviso_bloqueio}")
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")
@@ -1064,6 +1251,8 @@ def rodar():
         # Nenhuma coluna DDE de Quantidade incremental foi confirmada ainda.
         # Sem fonte auditada, os candles ao vivo mantêm quantidade=None;
         # nunca usar preço ou zero como substituto para volume Gabriel.
+        if agora.strftime("%H:%M") >= cfg.HORARIO_ULTIMO_CANDLE:
+            ultimo_candle_final_visto = agora.strftime("%Y-%m-%d")  # V498
         candle_fechado = construtor.nova_leitura(preco, agora)
         if coleta is not None:
             coleta.processar(agora, leitor.ler_extras(), candle_fechado)
@@ -1159,45 +1348,63 @@ def rodar():
             # trecho ja ficou para tras do horario atual, so nao tinha sido
             # incorporado ainda).
             if historico_candles:
-                gap_minutos = (candle_fechado.horario - historico_candles[-1].horario).total_seconds() / 60
-                if gap_minutos > cfg.TIMEFRAME_MINUTOS * 1.5:
-                    print(f"[{agora}] [AVISO] Buraco de {gap_minutos:.0f} min detectado "
-                          f"entre {historico_candles[-1].horario} e {candle_fechado.horario} "
-                          f"(replay pulado/arrastado?) - tentando preencher com dado real "
-                          f"do arquivo historico...")
-                    try:
-                        candles_arquivo = _ler_csv_candles(resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL, cfg.TIMEFRAME_MINUTOS))
-                    except (FileNotFoundError, OSError, ValueError) as e:
-                        print(f"[{agora}] [AVISO] Nao foi possivel ler '{cfg.CAMINHO_HISTORICO_INICIAL}' "
-                              f"para preencher o buraco: {e}")
-                        candles_arquivo = []
-                    preenchimento = [c for c in candles_arquivo
-                                      if historico_candles[-1].horario < c.horario < candle_fechado.horario]
-                    if preenchimento:
-                        historico_candles.extend(preenchimento)
-                        _salvar_historico_persistente(preenchimento)
-                        print(f"[{agora}] [AVISO] Buraco preenchido com {len(preenchimento)} "
+                # V498: primeiro mede o que FALTA de pregao (fim de semana/feriado/noite nao
+                # contam); so se faltar algo avisa, tenta preencher e bloqueia. Antes, todo
+                # candle depois de uma noite "parecia" buraco por causa do gap em minutos.
+                faltam = candles_faltando(
+                    historico_candles[-1].horario, candle_fechado.horario,
+                    cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
+                    cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
+                if faltam > 0:
+                    ultimo_conhecido = historico_candles[-1].horario
+                    ja_bloqueado = candles_aquecimento_restantes > 0   # ja avisado (queda do DDE)
+                    print(f"[{agora}] [AVISO] Buraco de {faltam} candle(s) de pregao detectado "
+                          f"entre {ultimo_conhecido} e {candle_fechado.horario} - tentando "
+                          f"preencher com dado real do export do Profit...")
+                    if not ja_bloqueado:
+                        narrar(f"Atenção. Buraco nos dados: faltam {faltam} candles entre "
+                               f"{ultimo_conhecido.strftime('%H:%M')} e "
+                               f"{candle_fechado.horario.strftime('%H:%M')}. Vou tentar preencher "
+                               f"com o histórico exportado do Profit.")
+                    novos_csv = recuperador_csv.tentar(
+                        historico_candles + [candle_fechado], agora, agora_real,
+                        cfg.TIMEFRAME_MINUTOS, forcar=True)
+                    novos_csv = [c for c in novos_csv if c.horario < candle_fechado.horario]
+                    if novos_csv:
+                        historico_candles.extend(novos_csv)
+                        historico_candles.sort(key=lambda c: c.horario)
+                        _salvar_historico_persistente(novos_csv)
+                        print(f"[{agora}] [AVISO] Buraco preenchido com {len(novos_csv)} "
                               f"candle(s) reais do arquivo.")
                     else:
-                        print(f"[{agora}] [AVISO] Nao foi possivel preencher o buraco (arquivo "
-                              f"historico nao cobre esse trecho) - MA21/RSI/ATR podem estar "
+                        print(f"[{agora}] [AVISO] Nao foi possivel preencher o buraco (export do "
+                              f"Profit nao cobre esse trecho) - MA21/RSI/ATR podem estar "
                               f"incorretos ate a media 'esquentar' de novo com candles novos.")
                     # V462 (achado C do Manus): a decisao de bloquear vem DEPOIS de qualquer
                     # tentativa, olhando o que AINDA falta - preenchimento parcial nao libera.
-                    # So e buraco de verdade se faltarem candles de PREGAO (fim de semana/
-                    # feriado/noite nao contam).
                     faltam = candles_faltando(
                         historico_candles[-1].horario, candle_fechado.horario,
                         cfg.TIMEFRAME_MINUTOS, cfg.HORARIO_PRIMEIRO_CANDLE,
                         cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
                     if faltam > 0:
-                        candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
-                        print(f"[{agora}] [BLOQUEIO V462] Ainda faltam {faltam} candle(s) de pregao "
-                              f"no historico. NOVAS ENTRADAS BLOQUEADAS por "
-                              f"{candles_aquecimento_restantes} candles (posicao aberta segue "
-                              f"gerida). Para liberar antes: exporte o historico atualizado do "
-                              f"Profit para a pasta de '{cfg.CAMINHO_HISTORICO_INICIAL}' e "
-                              f"reinicie o robo.")
+                        if candles_aquecimento_restantes == 0:   # V498: nao reinicia a contagem
+                            candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
+                        ultimo_lembrete_bloqueio = agora_real
+                        ultima_recuperacao_csv = agora_real
+                        msg = (f"BLOQUEIO. Ainda faltam {faltam} candles no histórico. Novas "
+                               f"entradas BLOQUEADAS por {candles_aquecimento_restantes} candles; "
+                               f"posição aberta segue gerida. {_instrucao_liberar()}")
+                        print(f"[{agora}] [BLOQUEIO V462] {msg}")
+                        if not ja_bloqueado:
+                            narrar(msg)
+                            try:
+                                email_notificacao.notificar("ROBONILDO: entradas bloqueadas por buraco", msg)
+                            except Exception as e:
+                                print(f"[BLOQUEIO] E-mail de aviso nao enviado: {e}")
+                    else:
+                        msg = "Buraco preenchido com dados reais. Entradas liberadas."
+                        print(f"[{agora}] [INTEGRIDADE] {msg}")
+                        narrar(msg)
 
             # remove qualquer candle ja existente no mesmo horario (evita duplicar
             # quando o historico de bootstrap ja cobre parte do periodo que o
@@ -1207,6 +1414,10 @@ def rodar():
             historico_candles.sort(key=lambda c: c.horario)
             if candles_aquecimento_restantes > 0:
                 candles_aquecimento_restantes -= 1
+                if candles_aquecimento_restantes == 0:
+                    msg = "Aquecimento depois do buraco terminou. Novas entradas liberadas."
+                    print(f"[{agora}] [INTEGRIDADE] {msg}")
+                    narrar(msg)
             _salvar_historico_persistente([candle_fechado])
 
             sinal_auditoria = None
@@ -1308,7 +1519,7 @@ def rodar():
                     pode, motivo_bloqueio = gestor.pode_abrir_posicao(sinal.horario)
                     if pode and candles_aquecimento_restantes > 0:
                         pode = False
-                        motivo_bloqueio = (f"Historico com buraco nao preenchido - aquecendo "
+                        motivo_bloqueio = (f"BURACO NA BASE DE DADOS - entradas bloqueadas "
                                            f"({candles_aquecimento_restantes} candles restantes)")
                     if pode:
                         # V461: limite de risco por operacao ANTES de enviar ordem
@@ -1384,10 +1595,17 @@ def rodar():
                         if diagnostico_fechamento:
                             narrar(diagnostico_fechamento["explicacao"])
                             ultima_expectativa_narrada = chave_fechamento
-                        narrar(
-                            f"O sinal foi confirmado no fechamento do candle, mas a "
-                            f"entrada foi bloqueada pela regra de risco: {motivo_bloqueio}."
-                        )
+                        if candles_aquecimento_restantes > 0:
+                            narrar(
+                                f"O sinal de {sinal.lado.lower()} foi confirmado, mas a entrada "
+                                f"está BLOQUEADA por buraco na base de dados, restam "
+                                f"{candles_aquecimento_restantes} candles. {_instrucao_liberar()}"
+                            )
+                        else:
+                            narrar(
+                                f"O sinal foi confirmado no fechamento do candle, mas a "
+                                f"entrada foi bloqueada pela regra de risco: {motivo_bloqueio}."
+                            )
                 else:
                     if tendencia_fechamento is not None:
                         if candle_fechado.fechamento > candle_fechado.abertura:

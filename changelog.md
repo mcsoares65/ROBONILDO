@@ -4,6 +4,29 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V498 — integridade da base de dados: checar na partida, narrar, recuperar sozinho
+
+Incidente de 06/10/2026: a entrada das 15:15 foi bloqueada por "buraco" e o robô não tinha dito nada o dia todo.
+Duas causas empilhadas (ata `conselho/2026-10-07-AI.txt`): (1) o candle das 18:15 nunca fechava (o robô parava de
+ler às 18:20:58), então a manhã seguinte via 1 candle faltando e bloqueava 50 candles desde as 09:15; (2) a
+planilha DDE ficou parada ~1 h com o Excel ocupado e a falha de leitura era silenciosa. O limite de 25% da banca
+NÃO participou (removido na V483).
+- `integridade_historico.py` (novo): análise de buracos de pregão, recuperador pelo CSV e vigia de leitura do DDE.
+- Partida: a continuidade do histórico é a primeira checagem, nos dois caminhos de carga (persistente e CSV), com
+  voz e e-mail se houver bloqueio. Antes só rodava no caminho do CSV e só imprimia.
+- Buraco: avisado na hora (voz), "ENTRADAS BLOQUEADAS" na linha de status, lembrete falado a cada 30 min, e
+  liberação automática (sem reiniciar) quando o export do Profit na pasta de histórico cobrir o buraco (conferido a
+  cada 30 s). Reiniciar não re-bloqueia buraco com 50+ candles depois.
+- Fim do pregão: o robô segue acompanhando sem operar até o candle das 18:15 fechar (relógio do DDE em 18:30, ou 60 s
+  com o DDE parado) e o salva. Não há mais buraco falso na manhã seguinte.
+- DDE: falha de leitura vira aviso falado em 20 s (8 s com posição aberta, com e-mail) e aviso de retorno, seguido de
+  conferência imediata de buraco. Console: no máximo uma linha de falha a cada 30 s.
+- `leitor_dde.py`: tenta achar a planilha por nome (ROT) para o DDE poder viver numa instância própria do Excel;
+  se não achar, comportamento de antes. NÃO testado em Windows.
+- Política de 50 candles de bloqueio mantida (decisão do dono pendente). `_noticias` inicializado (erro latente).
+
+---
+
 ## V497 — escalação de titulares de entrada (Regra 17)
 
 Pedido do dono (06/10/2026): o "cenário" é o radar do terminal (Retomada MA21, MACD + Estocástico, Saída de
