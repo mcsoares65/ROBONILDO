@@ -43,8 +43,10 @@ primeiro candle fechava, e o "sinal bloqueado" era narrado como "regra de risco"
  - Fim do pregão: depois de 18:20:58 o robô segue alimentando o construtor, sem operar, até o candle das 18:15
    fechar (DDE em 18:30, ou 60 s com o DDE parado) e o salva. Só vale se o robô acompanhou o 18:15 ao vivo
    (evita gravar candle falso de uma partida depois do encerramento).
- - DDE: falha de leitura é falada em 20 s (8 s com posição aberta, mais e-mail e texto de urgência: stop/alvo sem
+ - DDE: falha de leitura é falada em 10 s (8 s com posição aberta, mais e-mail e texto de urgência: stop/alvo sem
    monitoramento), repetida a cada 120 s (30 s com posição), com aviso de retorno e conferência imediata de buraco.
+   No instante em que um candle inteiro se perde durante a queda (relógio real, só ao vivo) o robô fala "buraco",
+   bloqueia e manda e-mail, sem esperar a leitura voltar.
    No console, no máximo uma linha de falha a cada 30 s (V486: nada de fila de voz).
  - leitor_dde.py: busca a planilha por nome na tabela de objetos em execução (ROT). Isso permite o DDE rodar numa
    instância própria do Excel, de modo que mexer em outra planilha não tranca a leitura. Se não achar ou falhar,
@@ -54,7 +56,7 @@ primeiro candle fechava, e o "sinal bloqueado" era narrado como "regra de risco"
 5. TESTES (simulação com DDE falso, relógio simulado)
 ---------------------------------------------------------------------------
  - Fim do dia: candle 18:15 fecha por DDE parado e é gravado; início depois do encerramento não grava.
- - Queda de 1 h no meio do dia: aviso falado em 20 s e a cada 120 s, retorno, bloqueio imediato, export do Profit
+ - Queda de 1 h no meio do dia: aviso falado em 10 s e a cada 120 s, retorno, bloqueio imediato, export do Profit
    chegando depois libera as entradas sozinho.
  - Análise: manhã normal íntegra; 18:15 faltando = 1 faltante e 50 de bloqueio; buraco no meio; buraco velho
    (50+ candles depois) não bloqueia; recuperador relê só se o arquivo mudou e a cada 30 s.

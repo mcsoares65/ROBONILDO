@@ -19,7 +19,7 @@ NÃO participou (removido na V483).
   cada 30 s). Reiniciar não re-bloqueia buraco com 50+ candles depois.
 - Fim do pregão: o robô segue acompanhando sem operar até o candle das 18:15 fechar (relógio do DDE em 18:30, ou 60 s
   com o DDE parado) e o salva. Não há mais buraco falso na manhã seguinte.
-- DDE: falha de leitura vira aviso falado em 20 s (8 s com posição aberta, com e-mail) e aviso de retorno, seguido de
+- DDE: falha de leitura vira aviso falado em 10 s (8 s com posição aberta, com e-mail); no instante em que um candle inteiro se perde na queda, "BURACO NOS DADOS AGORA" e bloqueio imediato (sem esperar a leitura voltar); aviso de retorno, seguido de
   conferência imediata de buraco. Console: no máximo uma linha de falha a cada 30 s.
 - `leitor_dde.py`: tenta achar a planilha por nome (ROT) para o DDE poder viver numa instância própria do Excel;
   se não achar, comportamento de antes. NÃO testado em Windows.
