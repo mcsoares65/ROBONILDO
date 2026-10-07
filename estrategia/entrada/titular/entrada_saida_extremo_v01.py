@@ -16,7 +16,8 @@ Variações testadas antes desta versão (Regra 11.2): nenhuma.
 Sem dependência de data, evento ou preço absoluto (Regra 11.3).
 Resultado financeiro: ainda não medido; rodar `classificacao.py` (Regra 12).
 
-Contrato: gerar_sinal(row) -> 1, -1 ou 0. Usa apenas dados fornecidos pelo
+Contrato: gerar_sinal(row) -> 1, -1 ou 0 (opcional, V502: diagnosticar_oportunidades(row) -> radar,
+sem efeito no sinal). Usa apenas dados fornecidos pelo
 motor, não realiza I/O, não mantém estado e não importa módulos do projeto
 (Regra 3).
 """
@@ -41,3 +42,55 @@ def gerar_sinal(row) -> int:
             and cruzamento_extremo):
         return 1 if tendencia == 1 else -1
     return 0
+
+
+# ---------------------------------------------------------------------------
+# Radar (V502). Mostra no terminal quantas condições já estão confirmadas e a
+# próxima que falta. NÃO participa de gerar_sinal() e não altera nenhum limiar:
+# é a cópia, para este arquivo, do radar que a porta tinha no titular antigo
+# (entrada_tres_portas_v01). Sem I/O, sem estado, sem importar o projeto (Regra 3).
+# ---------------------------------------------------------------------------
+
+
+def diagnosticar_oportunidades(row):
+    tendencia = row["trend"]
+    hora = row["dt"].strftime("%H:%M")
+    amplitude = row["Maximo"] - row["Minimo"]
+    corpo = abs(row["Fechamento"] - row["Abertura"])
+    cruzamento_extremo = (row["stoch_cross_up_20"] if tendencia == 1
+                          else row["stoch_cross_down_80"] if tendencia == -1 else False)
+    elegibilidade = [
+        (tendencia != 0, "definição de tendência"),
+        (not ("12:30" <= hora <= "13:15"), "horário permitido"),
+        (not (279.0 <= amplitude <= 360.0), "amplitude fora da faixa fraca"),
+    ]
+    condicoes = [
+        (amplitude > 0, "amplitude válida"),
+        (amplitude > 0 and corpo <= CORPO_MAXIMO_PROPORCAO * amplitude, "corpo sem exaustão"),
+        (bool(cruzamento_extremo), "saída da zona extrema do estocástico"),
+    ]
+    elegivel = all(ok for ok, _ in elegibilidade)
+    confirmadas = sum(bool(ok) for ok, _ in condicoes) if elegivel else 0
+    faltantes = ([t for ok, t in condicoes if not ok] if elegivel
+                 else [t for ok, t in elegibilidade if not ok])
+    sinal = (1 if tendencia == 1 else -1) if elegivel and all(ok for ok, _ in condicoes) else 0
+    faltante = faltantes[0] if faltantes else "nenhuma"
+    detalhe = faltante
+    bloqueio_horario = faltante == "horário permitido"
+    if bloqueio_horario:
+        detalhe = "BLOQUEADA ATÉ 13:30"
+    elif faltante == "corpo sem exaustão":
+        proporcao_corpo = (corpo / amplitude * 100.0) if amplitude > 0 else 0.0
+        detalhe = f"corpo {proporcao_corpo:.0f}% (máx. 70%)"
+    return [{
+        "estrategia": "Saída de Extremo",
+        "prioridade": 3,
+        "direcao": "COMPRA" if tendencia == 1 else "VENDA" if tendencia == -1 else "NEUTRA",
+        "sinal": sinal,
+        "confirmadas": confirmadas,
+        "total": len(condicoes),
+        "progresso": confirmadas / len(condicoes),
+        "faltantes": faltantes,
+        "detalhe": detalhe,
+        "bloqueio_horario": bloqueio_horario,
+    }]

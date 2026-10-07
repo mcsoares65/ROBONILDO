@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V501"
+VERSAO = "V502"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1592,3 +1592,14 @@ VERSAO = "V501"
 # ---------------------------------------------------------------------------
 # Mesmo desenho da Apuracao diaria (dia x estrategia) com hora de entrada, candle de saida e resultado
 # de cada operacao do dia. Pedido do dono (07/10/2026).
+
+# ---------------------------------------------------------------------------
+# V502 - radar dos tres titulares de entrada; replay nao grava o historico acumulado
+# ---------------------------------------------------------------------------
+# entrada_{retomada_ma21,macd_estocastico,saida_extremo}_v01.py: cada arquivo ganha
+# diagnosticar_oportunidades(row) (radar X/Y confirmacoes, proxima condicao, bloqueio de horario),
+# copiado da porta correspondente do entrada_tres_portas_v01. gerar_sinal() NAO mudou. Medido em
+# 49.503 avaliacoes (2025-26): 0 divergencias entre o sinal do radar e o gerar_sinal().
+# principal.py: _salvar_historico_persistente() nao grava nada em modo REPLAY (o replay trocava os
+# candles reais do dia pelos montados pelo DDE, o primeiro so a partir da hora de inicio).
+# escalacao.py: so texto ("juiz" -> classificacao.py).

@@ -3,7 +3,7 @@
 A pasta estrategia/entrada/titular/ aceita VÁRIOS cartuchos, cada um uma ideia só
 (Regra 16). Esta peça junta os titulares e se apresenta ao motor como se fosse um
 cartucho único: `gerar_sinal(row)` e `diagnosticar_oportunidades(row)`. Assim o
-robô ao vivo (principal.py) e o juiz (classificacao.py) usam exatamente a mesma
+robô ao vivo (principal.py) e classificacao.py usam exatamente a mesma
 lógica de escalação (Regra de paridade replay/ao vivo).
 
 Regras da escalação (Regra 17):
@@ -19,7 +19,7 @@ Regras da escalação (Regra 17):
   com um titular único.
 
 A escalação NÃO é um cartucho e NÃO concorre no ranking: é um agendador do motor
-(como o próprio motor). O juiz a mede como uma linha de comparação contra os
+(como o próprio motor). A classificacao.py a mede como uma linha de comparação contra os
 titulares individuais, para provar que o time vale mais que o melhor jogador.
 """
 

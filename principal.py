@@ -568,7 +568,14 @@ def _salvar_historico_persistente(candles: List[Candle], sobrescrever: bool = Fa
     anterior do mesmo horario, sem criar duplicatas. A escrita acontece num
     arquivo temporario e so depois substitui o original; uma interrupcao no
     meio da gravacao preserva o arquivo anterior.
+
+    V502: no REPLAY nao grava nada. O replay remonta candles de um dia que o
+    arquivo ja tem (os do dia vem do export/ao vivo) e os substituiria por versoes
+    montadas pela leitura do DDE, a comecar pelo primeiro candle, que o replay
+    monta so a partir do momento em que e iniciado.
     """
+    if _MODO_REPLAY:
+        return
     caminho = Path(cfg.CAMINHO_HISTORICO_PERSISTENTE)
     caminho.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1839,6 +1846,7 @@ if __name__ == "__main__":
         _MODO_REPLAY = True
         _NOME_ATIVO_DDE = f"{_leitor_dde_mod.PREFIXO_REPLAY}{cfg.ATIVO}"
         print(f"[MODO REPLAY] Buscando ativo '{_NOME_ATIVO_DDE}' na coluna A da aba DDE.")
+        print("[MODO REPLAY] O historico acumulado NAO sera gravado (so leitura); o arquivo real fica intacto.")
 
         # V458: a REMOCAO dos limites diarios no Replay foi revogada. Ela
         # elevava os limites para 999, de modo que um Replay podia abrir dez
