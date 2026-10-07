@@ -4,6 +4,17 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V501 — classificacao.py modo A: aba "Horários por dia"
+
+Pedido do dono (07/10/2026): na análise diária, incluir o horário em que a estratégia entrou e saiu da operação.
+- Nova aba "Horários por dia" na planilha do modo A, ao lado da "Apuração diária", com o mesmo desenho (dia nas
+  linhas, estratégia nas colunas). Cada célula lista as operações do dia: `entrada 09:45 | saída 10:30-10:45 | +55,00`.
+  A hora de entrada é a da execução; a saída é a janela de 15 min do candle em que a posição fechou (OHLC de 15 min
+  não revela o minuto exato do stop/alvo), igual à aba "Operações titulares".
+- A "Apuração diária" (valores) não mudou. Metodologia atualizada.
+
+---
+
 ## V500 — rechecagem do export sem poluir o console
 
 Log do dono (07/10, 02:54): com candles aproximados na base, a rechecagem do export a cada 30 s repetia a linha

@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V500"
+VERSAO = "V501"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1586,3 +1586,9 @@ VERSAO = "V500"
 # ---------------------------------------------------------------------------
 # principal.py: o resolvedor do CSV so imprime quando a mensagem muda (antes: a cada 30 s enquanto
 # houvesse candle aproximado, o dia todo).
+
+# ---------------------------------------------------------------------------
+# V501 - classificacao.py modo A: aba "Horarios por dia"
+# ---------------------------------------------------------------------------
+# Mesmo desenho da Apuracao diaria (dia x estrategia) com hora de entrada, candle de saida e resultado
+# de cada operacao do dia. Pedido do dono (07/10/2026).

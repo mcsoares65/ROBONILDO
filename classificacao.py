@@ -1046,6 +1046,34 @@ def _resultado_por_dia(trades: list[dict]) -> dict:
     return por_dia
 
 
+def _operacoes_por_dia(trades: list[dict]) -> dict:
+    """V501: {data: [(hora de entrada, janela do candle de saída, resultado)]} — a data é a do
+    candle de sinal. A saída é o candle em que a posição fechou (OHLC de 15 min não revela o
+    minuto exato do stop/alvo), como na aba 'Operações titulares'."""
+    por_dia: dict = {}
+    for t in sorted(trades, key=lambda x: x["horario_execucao"]):
+        fim = t["saida_dt"]
+        ini = fim - timedelta(minutes=cfg.TIMEFRAME_MINUTOS)
+        por_dia.setdefault(t["horario_rotulo"].date(), []).append(
+            (t["horario_execucao"].strftime("%H:%M"), f"{ini:%H:%M}-{fim:%H:%M}", t["resultado_reais"]))
+    return por_dia
+
+
+def _colunas_horarios(rank_entrada: list[dict], rank_saida: list[dict],
+                      rank_cruzado: list[dict]) -> list[tuple[str, str, dict]]:
+    """Mesmas colunas e ordem de _colunas_apuracao, com as operações de cada dia."""
+    colunas = []
+    for r in rank_entrada:
+        colunas.append(("Entradas", r["entrada"] + (" (titular)" if r["titular"] else ""), r["_operacoes_dia"]))
+    for r in rank_saida:
+        colunas.append(("Saídas", r["saida"] + (" (titular)" if r["titular"] else ""), r["_operacoes_dia"]))
+    for r in rank_cruzado:
+        if r["titular_entrada"] or r["titular_saida"]:
+            continue
+        colunas.append(("Cruzadas", f"{r['entrada']} × {r['saida']}", r["_operacoes_dia"]))
+    return colunas
+
+
 def _colunas_apuracao(rank_entrada: list[dict], rank_saida: list[dict],
                       rank_cruzado: list[dict]) -> list[tuple[str, str, dict]]:
     """Colunas das abas de apuração: (bloco, rótulo, {dia: resultado}).
@@ -1188,6 +1216,50 @@ def _aba_apuracao(wb, nome_aba: str, titulo: str, colunas: list, chaves: list,
     ws.freeze_panes = ws.cell(row=5, column=deslocamento + 1)
 
 
+def _aba_horarios_dia(wb, titulo: str, colunas: list, dias: list) -> None:
+    """V501: 'Horários por dia' — mesmo desenho da Apuração diária (dia nas linhas, estratégia
+    nas colunas), mas cada célula lista as operações do dia:
+    'entrada 09:45 | saída 10:30-10:45 | +55,00' (uma por linha de texto)."""
+    from openpyxl.utils import get_column_letter
+    est = _estilos_xlsx()
+    ws = wb.create_sheet("Horários por dia")
+    ws.cell(row=1, column=1, value=titulo).font = est["titulo"]
+    ws.cell(row=2, column=1,
+            value="Hora de entrada (execução) e candle de saída de cada operação do dia, com o resultado "
+                  "líquido (R$, 1 contrato). A saída é a janela do candle de 15 min em que a posição "
+                  "fechou. Célula vazia = sem operação.").font = est["fonte"]
+    for c, rotulo in ((1, "Data"), (2, "Dia")):
+        cel = ws.cell(row=4, column=c, value=rotulo)
+        cel.font, cel.fill = est["cab_fonte"], est["cab_fill"]
+        cel.alignment = est["Alignment"](horizontal="center", vertical="center")
+    ws.column_dimensions["A"].width = 12
+    ws.column_dimensions["B"].width = 9
+    for c, (bloco, rotulo, _) in enumerate(colunas, 3):
+        bl = ws.cell(row=3, column=c, value=bloco)
+        bl.font, bl.fill = est["cab_fonte"], est["bloco_fill"][bloco]
+        bl.alignment = est["Alignment"](horizontal="center")
+        cel = ws.cell(row=4, column=c, value=rotulo)
+        cel.font, cel.fill = est["cab_fonte"], est["cab_fill"]
+        cel.alignment = est["Alignment"](horizontal="center", vertical="center", wrap_text=True)
+        ws.column_dimensions[get_column_letter(c)].width = 34
+    ws.row_dimensions[4].height = 78
+    for i, dia in enumerate(sorted(dias)):
+        linha = 5 + i
+        k = ws.cell(row=linha, column=1, value=dia)
+        k.font = est["fonte"]
+        k.number_format = "dd/mm/yyyy"
+        ws.cell(row=linha, column=2, value=_DIAS_SEMANA[dia.weekday()]).font = est["fonte"]
+        for j, (_, _, ops_por_dia) in enumerate(colunas):
+            ops = ops_por_dia.get(dia)
+            if not ops:
+                continue
+            texto = "\n".join(f"entrada {e} | saída {s} | {r:+,.2f}" for e, s, r in ops)
+            cel = ws.cell(row=linha, column=3 + j, value=texto)
+            cel.font = est["fonte"]
+            cel.alignment = est["Alignment"](wrap_text=True, vertical="top")
+    ws.freeze_panes = "C5"
+
+
 def _aba_operacoes_titulares(wb, trades: list[dict], meta: dict) -> None:
     from openpyxl.utils import get_column_letter
     est = _estilos_xlsx()
@@ -1240,6 +1312,7 @@ def _aba_metodologia(wb, meta: dict) -> None:
         ("Saídas", f"Cada saída pareada com a entrada titular ({meta['entrada_titular']}.py)."),
         ("Cruzadas", "Todas as combinações entrada × saída. Nas abas de apuração, o bloco Cruzadas omite os pares que já aparecem nos blocos Entradas/Saídas (os que têm titular)."),
         ("Apuração diária / mensal / anual", "Soma do resultado líquido por dia do candle de sinal, por mês e por ano. Dias sem operação valem zero."),
+        ("Horários por dia", "Mesmo desenho da Apuração diária, com a hora de entrada, o candle de saída e o resultado de cada operação do dia, por estratégia. A saída é a janela de 15 min do candle em que a posição fechou (OHLC de 15 min não revela o minuto exato)."),
         ("Fonte e período", meta["fonte"]),
         ("Histórico utilizado",
          f"{meta['arquivo']}, de {meta['historico_inicio']:%d/%m/%Y} a {meta['historico_fim']:%d/%m/%Y} "
@@ -1287,6 +1360,8 @@ def gravar_planilha_analise(
     anos = sorted({d.year for d in dias})
     _aba_apuracao(wb, "Apuração diária", f"Apuração diária{sufixo}", colunas, dias,
                   "Data", lambda d: d, lambda k: k, "dd/mm/yyyy", semana=True)
+    _aba_horarios_dia(wb, f"Horários das operações por dia{sufixo}",
+                      _colunas_horarios(rank_entrada, rank_saida, rank_cruzado), dias)
     _aba_apuracao(wb, "Apuração mensal", f"Apuração mensal{sufixo}", colunas, meses,
                   "Mês", lambda d: (d.year, d.month), lambda k: f"{k[1]:02d}/{k[0]}", "@")
     _aba_apuracao(wb, "Apuração anual", f"Apuração anual{sufixo}", colunas, anos,
@@ -1906,6 +1981,7 @@ def executar(
             entrada_titular=ent.titular, saida_titular=sai.titular,
         )
         res["_por_dia"] = _resultado_por_dia(trades)    # modo A; não vai para o CSV
+        res["_operacoes_dia"] = _operacoes_por_dia(trades)  # V501: horários por dia (modo A)
         res["time"] = ent.time
         if (ent.time if time else ent.titular) and sai.titular:
             trades_titular = sorted(trades, key=lambda t: t["horario_execucao"])
