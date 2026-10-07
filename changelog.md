@@ -4,6 +4,20 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V502 — radar dos três titulares + replay sem gravar no histórico acumulado
+
+Log de replay do dono (07/10/2026, V500):
+- **Radar cego.** Com os três titulares em arquivos, o radar mostrava `0/1 | aguardando condições | 0%` o tempo
+  todo (e sempre a MACD + Estocástico): os arquivos extraídos só tinham `gerar_sinal`, sem o radar que as portas
+  tinham no titular antigo. Cada um dos três ganhou `diagnosticar_oportunidades(row)` com as mesmas condições
+  (X/Y confirmações, próxima condição que falta, "BLOQUEADA ATÉ …"). `gerar_sinal` não mudou: em 49.503
+  avaliações (2025-26) o sinal do radar e o `gerar_sinal` divergiram 0 vezes.
+- **Replay gravava no arquivo real.** O replay trocava, no `historico_acumulado.csv`, os candles reais do dia pelos
+  que ele montava (o das 09:00, só a partir da hora em que o replay começou). Agora, em replay, nada é gravado nesse
+  arquivo; o robô avisa na partida.
+
+---
+
 ## V501 — classificacao.py modo A: aba "Horários por dia"
 
 Pedido do dono (07/10/2026): na análise diária, incluir o horário em que a estratégia entrou e saiu da operação.
