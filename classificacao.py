@@ -1161,18 +1161,21 @@ def _aba_ranking(wb, nome_aba: str, titulo: str, linhas: list[dict], par: bool) 
 
 def _aba_apuracao(wb, nome_aba: str, titulo: str, colunas: list, chaves: list,
                   rotulo_chave: str, chave_fn, rotulo_fn, formato_chave,
-                  semana: bool = False) -> None:
+                  semana: bool = False, titular_dia: Optional[tuple] = None) -> None:
     """Linhas = períodos (dia/mês/ano); colunas = estratégias. Última linha = total.
 
     chaves: períodos já ordenados; chave_fn(data) -> chave do período;
-    rotulo_fn(chave) -> valor exibido na primeira coluna."""
+    rotulo_fn(chave) -> valor exibido na primeira coluna.
+    titular_dia (V503, só com semana=True): (rótulo, {dia: resultado}, {dia: operações}) do time/titular.
+    Vira 3 colunas logo depois de Data e Dia: resultado do dia, hora de entrada e hora de saída."""
     from openpyxl.utils import get_column_letter
     est = _estilos_xlsx()
     ws = wb.create_sheet(nome_aba)
     ws.cell(row=1, column=1, value=titulo).font = est["titulo"]
     ws.cell(row=2, column=1,
             value="Resultado líquido (R$, 1 contrato) por período; célula '-' = sem operação/zero.").font = est["fonte"]
-    deslocamento = 2 if semana else 1
+    n_titular = 3 if (semana and titular_dia) else 0
+    deslocamento = (2 if semana else 1) + n_titular
     cab = ws.cell(row=4, column=1, value=rotulo_chave)
     cab.font, cab.fill = est["cab_fonte"], est["cab_fill"]
     cab.alignment = est["Alignment"](horizontal="center", vertical="center")
@@ -1182,6 +1185,16 @@ def _aba_apuracao(wb, nome_aba: str, titulo: str, colunas: list, chaves: list,
         c2.font, c2.fill = est["cab_fonte"], est["cab_fill"]
         c2.alignment = est["Alignment"](horizontal="center", vertical="center")
         ws.column_dimensions["B"].width = 9
+    if n_titular:
+        rotulo_t, res_t, ops_t = titular_dia
+        for c, (texto, largura) in enumerate(((f"{rotulo_t} (R$)", 16), ("Entrada", 11), ("Saída", 15)), 3):
+            bl = ws.cell(row=3, column=c, value=rotulo_t)
+            bl.font, bl.fill = est["cab_fonte"], est["bloco_fill"]["Entradas"]
+            bl.alignment = est["Alignment"](horizontal="center")
+            cel = ws.cell(row=4, column=c, value=texto)
+            cel.font, cel.fill = est["cab_fonte"], est["cab_fill"]
+            cel.alignment = est["Alignment"](horizontal="center", vertical="center", wrap_text=True)
+            ws.column_dimensions[get_column_letter(c)].width = largura
     agrupados = []
     for c, (bloco, rotulo, por_dia) in enumerate(colunas, deslocamento + 1):
         bl = ws.cell(row=3, column=c, value=bloco)
@@ -1194,6 +1207,7 @@ def _aba_apuracao(wb, nome_aba: str, titulo: str, colunas: list, chaves: list,
         agrupados.append(_agrupar_periodo(por_dia, chave_fn))
     ws.row_dimensions[4].height = 78
     totais = [0.0] * len(colunas)
+    total_titular = 0.0
     for i, chave in enumerate(chaves):
         linha = 5 + i
         k = ws.cell(row=linha, column=1, value=rotulo_fn(chave))
@@ -1201,6 +1215,18 @@ def _aba_apuracao(wb, nome_aba: str, titulo: str, colunas: list, chaves: list,
         k.number_format = formato_chave
         if semana:
             ws.cell(row=linha, column=2, value=_DIAS_SEMANA[chave.weekday()]).font = est["fonte"]
+        if n_titular:
+            ops = ops_t.get(chave) or []
+            bruto_t = res_t.get(chave, 0.0)
+            total_titular += bruto_t
+            cel = ws.cell(row=linha, column=3, value=round(bruto_t, 2))
+            cel.font = est["negrito"] if ops else est["fonte"]
+            cel.number_format = _FORMATO_MOEDA_XLSX
+            for c, texto in ((4, "\n".join(e for e, _, _ in ops)), (5, "\n".join(sd for _, sd, _ in ops))):
+                if texto:
+                    cel = ws.cell(row=linha, column=c, value=texto)
+                    cel.font = est["fonte"]
+                    cel.alignment = est["Alignment"](horizontal="center", vertical="top", wrap_text=True)
         for j, agr in enumerate(agrupados):
             bruto = agr.get(chave, 0.0)
             totais[j] += bruto
@@ -1209,6 +1235,10 @@ def _aba_apuracao(wb, nome_aba: str, titulo: str, colunas: list, chaves: list,
             cel.number_format = _FORMATO_MOEDA_XLSX
     linha_total = 5 + len(chaves)
     ws.cell(row=linha_total, column=1, value="Total").font = est["negrito"]
+    if n_titular:
+        cel = ws.cell(row=linha_total, column=3, value=round(total_titular, 2))
+        cel.font = est["negrito"]
+        cel.number_format = _FORMATO_MOEDA_XLSX
     for j, total in enumerate(totais):
         cel = ws.cell(row=linha_total, column=deslocamento + 1 + j, value=round(total, 2))
         cel.font = est["negrito"]
@@ -1311,7 +1341,7 @@ def _aba_metodologia(wb, meta: dict) -> None:
         ("Entradas", f"Cada entrada pareada com a saída titular ({meta['saida_titular']}.py)."),
         ("Saídas", f"Cada saída pareada com a entrada titular ({meta['entrada_titular']}.py)."),
         ("Cruzadas", "Todas as combinações entrada × saída. Nas abas de apuração, o bloco Cruzadas omite os pares que já aparecem nos blocos Entradas/Saídas (os que têm titular)."),
-        ("Apuração diária / mensal / anual", "Soma do resultado líquido por dia do candle de sinal, por mês e por ano. Dias sem operação valem zero."),
+        ("Apuração diária / mensal / anual", "Soma do resultado líquido por dia do candle de sinal, por mês e por ano. Dias sem operação valem zero. Na diária, as 3 primeiras colunas depois de Dia são do Time (ou do titular, se houver só um): resultado do dia, hora de entrada e janela do candle de saída; com mais de uma operação no dia, uma por linha, na mesma ordem."),
         ("Horários por dia", "Mesmo desenho da Apuração diária, com a hora de entrada, o candle de saída e o resultado de cada operação do dia, por estratégia. A saída é a janela de 15 min do candle em que a posição fechou (OHLC de 15 min não revela o minuto exato)."),
         ("Fonte e período", meta["fonte"]),
         ("Histórico utilizado",
@@ -1358,8 +1388,11 @@ def gravar_planilha_analise(
     dias = sorted(dias)
     meses = sorted({(d.year, d.month) for d in dias})
     anos = sorted({d.year for d in dias})
+    e_time = str(meta.get("entrada_titular", "")).startswith("TIME(")
+    titular_dia = ("Time" if e_time else "Titular", _resultado_por_dia(trades_titular),
+                   _operacoes_por_dia(trades_titular))   # V503: resultado e horários do time por dia
     _aba_apuracao(wb, "Apuração diária", f"Apuração diária{sufixo}", colunas, dias,
-                  "Data", lambda d: d, lambda k: k, "dd/mm/yyyy", semana=True)
+                  "Data", lambda d: d, lambda k: k, "dd/mm/yyyy", semana=True, titular_dia=titular_dia)
     _aba_horarios_dia(wb, f"Horários das operações por dia{sufixo}",
                       _colunas_horarios(rank_entrada, rank_saida, rank_cruzado), dias)
     _aba_apuracao(wb, "Apuração mensal", f"Apuração mensal{sufixo}", colunas, meses,
