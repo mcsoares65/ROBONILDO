@@ -850,6 +850,38 @@ def rodar():
             elif analise_volta.integro and not aproximados:
                 narrar("Conferi: nenhum candle foi perdido. Segue normal.")
 
+        # ---------- V499/V498: buraco - troca aproximados por reais e tenta liberar bloqueio ----------
+        # Roda ANTES dos desvios 'aguardando abertura' e 'mercado encerrado': o dono pode exportar
+        # o historico de madrugada ou com o pregao fechado e ver a liberacao na hora.
+        # A cada 30 s olha o export mais recente do Profit: candles reais substituem os
+        # aproximados e fecham buraco grande. O lembrete falado a cada 5 min (so com bloqueio)
+        # existe para o dono NUNCA descobrir o bloqueio so na hora do sinal.
+        if candles_aquecimento_restantes > 0 or _horarios_sinteticos:
+            if (agora_real - ultima_recuperacao_csv).total_seconds() >= 30:
+                ultima_recuperacao_csv = agora_real
+                trocados = _trocar_sinteticos_por_reais(historico_candles, agora, recuperador_csv,
+                                                        agora_real)
+                if trocados:
+                    msg = (f"Troquei {trocados} candle(s) aproximados pelos candles reais do "
+                           f"Profit. Base de dados mais precisa.")
+                    print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                    narrar(msg)
+                if candles_aquecimento_restantes > 0:
+                    analise_rec, preenchidos, aproximados = _conferir_integridade_historico(
+                        historico_candles, agora, recuperador_csv, agora_real, preco_atual=preco)
+                    if preenchidos or aproximados:
+                        print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {preenchidos} candle(s) "
+                              f"do export e {aproximados} aproximados preencheram o buraco.")
+                        if analise_rec.restantes < candles_aquecimento_restantes:
+                            candles_aquecimento_restantes = analise_rec.restantes
+                        if candles_aquecimento_restantes == 0:
+                            msg = ("Base de dados corrigida. Entradas LIBERADAS.")
+                            print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
+                            narrar(msg)
+                            ultimo_lembrete_bloqueio = agora_real
+                        else:
+                            narrar(f"Preenchi parte do buraco, mas ainda há buraco grande: "
+                                   f"{_texto_buraco(analise_rec)}.")
         # ---------- DDE ainda nao atualizou para hoje (antes do leilao abrir) ----------
         # O campo de horario do DDE pode continuar mostrando o ultimo tick do
         # PREGAO ANTERIOR ate o leilao de abertura de hoje gerar o primeiro tick
@@ -923,36 +955,8 @@ def rodar():
         if _noticias is not None:
             _noticias.retomar()
 
-        # ---------- V498: buraco - troca aproximados por reais e tenta liberar bloqueio ----------
-        # A cada 30 s olha o export mais recente do Profit: candles reais substituem os
-        # aproximados e fecham buraco grande. O lembrete falado a cada 5 min (so com bloqueio)
-        # existe para o dono NUNCA descobrir o bloqueio so na hora do sinal.
-        if candles_aquecimento_restantes > 0 or _horarios_sinteticos:
-            if (agora_real - ultima_recuperacao_csv).total_seconds() >= 30:
-                ultima_recuperacao_csv = agora_real
-                trocados = _trocar_sinteticos_por_reais(historico_candles, agora, recuperador_csv,
-                                                        agora_real)
-                if trocados:
-                    msg = (f"Troquei {trocados} candle(s) aproximados pelos candles reais do "
-                           f"Profit. Base de dados mais precisa.")
-                    print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
-                    narrar(msg)
-                if candles_aquecimento_restantes > 0:
-                    analise_rec, preenchidos, aproximados = _conferir_integridade_historico(
-                        historico_candles, agora, recuperador_csv, agora_real, preco_atual=preco)
-                    if preenchidos or aproximados:
-                        print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {preenchidos} candle(s) "
-                              f"do export e {aproximados} aproximados preencheram o buraco.")
-                        if analise_rec.restantes < candles_aquecimento_restantes:
-                            candles_aquecimento_restantes = analise_rec.restantes
-                        if candles_aquecimento_restantes == 0:
-                            msg = ("Base de dados corrigida. Entradas LIBERADAS.")
-                            print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
-                            narrar(msg)
-                            ultimo_lembrete_bloqueio = agora_real
-                        else:
-                            narrar(f"Preenchi parte do buraco, mas ainda há buraco grande: "
-                                   f"{_texto_buraco(analise_rec)}.")
+        # ---------- V498: lembrete falado do bloqueio (a recuperacao ja rodou acima) ----------
+        if candles_aquecimento_restantes > 0:
             if candles_aquecimento_restantes > 0 and \
                     (agora_real - ultimo_lembrete_bloqueio).total_seconds() >= cfg.LEMBRETE_BLOQUEIO_SEGUNDOS:
                 ultimo_lembrete_bloqueio = agora_real
@@ -961,6 +965,7 @@ def rodar():
                        f"Exporte o histórico do Profit para liberar agora.")
                 print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE] {msg}")
                 narrar(msg)
+
 
         # ---------- Prova real contra a tela do Profit ----------
         avisos_integridade = leitor.verificar_integridade(preco, agora, modo_replay=_MODO_REPLAY)

@@ -150,7 +150,7 @@ VALOR_PONTO_REAIS = 0.20  # fixo, WIN
 # janela do indicador mais longo (MA50) nao se renovar, NAO abre posicao nova
 # (posicao ja aberta continua sendo gerida normalmente).
 CANDLES_AQUECIMENTO_APOS_BURACO = 50
-BURACO_MAX_CANDLES_PREENCHER = 37   # V498: buraco ate este tamanho (1 pregao) e PREENCHIDO por aproximacao
+BURACO_MAX_CANDLES_PREENCHER = 38   # V498: buraco ate este tamanho (1 pregao = 38 candles) e PREENCHIDO por aproximacao
                                     # (reta entre os precos antes e depois) e as entradas seguem liberadas.
                                     # Acima disso (robo desligado por dias) nao ha base: bloqueia por
                                     # CANDLES_AQUECIMENTO_APOS_BURACO. Para nunca bloquear, ponha um valor enorme.
