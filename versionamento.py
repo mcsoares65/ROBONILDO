@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V502"
+VERSAO = "V503"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1603,3 +1603,10 @@ VERSAO = "V502"
 # principal.py: _salvar_historico_persistente() nao grava nada em modo REPLAY (o replay trocava os
 # candles reais do dia pelos montados pelo DDE, o primeiro so a partir da hora de inicio).
 # escalacao.py: so texto ("juiz" -> classificacao.py).
+
+# ---------------------------------------------------------------------------
+# V503 - classificacao.py modo A: colunas do Time na Apuracao diaria
+# ---------------------------------------------------------------------------
+# Apuracao diaria: depois de Data e Dia, tres colunas do time (ou do titular, se so ha um):
+# resultado do dia, hora de entrada e janela do candle de saida (varias operacoes: uma por linha).
+# Pedido do dono (07/10/2026): achar o resultado do time num dia sem abrir a aba de horarios.

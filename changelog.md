@@ -4,6 +4,16 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V503 — classificacao.py modo A: colunas do Time na "Apuração diária"
+
+Pedido do dono (07/10/2026): na aba "Horários por dia" ele não achou o resultado do time num dia (06/10).
+- "Apuração diária" ganhou, logo depois de Data e Dia, três colunas do time (escalação × saída titular; com um
+  titular só, o rótulo é "Titular"): **Time (R$)** com o resultado do dia, **Entrada** e **Saída** (hora de entrada e
+  janela do candle de saída). Com mais de uma operação no dia, uma por linha, na mesma ordem. A linha Total soma o Time.
+- As colunas por estratégia vêm depois, como antes. Mensal, anual e "Horários por dia" não mudaram.
+
+---
+
 ## V502 — radar dos três titulares + replay sem gravar no histórico acumulado
 
 Log de replay do dono (07/10/2026, V500):
