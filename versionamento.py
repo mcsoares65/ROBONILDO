@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V499"
+VERSAO = "V500"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1580,3 +1580,9 @@ VERSAO = "V499"
 # abertura" e "mercado encerrado": exportar o historico de madrugada libera na hora.
 # configuracao.py: BURACO_MAX_CANDLES_PREENCHER 37 -> 38 (um pregao tem 38 candles, 09:00..18:15).
 # configuracao.py: historico acumulado em D:\DAYTRADE\HISTORICO\ACUMULADO (fora da pasta do robo); principal.py copia o antigo na 1a vez.
+
+# ---------------------------------------------------------------------------
+# V500 - rechecagem do export sem repetir a linha "[HISTORICO] ... tem candle mais recente"
+# ---------------------------------------------------------------------------
+# principal.py: o resolvedor do CSV so imprime quando a mensagem muda (antes: a cada 30 s enquanto
+# houvesse candle aproximado, o dia todo).

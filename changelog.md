@@ -4,6 +4,14 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V500 — rechecagem do export sem poluir o console
+
+Log do dono (07/10, 02:54): com candles aproximados na base, a rechecagem do export a cada 30 s repetia a linha
+"[HISTORICO] ... tem candle mais recente ..." o tempo todo. O resolvedor do CSV agora só imprime quando a mensagem muda.
+O histórico acumulado na pasta `ACUMULADO` (V499) funcionou: 7224 candles carregados, 3 aproximados, entradas liberadas.
+
+---
+
 ## V499 — recuperação do buraco pelo export também antes da abertura
 
 Log do dono (07/10, 02:42): o robô V498 partiu com o histórico persistente terminando em 05/10 18:00, avisou "buraco de
