@@ -4,6 +4,37 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V498 — integridade da base de dados: checar na partida, narrar, recuperar sozinho
+
+Incidente de 06/10/2026: a entrada das 15:15 foi bloqueada por "buraco" e o robô não tinha dito nada o dia todo.
+Duas causas empilhadas (ata `conselho/2026-10-07-AI.txt`): (1) o candle das 18:15 nunca fechava (o robô parava de
+ler às 18:20:58), então a manhã seguinte via 1 candle faltando e bloqueava 50 candles desde as 09:15; (2) a
+planilha DDE ficou parada ~1 h com o Excel ocupado e a falha de leitura era silenciosa. O limite de 25% da banca
+NÃO participou (removido na V483).
+- `integridade_historico.py` (novo): análise de buracos de pregão, recuperador pelo CSV e vigia de leitura do DDE.
+- Partida: a continuidade do histórico é a primeira checagem, nos dois caminhos de carga (persistente e CSV), com
+  voz. Antes só rodava no caminho do CSV e só imprimia.
+- **Buraco NÃO bloqueia mais a entrada** (pedido do dono, 07/10: bloquear repetiria a falha do dia). O robô avisa na
+  hora, tenta preencher com o export do Profit e, o que o export não cobrir, preenche por aproximação (reta entre o
+  preço antes e depois; candle plano, só em memória, nunca no arquivo) e segue operando. Linha de status mostra
+  "dados aproximados (N candles)". Quando o export do Profit cobrir, os aproximados são trocados pelos reais (checado
+  a cada 30 s, sem reiniciar). Medido em 2025-26: aproximar erra o sinal em ~53% no 1º candle depois do buraco, ~12%
+  no 10º, ~0% no 30º (ignorar o buraco erra 78%/50%/4%).
+- Exceção: buraco maior que `BURACO_MAX_CANDLES_PREENCHER` (37 candles, um pregão: robô desligado por dias, como em
+  01/10 com 80 candles) não tem base para aproximar. Esse caso ainda bloqueia por `CANDLES_AQUECIMENTO_APOS_BURACO`
+  (50), com lembrete falado a cada 5 min (`LEMBRETE_BLOQUEIO_SEGUNDOS`), aviso quando o radar chega a 100% e
+  liberação automática ao exportar o histórico. Para nunca bloquear: valor enorme em `BURACO_MAX_CANDLES_PREENCHER`.
+- Fim do pregão: o robô segue acompanhando sem operar até o candle das 18:15 fechar (relógio do DDE em 18:30, ou 60 s
+  com o DDE parado) e o salva. Não há mais buraco falso na manhã seguinte.
+- DDE: falha de leitura vira aviso falado em 10 s (8 s com posição aberta, com e-mail); no instante em que um candle
+  inteiro se perde na queda, "BURACO NOS DADOS AGORA"; ao voltar a leitura, confere e preenche na hora. Console: no
+  máximo uma linha de falha a cada 30 s.
+- `leitor_dde.py`: tenta achar a planilha por nome (ROT) para o DDE poder viver numa instância própria do Excel;
+  se não achar, comportamento de antes. NÃO testado em Windows.
+- `_noticias` inicializado (erro latente).
+
+---
+
 ## V497 — escalação de titulares de entrada (Regra 17)
 
 Pedido do dono (06/10/2026): o "cenário" é o radar do terminal (Retomada MA21, MACD + Estocástico, Saída de

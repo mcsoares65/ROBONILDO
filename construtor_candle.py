@@ -77,6 +77,23 @@ class ConstrutorCandle:
         self._atual = _CandleEmFormacao(periodo, preco, preco, preco, preco, q)
         return candle_fechado
 
+    def fechar_em_formacao(self) -> Optional[Candle]:
+        """V498: fecha A FORCA o candle em formacao e zera o construtor. Usado no fim do
+        pregao: o ultimo candle (18:15) so fecharia com uma leitura de 18:30, que o DDE
+        nao entrega depois do encerramento - e sem ele a manha seguinte via um buraco falso."""
+        if self._atual is None:
+            return None
+        candle = Candle(
+            horario=self._atual.inicio,
+            abertura=self._atual.abertura,
+            maxima=self._atual.maxima,
+            minima=self._atual.minima,
+            fechamento=self._atual.fechamento,
+            quantidade=self._atual.quantidade,
+        )
+        self._atual = None
+        return candle
+
     def candle_em_formacao(self) -> Optional[Candle]:
         """Devolve o estado atual da vela ainda nao fechada (util para monitorar sem esperar o fechamento)."""
         if self._atual is None:

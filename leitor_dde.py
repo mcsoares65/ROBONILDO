@@ -85,6 +85,7 @@ AVISO_INTEGRIDADE_REPETIR_SEGUNDOS = 120  # V486: o MESMO tipo de aviso de integ
                                            # saia um por iteracao (~2s): em 05/10/2026 foram
                                            # 825 avisos em 27 min e a voz ficou lendo-os por
                                            # mais de 2 horas (fila do SAPI sem descarte).
+FALHA_LEITURA_IMPRIMIR_SEGUNDOS = 30  # V498: no maximo uma linha de "Falha ao ler ..." a cada 30 s
 CHECKPOINT_NARRACAO_SEGUNDOS = 600  # a cada 10 minutos, narra o preco atual em voz alta -
                                       # da pra voce conferir contra a tela do Profit sem
                                       # precisar ficar vigiando o tempo todo
@@ -100,6 +101,28 @@ class LeitorDDE:
         self._ultimo_preco: Optional[float] = None
         self._ultima_mudanca_preco: Optional[datetime] = None
         self._ultimo_checkpoint: Optional[datetime] = None
+        # V498: ultima causa de falha de leitura (o principal usa para narrar) e
+        # controle para nao imprimir uma linha de falha a cada 3 segundos
+        self.ultimo_erro_leitura: Optional[str] = None
+        self._ultima_falha_impressa: Optional[datetime] = None
+        self._falhas_suprimidas = 0
+
+    def _avisar_falha_leitura(self, o_que: str, tentativas: int, erro, consequencia: str):
+        """V498: uma linha de falha por FALHA_LEITURA_IMPRIMIR_SEGUNDOS (antes saia uma a
+        cada ~3 s, enchendo o console sem dizer nada de novo). O principal narra."""
+        self.ultimo_erro_leitura = str(erro) if erro is not None else None
+        agora = datetime.now()
+        if (self._ultima_falha_impressa is not None and
+                (agora - self._ultima_falha_impressa).total_seconds() < FALHA_LEITURA_IMPRIMIR_SEGUNDOS):
+            self._falhas_suprimidas += 1
+            return
+        detalhe = f": {erro}" if erro is not None else ""
+        extra = (f" (+{self._falhas_suprimidas} falhas iguais omitidas)"
+                 if self._falhas_suprimidas else "")
+        print(f"[LEITOR_DDE] Falha ao ler {o_que} apos {tentativas} tentativas{detalhe} - "
+              f"{consequencia}{extra}")
+        self._ultima_falha_impressa = agora
+        self._falhas_suprimidas = 0
 
     def conectar(self):
         try:
@@ -108,6 +131,26 @@ class LeitorDDE:
             raise RuntimeError(
                 "pywin32 nao instalado. Rodar: pip install pywin32"
             ) from e
+
+        # V498: tenta primeiro achar a PLANILHA pelo nome na tabela de objetos em execucao
+        # (ROT) do Windows, em qualquer instancia do Excel. Assim o DDE pode ficar numa
+        # instancia propria do Excel (aberta so com ele) e mexer em outras planilhas na
+        # outra instancia nao tranca a leitura (RPC_E_CALL_REJECTED). Se nao achar, ou se
+        # qualquer coisa falhar, segue EXATAMENTE o caminho de antes (GetActiveObject).
+        try:
+            planilha_rot = self._achar_planilha_na_rot()
+            if planilha_rot is not None:
+                planilha_rot.Sheets(NOME_ABA_DDE)  # teste de fogo: a aba do DDE responde?
+        except Exception as e:
+            print(f"[LEITOR_DDE] Busca da planilha por nome indisponivel ({e}); "
+                  f"usando o Excel ativo.")
+            planilha_rot = None
+        if planilha_rot is not None:
+            self._planilha = planilha_rot
+            self._excel = getattr(planilha_rot, "Application", None)
+            print(f"[LEITOR_DDE] Planilha '{self.caminho_planilha}' encontrada pelo nome "
+                  f"(instancia propria do Excel, se voce a abriu separada).")
+            return
 
         # GetActiveObject conecta ao Excel JA ABERTO (o mesmo com o vínculo DDE ativo).
         # Dispatch() criaria uma SEGUNDA instancia invisivel, que nao teria o vinculo
@@ -134,6 +177,27 @@ class LeitorDDE:
                 f"em CAMINHO_PLANILHA ou abra o arquivo correto."
             )
         self._planilha = aberta
+
+    def _achar_planilha_na_rot(self):
+        """Procura na Running Object Table a pasta de trabalho com o caminho configurado.
+        NAO abre o arquivo se ele nao estiver aberto (so enumera o que ja esta em
+        execucao). Devolve o Workbook ou None."""
+        import pythoncom
+        import win32com.client
+        rot = pythoncom.GetRunningObjectTable()
+        contexto = pythoncom.CreateBindCtx(0)
+        alvo = self.caminho_planilha.lower()
+        for moniker in rot.EnumRunning():
+            try:
+                nome = moniker.GetDisplayName(contexto, None)
+            except Exception:
+                continue
+            if str(nome).lower() != alvo:
+                continue
+            objeto = rot.GetObject(moniker)
+            despachante = objeto.QueryInterface(pythoncom.IID_IDispatch)
+            return win32com.client.Dispatch(despachante)
+        return None
 
     def localizar_ativo(self, nome_ativo: str) -> int:
         """
@@ -191,14 +255,14 @@ class LeitorDDE:
                 celula = f"{COLUNA_PRECO}{self._linha_ativo}"
                 valor = self._planilha.Sheets(NOME_ABA_DDE).Range(celula).Value
                 if valor is not None:
+                    self.ultimo_erro_leitura = None
                     return float(valor)
             except Exception as e:
                 ultimo_erro = e
             _time.sleep(espera_segundos)
 
-        detalhe = f": {ultimo_erro}" if ultimo_erro is not None else ""
-        print(f"[LEITOR_DDE] Falha ao ler preco apos {tentativas} tentativas{detalhe} - "
-              "pulando esta leitura (instabilidade conhecida do DDE).")
+        self._avisar_falha_leitura("preco", tentativas, ultimo_erro,
+                                   "pulando esta leitura (instabilidade conhecida do DDE).")
         return None
 
     def ler_horario_mercado(self, tentativas: int = 3, espera_segundos: float = 0.5) -> Optional[datetime]:
@@ -235,9 +299,7 @@ class LeitorDDE:
                 ultimo_erro = e
                 _time.sleep(espera_segundos)
 
-        detalhe = f": {ultimo_erro}" if ultimo_erro is not None else ""
-        print(f"[LEITOR_DDE] Falha ao ler horario apos {tentativas} tentativas{detalhe} - "
-              "pulando esta leitura.")
+        self._avisar_falha_leitura("horario", tentativas, ultimo_erro, "pulando esta leitura.")
         return None
 
     def verificar_integridade(self, preco_atual: float, horario_mercado: datetime,

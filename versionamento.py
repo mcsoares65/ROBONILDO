@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V497"
+VERSAO = "V498"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1558,3 +1558,17 @@ VERSAO = "V497"
 #   classificacao.py : idem; com 2+ titulares o time aparece como linha de comparacao fora do
 #                  ranking (modo E) e como parceiro das saidas (modos S e A). Com 1 titular nada muda.
 #   Ata conselho/2026-10-06-AH.txt (medicoes de cenarios e de saidas livres).
+
+# ---------------------------------------------------------------------------
+# V498 - integridade da base de dados (incidente de 06/10/2026); buraco aproximado, nao bloqueia
+# ---------------------------------------------------------------------------
+# integridade_historico.py (novo): analisar_historico (buracos de pregao + bloqueio
+# restante), RecuperadorCSV (preenche buraco com o export do Profit sem reiniciar),
+# VigiaLeituraDDE (falha de leitura vira aviso falado). principal.py: checagem de
+# continuidade como PRIMEIRA coisa da partida (arquivo persistente e CSV), narrada;
+# bloqueio avisado na hora, lembrete a cada 30 min, "ENTRADAS BLOQUEADAS" na linha de
+# status, liberacao automatica; candle das 18:15 fechado e salvo no fim do pregao
+# (construtor_candle.fechar_em_formacao); conferencia imediata ao voltar a leitura do DDE.
+# leitor_dde.py: falhas de leitura impressas no maximo a cada 30 s; busca da planilha
+# por nome na ROT (instancia propria do Excel), com fallback para GetActiveObject.
+#   Ata conselho/2026-10-07-AI.txt.

@@ -1,0 +1,80 @@
+# Ata ao conselho — V498 — integridade da base de dados (incidente de 06/10/2026)
+
+Autoria: Claude (Anthropic), 07/10/2026, a pedido de Marcio Soares (dono do laboratório).
+Atas consultadas (Regra 15): W (01/10, buraco e bloqueio V461), AH (V497), e a V486 (spam de voz).
+Fonte: log de 06/10/2026 (robô V489 em produção) e medições em 2025-26.
+
+1. O QUE ACONTECEU
+---------------------------------------------------------------------------
+O dono esperou o dia todo e, na entrada das 15:15, o robô disse que a operação estava bloqueada.
+Duas causas, uma sobre a outra:
+ (a) O robô encerra às 18:20:58 e parava de ler o DDE. O construtor de candles só fecha um candle quando
+     chega uma leitura do período seguinte (18:30), que nunca chegava. O candle das 18:15 de 05/10 não
+     foi salvo. Às 09:15 de 06/10 faltava 1 candle de pregão e o bloqueio V462 travou 50 candles
+     (mais que um pregão inteiro, 37 candles). O dia estava bloqueado desde a abertura.
+ (b) Entre 12:30 e 13:27 a planilha DDE ficou sem leitura (Excel ocupado com outra planilha). A falha era
+     impressa no console, nunca falada, e abriu um segundo buraco com mais 50 candles de bloqueio.
+O limite de 25% da banca NÃO participou: foi removido na V483 (RISCO_MAXIMO_PCT_BANCA = 0); só a validação
+do stop (falha fechada) permanece e não apareceu no log.
+
+2. POR QUE O ROBÔ NÃO DISSE NADA
+---------------------------------------------------------------------------
+A conferência de continuidade da partida (prometida na ata W) só existia no caminho do CSV e só imprimia.
+Com o histórico persistente (o caso normal) não havia conferência alguma. O aviso de buraco só vinha quando o
+primeiro candle fechava, e o "sinal bloqueado" era narrado como "regra de risco", sem dizer buraco.
+
+3. MEDIÇÃO: QUANTO UM BURACO CONTAMINA O SINAL (2025-26, comparação com a série completa)
+---------------------------------------------------------------------------
+ - Buraco de 2 candles ignorado (comportamento atual): sinais diferentes em ~78% (1 candle depois), ~50% (10),
+   ~19% (20), ~4% (30).
+ - Preenchendo por interpolação: 53% / 12% / 5% / 0%.
+ - Só o candle das 18:15 faltando: ~30% de divergência nos primeiros ~15 candles do dia seguinte, ~15% em 20,
+   0 a partir de 30. Por isso o 18:15 NÃO foi isentado da contagem de faltantes: a correção é fechá-lo.
+
+4. O QUE FOI FEITO (V498)
+---------------------------------------------------------------------------
+ - integridade_historico.py (novo, funções puras testáveis): análise de buracos + candles de bloqueio restantes,
+   recuperador pelo CSV (só insere candle que não existe, nunca troca o montado ao vivo) e vigia da leitura do DDE.
+ - Partida: continuidade é a PRIMEIRA checagem, nos dois caminhos de carga, falada ("Base de dados íntegra" ou o
+   buraco, o bloqueio e como liberar) e e-mail se houver bloqueio.
+ - Buraco NÃO bloqueia mais (pedido do dono, 07/10: o bloqueio repetiria a falha do dia). O robô avisa na hora,
+   tenta o export do Profit e, no que faltar, preenche por aproximação (reta entre o preço de antes e de depois;
+   candle plano; só em memória, nunca no arquivo persistente) e segue operando. O DDE só entrega o preço de agora,
+   então não recupera os candles perdidos; os aproximados são trocados pelos reais quando o export do Profit os
+   cobrir (conferido a cada 30 s). Linha de status: "dados aproximados (N candles)".
+   Custo medido da aproximação (2025-26): sinal diferente em ~53% no 1º candle depois do buraco, ~12% no 10º, ~0%
+   no 30º (ignorar o buraco: 78% / 50% / 4%).
+ - EXCEÇÃO mantida e declarada: buraco maior que 37 candles (BURACO_MAX_CANDLES_PREENCHER, um pregão) não é
+   aproximado, porque não há base (é o caso de 01/10: 80 candles, MA21 a 3.000 pts do preço, stop de R$ 707). Esse
+   caso ainda bloqueia por 50 candles, com lembrete falado a cada 5 min, aviso quando o radar chega a 100% e
+   liberação automática ao exportar o histórico. O dono pode desligar com um valor enorme na constante.
+ - No instante em que um candle inteiro se perde durante a queda (relógio real, só ao vivo) o robô fala "buraco" e
+   manda e-mail; ao voltar a leitura, confere e preenche na hora.
+ - Fim do pregão: depois de 18:20:58 o robô segue alimentando o construtor, sem operar, até o candle das 18:15
+   fechar (DDE em 18:30, ou 60 s com o DDE parado) e o salva. Só vale se o robô acompanhou o 18:15 ao vivo
+   (evita gravar candle falso de uma partida depois do encerramento).
+ - DDE: falha de leitura é falada em 10 s (8 s com posição aberta, mais e-mail e texto de urgência: stop/alvo sem
+   monitoramento), repetida a cada 120 s (30 s com posição), com aviso de retorno e conferência imediata de buraco.
+   No instante em que um candle inteiro se perde durante a queda (relógio real, só ao vivo) o robô fala "buraco",
+   bloqueia e manda e-mail, sem esperar a leitura voltar.
+   No console, no máximo uma linha de falha a cada 30 s (V486: nada de fila de voz).
+ - leitor_dde.py: busca a planilha por nome na tabela de objetos em execução (ROT). Isso permite o DDE rodar numa
+   instância própria do Excel, de modo que mexer em outra planilha não tranca a leitura. Se não achar ou falhar,
+   usa GetActiveObject como antes. Código novo NÃO testado em Windows.
+ - Erro latente corrigido: `_noticias` indefinido quando o módulo de notícias não carrega.
+
+5. TESTES (simulação com DDE falso, relógio simulado)
+---------------------------------------------------------------------------
+ - Fim do dia: candle 18:15 fecha por DDE parado e é gravado; início depois do encerramento não grava.
+ - Queda de 1 h no meio do dia: aviso falado em 10 s e a cada 120 s, retorno, bloqueio imediato, export do Profit
+   chegando depois libera as entradas sozinho.
+ - Análise: manhã normal íntegra; 18:15 faltando = 1 faltante e 50 de bloqueio; buraco no meio; buraco velho
+   (50+ candles depois) não bloqueia; recuperador relê só se o arquivo mudou e a cada 30 s.
+ - Não coberto: Windows real (ROT, SAPI), pregão encurtado (24 e 31/12 seguem como no V461).
+
+6. PENDÊNCIAS E DECISÕES DO DONO
+---------------------------------------------------------------------------
+ - Limite de 37 candles para aproximar (e bloquear acima): o dono decide se mantém, sobe ou desliga.
+ - Operação: abrir o Excel do DDE em instância própria (abrir o Excel por um novo atalho, não por duplo clique num
+   arquivo com outro Excel aberto) e, antes do pregão, exportar o histórico do Profit para a pasta de histórico.
+ - A máquina do dono roda a V489; precisa atualizar para a V498.
