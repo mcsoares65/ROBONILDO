@@ -1,0 +1,65 @@
+# Ata ao conselho — V497 — escalação de titulares de entrada (Regra 17) e duas medições
+
+Autoria: Claude (Anthropic), 06/10/2026, a pedido de Marcio Soares (dono do laboratório).
+Atas consultadas (Regra 15): AA a AG, em especial AE (portas), AF (nomes) e AG (saídas).
+
+1. PEDIDO DO DONO
+---------------------------------------------------------------------------
+O "cenário" que o dono quer é o radar do terminal (Retomada MA21, MACD + Estocástico, Saída de Extremo):
+em vez de rastrear as portas de uma estratégia titular, o motor rastreia e escala uma entre várias
+estratégias titulares, cada uma num arquivo. O mesmo, depois, para a saída. O dono decide quem é titular
+movendo arquivos; vale o que der mais resultado. A saída fica em segundo plano nesta entrega.
+
+2. O QUE FOI FEITO (V497)
+---------------------------------------------------------------------------
+ - escalacao.py (novo): junta N titulares de entrada e se apresenta ao motor como um cartucho
+   (gerar_sinal e radar). Um lado sinalizando: entra o de maior prioridade (PRIORIDADE_ESCALACAO, depois
+   ordem alfabética). Lados opostos no mesmo candle: não entra. Exceção de cartucho não é silenciada.
+ - principal.py: titular/ de entrada aceita 1 ou mais arquivos; com 1 nada muda (provado: carrega o
+   tres_portas como antes); a saída segue com exatamente 1.
+ - classificacao.py: idem; com 2+ titulares o juiz mostra a linha "ESCALAÇÃO x TITULARES INDIVIDUAIS" no
+   modo E (fora do ranking, Regra 17) e usa o time como entrada titular nos modos S e A. Em paralelo, o
+   processo remonta a escalação pelos arquivos.
+ - compliance.md: Regra 17 e adendo 6.
+ - cenario.py (reconhecedor de regime) não é usado; fica parado.
+
+3. MEDIÇÃO A — CENÁRIOS DE MERCADO COMO ROTEADOR (descartada como caminho principal)
+---------------------------------------------------------------------------
+Escopo: 8 entradas individuais (sem o titular agregador) x 10 saídas, 2020-2026, 94.597 operações
+classificadas pelo cenario.py; preços reescalados à volatilidade de 2026 (K por ano), custo R$ 0,50/op.
+ - O reconhecedor é estável (proporção por cenário quase igual entre os anos).
+ - Estabilidade do ranking de pares dentro de cada cenário, treino 2020-22 contra validação 2023-25
+   (Spearman): esticado +0,86; fim de tarde +0,44; lateral +0,22; abertura -0,12; tendência -0,15;
+   volátil -0,36; indefinido -0,80. Ou seja, só dois cenários repetem o vencedor.
+ - Walk-forward expandido (escolhe nos anos anteriores): R$/op do roteador 17,0 (2022), 26,1 (2023),
+   10,8 (2024), 0,9 (2025), 25,2 (2026); em 2024-2026 abaixo do nulo com rótulos embaralhados
+   (12,7; 14,1; 35,8). O ganho vem de escolher o melhor entre muitos pares, não do cenário.
+ - Duas células com persistência, HIPÓTESES NÃO TESTADAS fora da amostra (≈560 células examinadas,
+   máximo esperado por acaso de t perto de 3):
+     compressao_amplitude_v02 + alvo_meio_range em "esticado": R$/op 123, 111, 83, 70, 55 em 2022-2026;
+       2020-25: 130 operações, t = 3,73 (sem o filtro de cenário, t = 3,07).
+     cci_100 + reversao_estocastico em "lateral": positiva nos 7 anos, t = 2,63 (sem filtro, 2,04).
+   Variações declaradas (Regra 11.2): 6 cenários x 80 pares, 3 divisões de período, 5 janelas de walk-forward.
+
+4. MEDIÇÃO B — SAÍDAS "LIVRES" CONTRA O ESQUELETO ATUAL
+---------------------------------------------------------------------------
+Escopo igual ao da medição A. Sete saídas sem alvo fixo (stop de segurança de 2,5 ATR + uma leitura:
+estocástico, estocástico só no lucro, MACD, RSI, MA21, trailing de 2 ATR, só o stop) contra 10 saídas
+do esqueleto (stop estrutural + alvo). Acumulado = resultado - |drawdown|, somado nas 8 entradas:
+  tendencia_trailing_v01 (esqueleto)   53.756   giveback                  47.605
+  protecao_encerramento_v01            46.689   reversao_estocastico_v01  44.598
+  baseline                             43.848   livre: trailing ATR 2     43.237
+  livre: MACD                          35.151   livre: estocástico no lucro 34.666
+  livre: estocástico                   26.341   livre: RSI                16.349   livre: só stop 15.224
+Por período, tendencia_trailing: 8.374 (2020-22), 18.310 (2023-25), 2.024 (2026). Em 2026 quase tudo
+funciona (só o stop é o melhor); em 2020-22 as saídas livres perdem muito (estocástico -24.549).
+O mesmo trailing com stop estrutural fez 53.756 contra 43.237 com stop largo: o stop curto ajuda.
+Limites: sem teste de significância entre saídas; a soma é dominada por poucas entradas; as duas
+entrada_saida_extremo perdem com qualquer saída livre.
+
+5. PENDÊNCIAS (decisão do dono)
+---------------------------------------------------------------------------
+ - Quem forma o primeiro time de titulares (mover arquivos para estrategia/entrada/titular/).
+ - Saída: variante "trailing que aperta quando o estocástico sai da zona extrema" (funil encadeado) contra
+   saida_tendencia_trailing_v01; radar de saída; saída titular segue a protecao_encerramento_v02 por ora.
+ - Se o time perder para o melhor titular individual fora da amostra, desfazer a escalação (Regra 17, item 5).

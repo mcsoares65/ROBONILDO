@@ -586,6 +586,36 @@ duas. A medição está na ata `conselho/2026-10-05-AE.txt`.
 
 ---
 
+## 17. Escalação dos titulares de entrada
+
+**O que muda:** a pasta `estrategia/entrada/titular/` aceita um ou mais cartuchos de
+entrada, cada um uma ideia única (Regra 16). Com dois ou mais, o motor passa a "escalar"
+quem entra em campo, no estilo do radar do terminal. A escalação é um agendador do motor,
+não um cartucho: o OU que a Regra 16 proíbe dentro de um arquivo continua proibido; aqui ele
+existe fora dos cartuchos, em `escalacao.py`, e é medido.
+
+1. **Quem é titular** é decisão do dono, por merge de PR que move arquivos para `titular/`
+   (Regra 12). Nenhuma IA escolhe o time.
+2. **Mecanismo** (`escalacao.py`, usado igualmente por `principal.py` e `classificacao.py`):
+   a cada candle fechado todos os titulares são consultados; se só um lado sinaliza, entra o
+   titular de maior prioridade (atributo opcional `PRIORIDADE_ESCALACAO` do cartucho, menor
+   vence; sem ele, ordem alfabética do nome do arquivo); se há sinais em lados opostos no
+   mesmo candle, o motor não entra. O motor segue com uma posição por vez e com as regras de
+   risco de hoje. Com um titular só, nada muda.
+3. **Radar.** Cada titular pode expor `diagnosticar_oportunidades(row)`; o radar do terminal
+   mostra o progresso de todos. Titular sem radar próprio aparece como uma oportunidade única.
+4. **Ranking.** Cada titular continua disputando o ranking sozinho. A escalação NÃO entra no
+   ranking: o juiz a mostra como linha de comparação ("ESCALAÇÃO x TITULARES INDIVIDUAIS") no
+   modo E, e como parceira das saídas nos modos S e A (a entrada titular passa a ser o time).
+5. **Prova.** O time só se justifica se superar o melhor titular individual fora da amostra
+   (Regra 11). Uma escalação que perde para o melhor jogador deve ser desfeita.
+6. **Saída.** Continua um único titular em `estrategia/saida/titular/`. Radar e escalação de
+   saídas dependem de regra própria, ainda não definida (as medições estão na ata AH).
+7. **Cenário de mercado** (`cenario.py`, reconhecedor de regime) não participa da
+   escalação. Fica parado até haver evidência (ata AH).
+
+---
+
 ## Termo de concordância
 
 ### Estratégias derivadas por desmembramento
@@ -649,6 +679,10 @@ importado no laboratório.
 
 ## Histórico de mudanças
 
+- **v8, adendo 6 de 06/10/2026** (por pedido do dono do laboratório): nova Regra 17 — a pasta
+  `entrada/titular/` aceita vários titulares e o motor escala quem entra em campo
+  (`escalacao.py`); a escalação não concorre no ranking e precisa superar o melhor titular
+  individual fora da amostra. Item 8 da Regra 16 mantém a transição dos titulares atuais.
 - **v8, adendo 5 de 05/10/2026** (por pedido do dono do laboratório): a Regra 16 passa a valer
   também para saídas: stop e alvo encadeados são um funil só; regras de encerramento antecipado
   soltas vão cada uma para o seu arquivo. Item 7 novo (saídas) e item 8 (transição dos titulares).

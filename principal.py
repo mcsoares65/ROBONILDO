@@ -272,34 +272,16 @@ print(f"[DIAGNOSTICO] motor calcula RSI/ATR? "
 # rodada 3 - evita acoplamento oculto entre os dois).
 
 
-def _descobrir_cartucho(nome_pasta: str, funcao_obrigatoria: str):
-    """
-    Acha exatamente 1 arquivo .py em estrategia/<nome_pasta>/titular/
-    (ignora arquivos que comecam com "_"). Confirma a funcao obrigatoria.
-
-    Estrutura V431:
-      estrategia/entrada/titular/  → cartucho de entrada de producao
-      estrategia/saida/titular/    → cartucho de saida de producao
-    Candidatas de ranking ficam na raiz do slot (fora de titular/) e nao
-    sao carregadas aqui — so no classificacao.py.
-    """
-    pasta = _Path(__file__).parent / "estrategia" / nome_pasta / "titular"
-    candidatos = [a for a in sorted(pasta.glob("*.py")) if not a.stem.startswith("_")]
-    if len(candidatos) != 1:
-        raise RuntimeError(
-            f"A pasta 'estrategia/{nome_pasta}/titular/' deve conter exatamente 1 "
-            f"arquivo de cartucho; foram encontrados {len(candidatos)}: "
-            f"{[a.name for a in candidatos]}"
-        )
-    nome = candidatos[0].stem
+def _importar_titular(nome_pasta: str, arquivo, funcao_obrigatoria: str):
+    nome = arquivo.stem
     # Import por caminho de arquivo — evita depender de estrategia/ ser pacote
     # com __init__ em todas as subpastas (titular/ pode ser so uma pasta de arquivos).
     spec = importlib.util.spec_from_file_location(
         f"robonildo_{nome_pasta}_titular_{nome}",
-        candidatos[0],
+        arquivo,
     )
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Nao foi possivel importar {candidatos[0]}")
+        raise RuntimeError(f"Nao foi possivel importar {arquivo}")
     modulo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modulo)
     if not callable(getattr(modulo, funcao_obrigatoria, None)):
@@ -310,10 +292,63 @@ def _descobrir_cartucho(nome_pasta: str, funcao_obrigatoria: str):
     return nome, modulo
 
 
-_nome_estrategia, _modulo_estrategia = _descobrir_cartucho("entrada", "gerar_sinal")
+def _arquivos_titulares(nome_pasta: str):
+    pasta = _Path(__file__).parent / "estrategia" / nome_pasta / "titular"
+    return [a for a in sorted(pasta.glob("*.py")) if not a.stem.startswith("_")]
+
+
+def _descobrir_cartucho(nome_pasta: str, funcao_obrigatoria: str):
+    """
+    Acha exatamente 1 arquivo .py em estrategia/<nome_pasta>/titular/
+    (ignora arquivos que comecam com "_"). Confirma a funcao obrigatoria.
+    Usado pela SAIDA: so existe um titular de saida (a escalacao de saidas
+    ainda nao existe).
+
+    Estrutura V431:
+      estrategia/entrada/titular/  → cartuchos de entrada de producao (V497: 1 ou mais)
+      estrategia/saida/titular/    → cartucho de saida de producao
+    Candidatas de ranking ficam na raiz do slot (fora de titular/) e nao
+    sao carregadas aqui — so no classificacao.py.
+    """
+    candidatos = _arquivos_titulares(nome_pasta)
+    if len(candidatos) != 1:
+        raise RuntimeError(
+            f"A pasta 'estrategia/{nome_pasta}/titular/' deve conter exatamente 1 "
+            f"arquivo de cartucho; foram encontrados {len(candidatos)}: "
+            f"{[a.name for a in candidatos]}"
+        )
+    return _importar_titular(nome_pasta, candidatos[0], funcao_obrigatoria)
+
+
+def _descobrir_titulares_entrada():
+    """V497 (Regra 17): a pasta estrategia/entrada/titular/ aceita 1 ou mais
+    cartuchos de entrada. Com 1, o cartucho opera sozinho (comportamento de
+    sempre). Com 2 ou mais, escalacao.Escalacao os junta: consulta todos a cada
+    candle e escala quem sinalizar (conflito de lados = nao entra)."""
+    arquivos = _arquivos_titulares("entrada")
+    if not arquivos:
+        raise RuntimeError(
+            "A pasta 'estrategia/entrada/titular/' deve conter pelo menos 1 arquivo de cartucho."
+        )
+    return [_importar_titular("entrada", a, "gerar_sinal") for a in arquivos]
+
+
+_titulares_entrada = _descobrir_titulares_entrada()
+if len(_titulares_entrada) == 1:
+    _nome_estrategia, _modulo_estrategia = _titulares_entrada[0]
+    _escalacao = None
+else:
+    from escalacao import Escalacao as _Escalacao, Membro as _Membro
+    _escalacao = _Escalacao([_Membro(n, m) for n, m in _titulares_entrada])
+    _nome_estrategia, _modulo_estrategia = _escalacao.nome, _escalacao
 diagnosticar_sinal = getattr(_modulo_estrategia, "diagnosticar_sinal", None)
 diagnosticar_oportunidades = getattr(_modulo_estrategia, "diagnosticar_oportunidades", None)
-print(f"Cartucho de entrada: {_nome_estrategia}.py  [estrategia/entrada/titular/]")
+if _escalacao is None:
+    print(f"Cartucho de entrada: {_nome_estrategia}.py  [estrategia/entrada/titular/]")
+else:
+    print(f"Escalação de entrada: {len(_titulares_entrada)} titulares  [estrategia/entrada/titular/]")
+    for _n, _ in _titulares_entrada:
+        print(f"  - {_n}.py")
 
 _nome_saida, _modulo_saida = _descobrir_cartucho("saida", "avaliar_saida")
 diagnosticar_saida = getattr(_modulo_saida, "diagnosticar_saida", None)
@@ -1256,6 +1291,8 @@ def rodar():
 
                 sinal = gestor.avaliar_candle(historico_candles)
                 sinal_auditoria = sinal
+                if sinal and _escalacao is not None and _escalacao.ultimo_titular:
+                    print(f"[ESCALAÇÃO] {_escalacao.ultimo_titular} entrou em campo: {sinal.lado}.")
                 if sinal:
                     row_fechamento = gestor.construir_row(historico_candles)
                     diagnostico_fechamento = (
