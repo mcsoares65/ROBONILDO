@@ -694,9 +694,24 @@ def rodar():
     # a continuidade e conferida AQUI, na partida, nos dois caminhos de carga, e o
     # resultado e narrado em voz alta. Se houver buraco que o export do Profit nao
     # cubra, as novas entradas ja nascem bloqueadas e o robo diz isso agora.
+    # O resolvedor imprime qual arquivo escolheu; na rechecagem a cada 30 s isso virava uma
+    # linha repetida o dia todo. Aqui so repete a mensagem quando ela MUDA.
+    _ultima_msg_resolvedor = [None]
+
+    def _resolver_csv_silencioso():
+        import contextlib
+        import io
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            caminho = resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL, cfg.TIMEFRAME_MINUTOS)
+        texto = buf.getvalue().strip()
+        if texto and texto != _ultima_msg_resolvedor[0]:
+            print(texto)
+        _ultima_msg_resolvedor[0] = texto
+        return caminho
+
     recuperador_csv = _integridade.RecuperadorCSV(
-        lambda: resolver_csv_historico(cfg.CAMINHO_HISTORICO_INICIAL, cfg.TIMEFRAME_MINUTOS),
-        _ler_csv_candles, intervalo_segundos=30.0)
+        _resolver_csv_silencioso, _ler_csv_candles, intervalo_segundos=30.0)
     candles_aquecimento_restantes = 0
     narrar("Verificando a integridade da base de dados.")
     preco_inicial = leitor.ler_preco()
