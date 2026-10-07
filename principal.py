@@ -697,6 +697,7 @@ def rodar():
     # depois de um buraco nao preenchido no historico (posicao aberta segue gerida).
     # Ja foi calculado na checagem de integridade da partida (acima).
     vigia_dde = _integridade.VigiaLeituraDDE()
+    candles_perdidos_queda = 0   # candles inteiros perdidos na queda de leitura em andamento
     ultima_recuperacao_csv = datetime.now()
     ultimo_lembrete_bloqueio = datetime.now()
     ultimo_dia_candle_final = None   # data do dia cujo ultimo candle (18:15) ja foi fechado/salvo
@@ -726,9 +727,36 @@ def rodar():
                                                     aviso_falha)
                     except Exception as e:
                         print(f"[FALHA DDE] E-mail de aviso nao enviado: {e}")
+            # V498: BURACO sinalizado NO INSTANTE em que um candle inteiro se perde (ao vivo,
+            # pelo relogio real), sem esperar a leitura voltar.
+            if not _MODO_REPLAY and vigia_dde.inicio_queda is not None:
+                perdidos = _integridade.candles_perdidos_na_queda(
+                    vigia_dde.inicio_queda, agora_real, cfg.TIMEFRAME_MINUTOS,
+                    cfg.HORARIO_PRIMEIRO_CANDLE, cfg.HORARIO_ULTIMO_CANDLE, cfg.FERIADOS_B3)
+                if perdidos > candles_perdidos_queda:
+                    primeiro_buraco = candles_perdidos_queda == 0
+                    candles_perdidos_queda = perdidos
+                    if candles_aquecimento_restantes == 0:
+                        candles_aquecimento_restantes = cfg.CANDLES_AQUECIMENTO_APOS_BURACO
+                    ultimo_lembrete_bloqueio = agora_real
+                    if primeiro_buraco:
+                        msg = (f"BURACO NOS DADOS AGORA. Um candle inteiro se perdeu sem leitura do "
+                               f"Profit. Novas entradas BLOQUEADAS por "
+                               f"{candles_aquecimento_restantes} candles. Pare de mexer nas "
+                               f"planilhas. {_instrucao_liberar()}")
+                    else:
+                        msg = f"Mais um candle perdido. Já são {perdidos} candles sem leitura."
+                    print(f"[{agora_real.strftime('%H:%M:%S')}] [BLOQUEIO V498] {msg}")
+                    narrar(msg)
+                    if primeiro_buraco:
+                        try:
+                            email_notificacao.notificar("ROBONILDO: BURACO NOS DADOS (leitura caiu)", msg)
+                        except Exception as e:
+                            print(f"[BLOQUEIO] E-mail de aviso nao enviado: {e}")
             time.sleep(2)
             continue  # instabilidade pontual do DDE - pula este ciclo, tenta de novo
         aviso_volta = vigia_dde.sucesso(agora_real)
+        candles_perdidos_queda = 0
         if aviso_volta:
             print(f"[{agora_real.strftime('%H:%M:%S')}] [FALHA DDE] {aviso_volta}")
             narrar(aviso_volta)

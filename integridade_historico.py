@@ -165,6 +165,16 @@ class RecuperadorCSV:
                                       minutos, janela)
 
 
+def candles_perdidos_na_queda(inicio_queda: datetime, agora_real: datetime, minutos: int,
+                              primeiro: str, ultimo_rotulo: str, feriados=()) -> int:
+    """Quantos candles de pregao JA se perderam por inteiro numa queda de leitura que comecou
+    em `inicio_queda` (relogio real; so ao vivo). O candle em que a queda comecou e o atual
+    nao contam: so os periodos que passaram inteiros sem nenhuma leitura."""
+    return candles_faltando(inicio_do_periodo(inicio_queda, minutos),
+                            inicio_do_periodo(agora_real, minutos),
+                            minutos, primeiro, ultimo_rotulo, feriados)
+
+
 # ---------------------------------------------------------------------------
 # 3. Vigia da leitura do DDE
 # ---------------------------------------------------------------------------
@@ -178,7 +188,7 @@ class VigiaLeituraDDE:
     - Ao voltar a ler: um aviso de retorno (so se o aviso de falha chegou a ser dado,
       ou se a queda durou mais que `limite_segundos`)."""
 
-    def __init__(self, limite_segundos: float = 20.0, repetir_segundos: float = 120.0,
+    def __init__(self, limite_segundos: float = 10.0, repetir_segundos: float = 120.0,
                  limite_posicao_segundos: float = 8.0, repetir_posicao_segundos: float = 30.0):
         self.limite = limite_segundos
         self.repetir = repetir_segundos
@@ -193,6 +203,10 @@ class VigiaLeituraDDE:
     @property
     def em_falha(self) -> bool:
         return self._inicio is not None
+
+    @property
+    def inicio_queda(self) -> Optional[datetime]:
+        return self._inicio
 
     def falha(self, agora_real: datetime, posicao_aberta: bool = False,
               erro: Optional[str] = None) -> Optional[str]:
@@ -237,5 +251,5 @@ class VigiaLeituraDDE:
 
 
 __all__ = ["Analise", "Buraco", "RecuperadorCSV", "VigiaLeituraDDE",
-           "analisar_historico", "candles_para_preencher", "descrever_buracos",
+           "analisar_historico", "candles_para_preencher", "candles_perdidos_na_queda", "descrever_buracos",
            "JANELA_CANDLES_PADRAO"]
