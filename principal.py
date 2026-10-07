@@ -254,6 +254,7 @@ print("=" * 60)
 print(f"ROBONILDO [{cfg.VERSAO}]")
 print("=" * 60)
 import importlib
+import shutil
 import importlib.util
 from pathlib import Path as _Path
 from motor import MotorRobonildo, Candle, media_movel
@@ -485,6 +486,17 @@ def carregar_historico_inicial(caminho_csv: str, referencia_tempo: datetime) -> 
     completamente diferente da data simulada.
     """
     caminho_persistente = Path(cfg.CAMINHO_HISTORICO_PERSISTENTE)
+    # V499: o historico acumulado mudou de lugar (agora fora da pasta do robo). Na primeira
+    # vez, copia o arquivo do local antigo, se existir; depois so o novo vale.
+    legado = Path(cfg.CAMINHO_HISTORICO_PERSISTENTE_LEGADO)
+    if not caminho_persistente.exists() and legado.exists() and legado != caminho_persistente:
+        try:
+            caminho_persistente.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(legado, caminho_persistente)
+            print(f"[HISTORICO] Historico acumulado copiado do local antigo ({legado}) para "
+                  f"o novo ({caminho_persistente}).")
+        except OSError as e:
+            print(f"[AVISO] Nao foi possivel copiar o historico acumulado antigo: {e}")
     if caminho_persistente.exists():
         candles = _ler_csv_candles(caminho_persistente)
         candles = _remover_candles_futuros(candles, referencia_tempo)

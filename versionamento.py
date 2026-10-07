@@ -1579,3 +1579,4 @@ VERSAO = "V499"
 # principal.py: a conferencia do export (a cada 30 s) roda antes dos desvios "aguardando
 # abertura" e "mercado encerrado": exportar o historico de madrugada libera na hora.
 # configuracao.py: BURACO_MAX_CANDLES_PREENCHER 37 -> 38 (um pregao tem 38 candles, 09:00..18:15).
+# configuracao.py: historico acumulado em D:\DAYTRADE\HISTORICO\ACUMULADO (fora da pasta do robo); principal.py copia o antigo na 1a vez.

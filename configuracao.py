@@ -33,7 +33,13 @@ NOME_TELA_PROFIT = "ProfitPro"  # usado para confirmar foco antes de enviar orde
 # le as pastas de ano sob PASTA_HISTORICO_BACKTEST e deixa escolher os anos.
 PASTA_HISTORICO_BACKTEST = r"D:\DAYTRADE\HISTORICO"
 CAMINHO_HISTORICO_INICIAL = r"D:\DAYTRADE\HISTORICO\2026\WINFUT_F_0_15min.csv"  # so para a carga UNICA inicial
-CAMINHO_HISTORICO_PERSISTENTE = str(PASTA_LOGS / "historico_acumulado.csv")  # o robo mantem sozinho
+# V499: o historico que o robo acumula candle a candle fica FORA da pasta do robo, numa pasta
+# fixa da maquina. Assim, rodar o script de outra pasta (copia de seguranca, versao de teste)
+# usa e alimenta o MESMO historico, sem buraco ao trocar de pasta. Nao use o mesmo arquivo em
+# dois robos AO MESMO TEMPO (ordens duplicadas e gravacao concorrente).
+PASTA_HISTORICO_ACUMULADO = r"D:\DAYTRADE\HISTORICO\ACUMULADO"
+CAMINHO_HISTORICO_PERSISTENTE = str(Path(PASTA_HISTORICO_ACUMULADO) / "historico_acumulado.csv")  # o robo mantem sozinho
+CAMINHO_HISTORICO_PERSISTENTE_LEGADO = str(PASTA_LOGS / "historico_acumulado.csv")  # local antigo (V498 e antes): copiado 1 vez
 CAMINHO_ESTADO_RISCO = str(PASTA_LOGS / "estado_risco.json")
 GAP_MAXIMO_HORAS_HISTORICO = 48   # se o robo ficar parado mais que isso, o historico
                                    # acumulado e descartado (misturar cenarios de
