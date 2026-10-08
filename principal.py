@@ -685,6 +685,10 @@ def rodar():
     except Exception as e:
         print(f"[COLETA_DDE] indisponivel, seguindo sem coleta: {e}")
     leitor.localizar_ativo(_NOME_ATIVO_DDE)
+    # V507: aba REGISTRO_OPERACOES da planilha (uma linha por operacao). Nunca no replay.
+    registro_planilha = cfg.REGISTRO_PLANILHA_ATIVO and not _MODO_REPLAY
+    if registro_planilha:
+        registro_planilha = leitor.preparar_registro_operacoes()
 
     # pega uma primeira leitura do horario do MERCADO antes de criar o gestor de
     # risco e decidir sobre o historico - necessario para os dois calculos de
@@ -1472,10 +1476,17 @@ def rodar():
                         resultado_pts=resultado_pts, resultado_reais=resultado_reais,
                         motivo_saida=motivo,
                     )
-                    caminho.fechar(
+                    linha_caminho = caminho.fechar(
                         posicao_antes, agora, motivo, saida_teorica, preco,
                         preco_saida, resultado_pts, resultado_reais, entrada_dde=entrada_dde_op,
                     )
+                    if registro_planilha:
+                        leitor.registrar_fechamento_planilha(
+                            posicao_antes, agora, preco_saida, motivo, resultado_pts, resultado_reais,
+                            pico_reais=(linha_caminho or {}).get('pico_reais'),
+                            devolveu_reais=((linha_caminho or {}).get('devolucao_pts') or 0) * cfg.VALOR_PONTO_REAIS if linha_caminho else None,
+                            banca=gestor.banca_atual,
+                        )
                     email_notificacao.notificar_fechamento(
                         posicao_antes, motivo, preco_saida, resultado_pts, resultado_reais, agora
                     )
@@ -1510,10 +1521,17 @@ def rodar():
                         resultado_pts=resultado_pts, resultado_reais=resultado_reais,
                         motivo_saida=motivo,
                     )
-                    caminho.fechar(
+                    linha_caminho = caminho.fechar(
                         posicao_antes, agora, motivo, preco_saida, preco,
                         preco_saida, resultado_pts, resultado_reais, entrada_dde=entrada_dde_op,
                     )
+                    if registro_planilha:
+                        leitor.registrar_fechamento_planilha(
+                            posicao_antes, agora, preco_saida, motivo, resultado_pts, resultado_reais,
+                            pico_reais=(linha_caminho or {}).get('pico_reais'),
+                            devolveu_reais=((linha_caminho or {}).get('devolucao_pts') or 0) * cfg.VALOR_PONTO_REAIS if linha_caminho else None,
+                            banca=gestor.banca_atual,
+                        )
                     email_notificacao.notificar_fechamento(
                         posicao_antes, motivo, preco_saida, resultado_pts, resultado_reais, agora
                     )
@@ -1683,10 +1701,17 @@ def rodar():
                             resultado_pts=resultado_pts, resultado_reais=resultado_reais,
                             motivo_saida=motivo,
                         )
-                        caminho.fechar(
+                        linha_caminho = caminho.fechar(
                             posicao_antes, agora, motivo, saida_teorica, preco,
                             preco_saida, resultado_pts, resultado_reais, entrada_dde=entrada_dde_op,
                         )
+                        if registro_planilha:
+                            leitor.registrar_fechamento_planilha(
+                                posicao_antes, agora, preco_saida, motivo, resultado_pts, resultado_reais,
+                                pico_reais=(linha_caminho or {}).get('pico_reais'),
+                                devolveu_reais=((linha_caminho or {}).get('devolucao_pts') or 0) * cfg.VALOR_PONTO_REAIS if linha_caminho else None,
+                                banca=gestor.banca_atual,
+                            )
                         email_notificacao.notificar_fechamento(
                             posicao_antes, motivo, preco_saida, resultado_pts, resultado_reais, agora
                         )
@@ -1776,6 +1801,8 @@ def rodar():
                                 # na abertura - `sinal` nunca carrega isso desde
                                 # que o motor deixou de calcular nível nenhum.
                                 registrador.registrar_operacao_aberta(gestor.posicao_aberta)
+                                if registro_planilha:
+                                    leitor.registrar_abertura_planilha(gestor.posicao_aberta)
                                 email_notificacao.notificar_abertura(gestor.posicao_aberta, agora)
                                 narrar(
                                     f"A ordem de {sinal.lado.lower()} foi enviada após "
