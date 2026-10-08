@@ -4,6 +4,19 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V509 — narração e console: estratégia "escalada", sem "porta"/"jogador"/"em campo"; "Radar" vira "Escala"
+
+Pedido do dono (08/10/2026): a narração não usa "jogador" (soa como jogo, mal visto no mercado financeiro) nem "porta".
+- Ao abrir a posição, a narração diz: **"A estratégia <nome> foi escalada e assumiu a posição."** (só com a escalação de
+  titulares; com um titular só, nada muda).
+- Mantida a narração de aproximação/distanciamento e motivos ("A estratégia X está com N de M confirmações. Próxima
+  condição: …"). Saiu o sufixo "(porta N de M)". Quando a expectativa se desfaz: "A expectativa de compra da estratégia X
+  perdeu confirmação…".
+- Console: `[ESCALAÇÃO] A estratégia X foi escalada: COMPRA.` (antes "entrou em campo"); `[RADAR]` → `[ESCALA]`;
+  no batimento, "Radar <status>" → "Escala <status>". Só texto; a lógica não mudou.
+
+---
+
 ## V508 — classificacao.py (C002): time, titulares e reservas numa tabela só
 
 Pedido do dono (07/10/2026): apresentar a classificação com o time, seguido dos titulares (azul), dos reservas

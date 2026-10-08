@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V508"
+VERSAO = "V509"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1653,3 +1653,10 @@ VERSAO = "V508"
 #   ultimo em vermelho; cada grupo por acumulado. Coluna pos = lugar no ranking de entradas (T = time).
 #   Substitui a tabela separada "ESCALACAO x TITULARES INDIVIDUAIS". rank_entrada, planilha e
 #   demais modos inalterados.
+
+# ---------------------------------------------------------------------------
+# V509 - texto da narracao e do console: estrategia "escalada"; sem "porta", "jogador" nem "em campo"
+#   principal.py: ao abrir posicao com a escalacao, narra "A estrategia X foi escalada e assumiu a posicao.";
+#   removido o sufixo "(porta N de M)"; expectativa perdida cita a estrategia pelo nome; "[ESCALACAO] A estrategia X
+#   foi escalada"; "[RADAR]" -> "[ESCALA]"; "Radar <status>" -> "Escala <status>". A chave da expectativa passou a ser
+#   o nome da estrategia (antes o numero da porta). Somente texto/identificacao de narracao; logica inalterada.
