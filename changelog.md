@@ -4,11 +4,16 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
-## V509 — console e narração: "porta" vira "jogador da escalação", "Radar" vira "Escala"
+## V509 — narração e console: estratégia "escalada", sem "porta"/"jogador"/"em campo"; "Radar" vira "Escala"
 
-Pedido do dono (08/10/2026). Só texto, nenhuma lógica mudou:
-- Narração: "(porta 2 de 3)" → "(jogador 2 de 3 da escalação)"; "da Porta 2 perdeu confirmação" → "A expectativa de compra do jogador 2 da escalação perdeu confirmação" ("porta" era o jogador/estratégia; a escalação é o time).
-- Console: linha `[RADAR]` → `[ESCALA]`; no batimento, "Radar <status>" → "Escala <status>".
+Pedido do dono (08/10/2026): a narração não usa "jogador" (soa como jogo, mal visto no mercado financeiro) nem "porta".
+- Ao abrir a posição, a narração diz: **"A estratégia <nome> foi escalada e assumiu a posição."** (só com a escalação de
+  titulares; com um titular só, nada muda).
+- Mantida a narração de aproximação/distanciamento e motivos ("A estratégia X está com N de M confirmações. Próxima
+  condição: …"). Saiu o sufixo "(porta N de M)". Quando a expectativa se desfaz: "A expectativa de compra da estratégia X
+  perdeu confirmação…".
+- Console: `[ESCALAÇÃO] A estratégia X foi escalada: COMPRA.` (antes "entrou em campo"); `[RADAR]` → `[ESCALA]`;
+  no batimento, "Radar <status>" → "Escala <status>". Só texto; a lógica não mudou.
 
 ---
 

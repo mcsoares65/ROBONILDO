@@ -1655,7 +1655,8 @@ VERSAO = "V509"
 #   demais modos inalterados.
 
 # ---------------------------------------------------------------------------
-# V509 - texto do console e da narracao: "porta" -> "escalacao", "Radar" -> "Escala"
-#   principal.py: "(porta N de M)" -> "(jogador N de M da escalacao)"; "da Porta N" -> "do jogador N da escalacao";
-#   "[RADAR]" -> "[ESCALA]"; "Radar <status>" no heartbeat -> "Escala <status>". Somente texto;
-#   chaves internas (porta/total_portas) e logica inalteradas.
+# V509 - texto da narracao e do console: estrategia "escalada"; sem "porta", "jogador" nem "em campo"
+#   principal.py: ao abrir posicao com a escalacao, narra "A estrategia X foi escalada e assumiu a posicao.";
+#   removido o sufixo "(porta N de M)"; expectativa perdida cita a estrategia pelo nome; "[ESCALACAO] A estrategia X
+#   foi escalada"; "[RADAR]" -> "[ESCALA]"; "Radar <status>" -> "Escala <status>". A chave da expectativa passou a ser
+#   o nome da estrategia (antes o numero da porta). Somente texto/identificacao de narracao; logica inalterada.

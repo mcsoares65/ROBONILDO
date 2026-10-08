@@ -814,7 +814,7 @@ def rodar():
 
     ultimo_heartbeat = datetime.now()
     ultimo_candle_narracao_periodica = None  # evita repetir a narracao de acompanhamento no mesmo candle
-    ultima_expectativa_narrada = None  # (candle, porta, lado), evita repetição da explicação
+    ultima_expectativa_narrada = None  # (candle, estratégia, lado), evita repetição da explicação
     ultima_expectativa_perdida = None  # evita repetir a perda da mesma expectativa
     ultima_prioridade_radar_narrada = None  # (candle, estratégia, lado, faixa de 10%)
     radar_100_chave = None       # oportunidade que permanece continuamente em 100%
@@ -1120,22 +1120,17 @@ def rodar():
                 diagnostico = (diagnosticar_sinal(row_indicadores)
                                if diagnosticar_sinal is not None else None)
                 if dentro_da_faixa:
-                    porta = diagnostico.get("porta") if diagnostico else None
+                    nome_estrategia = diagnostico.get("estrategia") if diagnostico else None
                     lado = sinal_especulativo.lado
-                    chave_expectativa = (candle_atual.horario, porta, lado)
+                    chave_expectativa = (candle_atual.horario, nome_estrategia, lado)
                     if ultima_expectativa_narrada != chave_expectativa:
                         explicacao = (
                             diagnostico["explicacao"] if diagnostico else
                             f"A estratégia identificou uma expectativa de "
                             f"{lado.lower()} no fechamento do candle em formação."
                         )
-                        # Se a estrategia expuser total_portas (opcional), deixa
-                        # explicito QUAL das portas foi - nao e um funil
-                        # sequencial (so uma porta dispara por candle), so
-                        # identifica a porta entre as possiveis.
-                        total_portas = diagnostico.get("total_portas") if diagnostico else None
-                        if porta and total_portas:
-                            explicacao = f"{explicacao} (jogador {porta} de {total_portas} da escalação)"
+                        # V509: a explicacao ja diz qual estrategia esta se aproximando
+                        # (confirmacoes, proxima condicao); nao ha mais sufixo de "porta".
                         # O candle em formacao fecha em horario + TIMEFRAME. Dizer
                         # so "no fechamento" gera leitura ambigua: logo apos um
                         # [CANDLE FECHADO] o operador le as duas frases em sequencia
@@ -1171,8 +1166,8 @@ def rodar():
                 elif (ultima_expectativa_narrada is not None
                       and ultima_expectativa_narrada[0] == candle_atual.horario
                       and ultima_expectativa_perdida != ultima_expectativa_narrada):
-                    _, porta_anterior, lado_anterior = ultima_expectativa_narrada
-                    origem = f"do jogador {porta_anterior} da escalação" if porta_anterior else "da estratégia"
+                    _, estrategia_anterior, lado_anterior = ultima_expectativa_narrada
+                    origem = f"da estratégia {estrategia_anterior}" if estrategia_anterior else "da estratégia"
                     frase_perdida = (
                         f"A expectativa de {lado_anterior.lower()} {origem} perdeu "
                         "confirmação durante a formação do candle. Nenhuma ordem será "
@@ -1738,7 +1733,7 @@ def rodar():
                 sinal = gestor.avaliar_candle(historico_candles)
                 sinal_auditoria = sinal
                 if sinal and _escalacao is not None and _escalacao.ultimo_titular:
-                    print(f"[ESCALAÇÃO] {_escalacao.ultimo_titular} entrou em campo: {sinal.lado}.")
+                    print(f"[ESCALAÇÃO] A estratégia {_escalacao.ultimo_titular} foi escalada: {sinal.lado}.")
                 if sinal:
                     row_fechamento = gestor.construir_row(historico_candles)
                     diagnostico_fechamento = (
@@ -1748,7 +1743,7 @@ def rodar():
                     )
                     chave_fechamento = (
                         candle_fechado.horario,
-                        diagnostico_fechamento.get("porta") if diagnostico_fechamento else None,
+                        diagnostico_fechamento.get("estrategia") if diagnostico_fechamento else None,
                         sinal.lado,
                     )
                     pode, motivo_bloqueio = gestor.pode_abrir_posicao(sinal.horario)
@@ -1808,6 +1803,11 @@ def rodar():
                                     f"A ordem de {sinal.lado.lower()} foi enviada após "
                                     "a confirmação do candle. A posição foi aberta."
                                 )
+                                if _escalacao is not None and _escalacao.ultimo_titular:
+                                    # V509: quem foi escalada e assumiu a posicao
+                                    nome_escalada = (diagnostico_fechamento.get("estrategia")
+                                                     if diagnostico_fechamento else None) or _escalacao.ultimo_titular
+                                    narrar(f"A estratégia {nome_escalada} foi escalada e assumiu a posição.")
                                 if diagnostico_fechamento:
                                     narrar(diagnostico_fechamento["explicacao"])
                                     ultima_expectativa_narrada = chave_fechamento
