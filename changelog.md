@@ -4,6 +4,18 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V508 — classificacao.py (C002): time, titulares e reservas numa tabela só
+
+Pedido do dono (07/10/2026): apresentar a classificação com o time, seguido dos titulares (azul), dos reservas
+(branco) e do último em vermelho, por resultado acumulado.
+- Modo E (e A) com escalação: uma única tabela — **time** (negrito) no topo, **titulares** em azul, **reservas** em
+  branco, o último da tabela em vermelho. Dentro de cada grupo a ordem é a de sempre (acumulado).
+- Coluna `pos` = lugar do cartucho no ranking de entradas (um reserva pode ter lugar melhor que um titular); `T` = time.
+- Some a tabela separada "ESCALAÇÃO x TITULARES INDIVIDUAIS" (a linha da Regra 17 continua abaixo). Ranking
+  interno, planilha do modo A e modos S/C/D não mudaram. `VERSAO_CLASSIFICACAO` C001 → C002.
+
+---
+
 ## V507 — robô preenche a aba REGISTRO_OPERACOES (planilha PLANO_TRADE)
 
 Proposta do dono (07/10/2026): alimentar a aba REGISTRO_OPERACOES e chamar a planilha só de PLANO_TRADE.
