@@ -114,6 +114,8 @@ def diagnosticar_oportunidades(row):
     bloqueio_horario = False   # V510: a estratégia não tem mais janela de horário bloqueada
     if faltante == "afastamento superior a 200 pontos":
         detalhe = f"afastamento {row['distancia_ma21']:.0f}/200 pts"
+    elif faltante == "estocástico na direção da tendência":
+        detalhe = "estoc. a favor da tendência"   # V516: cabe na coluna do painel (29)
     elif faltante == "variação mínima do estocástico":
         detalhe = f"var. estoc. {variacao_stoch:.1f}/4,5"
     return [{

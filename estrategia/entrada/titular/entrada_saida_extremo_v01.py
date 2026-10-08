@@ -94,6 +94,8 @@ def diagnosticar_oportunidades(row):
     bloqueio_horario = faltante == "horário permitido"
     if bloqueio_horario:
         detalhe = "BLOQUEADA ATÉ 13:30"
+    elif faltante == "saída da zona extrema do estocástico":
+        detalhe = "estoc. saindo da zona extrema"   # V516: cabe na coluna do painel (29), sem reticências
     elif faltante == "corpo sem exaustão":
         proporcao_corpo = (corpo / amplitude * 100.0) if amplitude > 0 else 0.0
         detalhe = f"corpo {proporcao_corpo:.0f}% (máx. 70%)"
