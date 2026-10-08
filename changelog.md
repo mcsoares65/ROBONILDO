@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V514 — alerta de pré-entrada com 3 beeps
+
+Pedido do dono (08/10/2026): o beep antes de entrar passa de 1 para 3. Mesmo gatilho de sempre (preço dentro da faixa, a `BEEP_SEGUNDOS_ANTES` do fechamento, uma vez por candle). Quantidade em `configuracao.BEEP_QUANTIDADE`; toca numa thread, sem atrasar a leitura do DDE.
+
+---
+
 ## V513 — narração do candle sem "Nenhum sinal de entrada foi confirmado."
 
 Pedido do dono (08/10/2026): a fala do fechamento do candle agora termina na leitura da tendência das médias (ex.: "O candle fechou em alta, mas a tendência das médias ainda é de baixa."). Só texto; lógica inalterada.

@@ -69,6 +69,7 @@ PASTA_LOGS_AUDITORIA = str(PASTA_LOGS)
 MA_RAPIDA = 21            # aritmetica (SMA) - confirmado no Profit
 MA_LENTA = 50              # aritmetica (SMA) - confirmado no Profit
 TOLERANCIA_TOQUE_PONTOS = 40   # |Fechamento - MA21| <= 40 para considerar "tocou"
+BEEP_QUANTIDADE = 3        # V514: quantos beeps seguidos tocar no alerta de pre-entrada
 BEEP_SEGUNDOS_ANTES = 5   # toca beep de alerta quando faltar isso (ou menos) para o
                            # fechamento do candle, se o preco ja estiver dentro da faixa
 NARRACAO_ANTES_FECHAMENTO_SEGUNDOS = 10  # narra o acompanhamento (tendencia/posicao)

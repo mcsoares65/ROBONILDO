@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V513"
+VERSAO = "V514"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1689,3 +1689,8 @@ VERSAO = "V513"
 # ---------------------------------------------------------------------------
 # V513 - narracao do fechamento de candle sem a frase final "Nenhum sinal de entrada foi confirmado." (principal.py)
 #   Pedido do dono (08/10/2026). Fica so a leitura do candle e da tendencia das medias.
+
+# ---------------------------------------------------------------------------
+# V514 - alerta sonoro antes da entrada: 3 beeps (configuracao.BEEP_QUANTIDADE), em thread
+#   Pedido do dono (08/10/2026). Antes: 1 beep. Mesmo gatilho (preco dentro da faixa, ate BEEP_SEGUNDOS_ANTES
+#   do fechamento, uma vez por candle). Beeps de 300 ms com 150 ms de pausa, sem bloquear o laco do robo.
