@@ -4,6 +4,22 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V505 — robô grava o caminho de cada operação (pico, horário do pico, vale, derrapagem)
+
+Pergunta do dono (07/10/2026): o lucro de pico é mesmo devolvido antes da saída? O backtest só vê máxima/mínima de
+candle de 15 min (e acha isso raro); ao vivo, 06 e 07/10 mostraram o contrário. Agora o robô guarda o dado real:
+- `logs/caminho_operacoes.csv`: uma linha por operação fechada — pico (pts e R$), horário do pico, minutos até o pico,
+  vale, **devolução** (pico − resultado, pts e % do pico), **derrapagem** na saída (preço do DDE × nível teórico do
+  stop/alvo; positivo = pior), duração, nº de leituras e maior intervalo entre leituras (acusa buraco no DDE).
+- `logs/caminho_pontos_<dia>.csv`: trilha de preços da operação (no máx. 1 por segundo), para testar regras de saída
+  em dado real. `logs/caminho_aberto.json`: estado da operação em curso (sobrevive a reinício do robô).
+- `analisar_caminhos.py [pasta] [ativação R$]`: resumo e simulação "estopar com X% de queda do pico" (10% a 90%)
+  sobre as trilhas gravadas, comparada ao resultado real.
+- Só grava (não decide nada); preço é a leitura do DDE, não o fill da corretora. Desligado no replay. Não muda
+  `operacoes_<dia>.csv`, auditoria, motor, risco nem ordens.
+
+---
+
 ## V504 — saída titular sem corte antecipado de operação em prejuízo
 
 Pedido do dono (07/10/2026): se a operação se desenrola em prejuízo, nenhum corte antes das 18:20:58.
