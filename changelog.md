@@ -4,6 +4,13 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V518 — painel: "% ■" em coluna fixa, "há Ns" depois
+
+Pedido do dono (08/10/2026): o "há 36s" tem largura variável e empurrava o "100% ■", quebrando o layout vertical.
+- Antes: `… | Falta nenhuma | há 36s | 100% ■`. Agora: `… | Falta nenhuma | 100% ■ | há 36s`. Só formato do texto.
+
+---
+
 ## V517 — painel da Escala mais estável e sem "100%" falso
 
 Visto pelo dono no replay de 07/10 (10:29–10:32):
