@@ -3,6 +3,11 @@
 Reproduz a antiga proteção estrutural do Robonildo: stop no extremo dos
 últimos cinco candles e alvo fixo de 1,55 vez o risco. Depois da abertura não
 antecipa nem reconfigura a operação.
+
+TITULAR DE SAÍDA desde a V504 (pedido do dono, 07/10/2026): operação que corre em
+prejuízo NÃO é cortada por horário (sem as regras de 17h15 e 18h da
+saida_protecao_encerramento_v02). Só fecham: stop, alvo e o corte absoluto do motor
+(HORARIO_LIMITE_ABSOLUTO 18:20:58, CORTE_SEGURANCA_LIMITE).
 """
 
 from math import isfinite

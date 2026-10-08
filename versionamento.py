@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V503"
+VERSAO = "V505"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1610,3 +1610,21 @@ VERSAO = "V503"
 # Apuracao diaria: depois de Data e Dia, tres colunas do time (ou do titular, se so ha um):
 # resultado do dia, hora de entrada e janela do candle de saida (varias operacoes: uma por linha).
 # Pedido do dono (07/10/2026): achar o resultado do time num dia sem abrir a aba de horarios.
+
+# ---------------------------------------------------------------------------
+# V504 - saida titular sem corte por horario de operacao em prejuizo
+#   Pedido do dono (07/10/2026): operacao que corre em prejuizo nao pode ser cortada antes
+#   das 18:20:58 (HORARIO_LIMITE_ABSOLUTO, verificar_corte_final). saida_baseline.py
+#   (mesmo esqueleto: stop dos ultimos 5 candles + alvo 1,55R, sem regra de horario) foi
+#   para estrategia/saida/titular/; saida_protecao_encerramento_v02.py (17h15 + 18h) saiu
+#   de la e virou candidata na raiz de estrategia/saida/. Nenhum codigo de motor alterado.
+
+# ---------------------------------------------------------------------------
+# V505 - caminho de cada operacao real (pico, horario do pico, vale, derrapagem, trilha)
+#   Novo caminho_operacao.py (so grava, nao decide): logs/caminho_operacoes.csv (1 linha por
+#   operacao fechada), logs/caminho_pontos_<dia>.csv (trilha de precos, max 1/s) e
+#   logs/caminho_aberto.json (estado da operacao em curso, sobrevive a reinicio).
+#   principal.py: caminho.atualizar() a cada leitura com posicao aberta (antes das checagens de
+#   saida) e caminho.fechar() nos 3 pontos de saida (tick, corte final, fechamento de candle).
+#   Desligado no replay. analisar_caminhos.py le os arquivos e simula "estopar com X% de queda
+#   do pico" sobre a trilha real. Motor, risco, ordens e arquivos existentes inalterados.

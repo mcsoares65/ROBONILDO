@@ -361,6 +361,7 @@ from historico_csv import ler_csv_candles as _ler_csv_candles
 from historico_csv import resolver_csv_historico
 from registrador import Registrador
 from auditor_execucao import AuditorExecucao
+from caminho_operacao import CaminhoOperacao
 from leitor_dde import LeitorDDE
 import leitor_dde as _leitor_dde_mod  # so para acessar PREFIXO_REPLAY (constante de config)
 
@@ -610,6 +611,12 @@ def rodar():
     auditor = AuditorExecucao(
         pasta_logs=cfg.PASTA_LOGS_AUDITORIA,
         habilitado=cfg.AUDITORIA_EXECUCAO_ATIVA,
+    )
+    # V505: pico/vale/derrapagem/trilha de cada operacao real. No replay o relogio e o preco
+    # sao simulados (derrapagem sem sentido e trilha duplicada do mesmo dia): nao grava.
+    caminho = CaminhoOperacao(
+        pasta_logs=cfg.PASTA_LOGS_AUDITORIA,
+        habilitado=cfg.AUDITORIA_EXECUCAO_ATIVA and not _MODO_REPLAY,
     )
     executor = ExecutorOrdem()
     fila_noticias = queue.Queue()
@@ -1409,6 +1416,8 @@ def rodar():
 
         # ---------- Gestao de posicao aberta (monitoramento continuo) ----------
         if gestor.posicao_aberta:
+            # V505: registra pico/vale/trilha desta leitura ANTES de qualquer decisao de saida
+            caminho.atualizar(gestor.posicao_aberta, preco, agora)
             # 1) stop/alvo verificados tick a tick - nao espera o candle fechar
             saida_continua = gestor.verificar_saida_continua(preco)
             if saida_continua:
@@ -1420,6 +1429,7 @@ def rodar():
                     else posicao_antes.alvo if motivo == "ALVO"
                     else preco_saida
                 )
+                entrada_dde_op = auditor.entradas_dde.get(posicao_antes.horario_entrada)
                 auditor.registrar_saida(
                     horario=agora, posicao=posicao_antes, motivo=motivo,
                     saida_teorica=saida_teorica, saida_dde=preco,
@@ -1438,6 +1448,10 @@ def rodar():
                         resultado_pts=resultado_pts, resultado_reais=resultado_reais,
                         motivo_saida=motivo,
                     )
+                    caminho.fechar(
+                        posicao_antes, agora, motivo, saida_teorica, preco,
+                        preco_saida, resultado_pts, resultado_reais, entrada_dde=entrada_dde_op,
+                    )
                     email_notificacao.notificar_fechamento(
                         posicao_antes, motivo, preco_saida, resultado_pts, resultado_reais, agora
                     )
@@ -1453,6 +1467,7 @@ def rodar():
                 motivo, preco_saida = corte
                 posicao_antes = gestor.posicao_aberta
                 ordem_ok = executor.encerrar_posicao()
+                entrada_dde_op = auditor.entradas_dde.get(posicao_antes.horario_entrada)
                 auditor.registrar_saida(
                     horario=agora, posicao=posicao_antes, motivo=motivo,
                     saida_teorica=preco_saida, saida_dde=preco,
@@ -1470,6 +1485,10 @@ def rodar():
                         horario_saida=agora, saida=preco_saida,
                         resultado_pts=resultado_pts, resultado_reais=resultado_reais,
                         motivo_saida=motivo,
+                    )
+                    caminho.fechar(
+                        posicao_antes, agora, motivo, preco_saida, preco,
+                        preco_saida, resultado_pts, resultado_reais, entrada_dde=entrada_dde_op,
                     )
                     email_notificacao.notificar_fechamento(
                         posicao_antes, motivo, preco_saida, resultado_pts, resultado_reais, agora
@@ -1599,6 +1618,7 @@ def rodar():
                         else posicao_antes.alvo if motivo == "ALVO"
                         else preco_saida
                     )
+                    entrada_dde_op = auditor.entradas_dde.get(posicao_antes.horario_entrada)
                     auditor.registrar_saida(
                         horario=agora, posicao=posicao_antes, motivo=motivo,
                         saida_teorica=saida_teorica, saida_dde=preco,
@@ -1638,6 +1658,10 @@ def rodar():
                             horario_saida=agora, saida=preco_saida,
                             resultado_pts=resultado_pts, resultado_reais=resultado_reais,
                             motivo_saida=motivo,
+                        )
+                        caminho.fechar(
+                            posicao_antes, agora, motivo, saida_teorica, preco,
+                            preco_saida, resultado_pts, resultado_reais, entrada_dde=entrada_dde_op,
                         )
                         email_notificacao.notificar_fechamento(
                             posicao_antes, motivo, preco_saida, resultado_pts, resultado_reais, agora
