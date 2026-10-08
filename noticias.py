@@ -28,6 +28,8 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import configuracao as _cfg
+
 import feedparser
 from colorama import init, Fore, Style
 
@@ -74,7 +76,7 @@ LIMITE_MANCHETES_POR_FONTE = 15     # quantas entradas do feed olhar por vez
 RETENCAO_LIDAS_HORAS = 48           # por quanto tempo uma manchete "ja lida" continua
                                      # bloqueada, mesmo apos reiniciar o script - evita
                                      # que reiniciar o robo faca tudo parecer novo de novo
-CAMINHO_MANCHETES_LIDAS = Path(__file__).parent / "logs" / "noticias_lidas.json"
+CAMINHO_MANCHETES_LIDAS = _cfg.PASTA_LOGS / "noticias_lidas.json"
 
 # Fontes cujas manchetes saem em inglês — só essas passam pelo tradutor
 FONTES_EM_INGLES = {"Investing.com Economia", "Investing.com Ações"}

@@ -434,7 +434,7 @@ class MotorRobonildo:
     def __init__(
         self,
         gerar_sinal,
-        arquivo_estado: Optional[str] = "logs/estado_risco.json",
+        arquivo_estado: Optional[str] = cfg.CAMINHO_ESTADO_RISCO,
         horario_mercado_inicial: Optional[datetime] = None,
         avaliar_saida=None,
         diagnosticar_oportunidades=None,

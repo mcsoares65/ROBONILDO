@@ -1,6 +1,6 @@
 """V505 - le os arquivos de caminho_operacao.py e responde a pergunta do giveback.
 
-Uso:  python analisar_caminhos.py [pasta_logs] [ativacao_reais]
+Uso:  python analisar_caminhos.py [pasta_logs] [ativacao_reais]   (padrao: configuracao.PASTA_LOGS)
 
 1) Resumo: quantas operacoes chegaram a lucro, quanto devolveram, derrapagem na saida,
    buracos de leitura do DDE (maior_intervalo_s).
@@ -15,6 +15,8 @@ import csv
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+import configuracao as cfg
 
 CUSTO_REAIS = 0.50
 VALOR_PONTO = 0.2
@@ -55,7 +57,8 @@ def simular(trilha, pct, ativacao, resultado_real):
     return resultado_real, False
 
 
-def main(pasta="logs", ativacao=100.0):
+def main(pasta=None, ativacao=100.0):
+    pasta = pasta or cfg.PASTA_LOGS
     resumo, trilhas = carregar(pasta)
     if not resumo:
         print(f"Nenhuma operacao em {Path(pasta) / 'caminho_operacoes.csv'} ainda.")
@@ -94,5 +97,5 @@ def main(pasta="logs", ativacao=100.0):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "logs",
+    main(sys.argv[1] if len(sys.argv) > 1 else None,
          float(sys.argv[2]) if len(sys.argv) > 2 else 100.0)

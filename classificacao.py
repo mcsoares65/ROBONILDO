@@ -1032,7 +1032,7 @@ def _perguntar_simulacao() -> Optional[dict]:
 # Modo A (Análise) — planilha .xlsx. Incorpora o antigo analise.py: mesma engine
 # (executar_jogo), nenhuma lógica de backtest duplicada.
 # ---------------------------------------------------------------------------
-PASTA_ANALISES_PADRAO = Path(__file__).resolve().parent / "analise"   # ..\DAYTRADE\ROBONILDO\analise
+PASTA_ANALISES_PADRAO = Path(cfg.PASTA_ANALISE)   # V506: D:\DAYTRADE\ANALISE (fora da pasta do robo)
 _DIAS_SEMANA = ("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")
 _FORMATO_MOEDA_XLSX = '"R$ "#,##0.00;[Red]"(R$ "#,##0.00\\);\\-'
 
@@ -1779,7 +1779,7 @@ def executar(
     processos: Optional[int] = None,
 ):
     """modo: 'E'/'S'/'C'/'A'/'D' (None = pergunta; A = análise: cruzado completo +
-    planilha .xlsx em saida_dir, padrão <projeto>\\analise (único modo que grava arquivo); D = diagnóstico por
+    planilha .xlsx em saida_dir, padrão D:\\DAYTRADE\\ANALISE (único modo que grava arquivo); D = diagnóstico por
     cenário, só leitura, com todos os cenários; metades=True mostra o que se repete
     nas duas metades do período, None = pergunta). periodo: texto aceito por
     interpretar_periodo (None ou '' = tudo, o conteúdo do arquivo). simulacao: dict do

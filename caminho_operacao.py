@@ -145,16 +145,18 @@ class CaminhoOperacao:
     def fechar(self, posicao, horario, motivo, saida_teorica, saida_dde,
                preco_saida, resultado_pts, resultado_reais, entrada_dde=None):
         if not self.habilitado:
-            return
+            return None
+        linha = None
         try:
-            self._fechar(posicao, horario, motivo, saida_teorica, saida_dde,
-                         preco_saida, resultado_pts, resultado_reais, entrada_dde)
+            linha = self._fechar(posicao, horario, motivo, saida_teorica, saida_dde,
+                                 preco_saida, resultado_pts, resultado_reais, entrada_dde)
         except Exception as erro:
             print(f"[CAMINHO] Falha ao gravar resumo: {erro}")
         finally:
             self.estado = None
             self._ultimo_ponto_dt = None
             self._salvar()
+        return linha   # dict do resumo gravado (ou None); usado para a planilha (V507)
 
     def _fechar(self, posicao, horario, motivo, saida_teorica, saida_dde,
                 preco_saida, resultado_pts, resultado_reais, entrada_dde):
@@ -210,3 +212,4 @@ class CaminhoOperacao:
                 w.writeheader()
             w.writerow({k: ("" if x is None else (f"{x + 0.0:.2f}" if isinstance(x, float) else x))
                         for k, x in linha.items()})
+        return linha

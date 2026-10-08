@@ -4,6 +4,32 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V507 — robô preenche a aba REGISTRO_OPERACOES (planilha PLANO_TRADE)
+
+Proposta do dono (07/10/2026): alimentar a aba REGISTRO_OPERACOES e chamar a planilha só de PLANO_TRADE.
+- Planilha: o robô procura `D:\DAYTRADE\PLANO_TRADE.xlsx` e, se não achar aberta, `PLANO_TRADE_MA_v2.xlsx`. Pode
+  renomear o arquivo quando quiser (feche o Excel, renomeie, reabra); o vínculo DDE não depende do nome.
+- Aba REGISTRO_OPERACOES: uma linha por operação, escrita na entrada e completada na saída — data, hora de entrada,
+  lado, entrada, stop, alvo, hora de saída, saída, motivo, resultado (pts e R$ líquido), pico (R$), devolveu (R$),
+  banca após. Coluna O guarda o id da operação (não editar): reiniciar o robô com posição aberta não duplica a linha.
+- Na primeira partida o robô troca o cabeçalho do modelo antigo (MA_v2: Fechamento/MA21/MA50/Distância…) pelo novo e
+  apaga só a linha de exemplo de 17/08/2026. Cabeçalho diferente disso: não escreve nada.
+- Excel ocupado: 3 tentativas; se falhar, avisa no console (a verdade continua em `operacoes_<dia>.csv`). Não grava no replay.
+
+---
+
+## V506 — LOGS e ANALISE fora da pasta do robô
+
+Pedido do dono (07/10/2026): as pastas de logs e de análise não ficam dentro da pasta do robô.
+- Logs (operações, auditoria, caminho das operações, coleta DDE, `estado_risco.json`, notícias lidas) passam a
+  `D:\DAYTRADE\LOGS`; as planilhas do `classificacao.py` modo A, a `D:\DAYTRADE\ANALISE` (continua valendo
+  a opção de escolher outra pasta ao rodar).
+- Na primeira partida o robô copia o que existir em `<pasta do robô>\logs` e ainda não existir na nova pasta
+  (principalmente o `estado_risco.json`, com posição aberta e banca). Nada é apagado nem sobrescrito.
+- Caminhos ficam em `configuracao.py` (`PASTA_LOGS`, `PASTA_ANALISE`).
+
+---
+
 ## V505 — robô grava o caminho de cada operação (pico, horário do pico, vale, derrapagem)
 
 Pergunta do dono (07/10/2026): o lucro de pico é mesmo devolvido antes da saída? O backtest só vê máxima/mínima de

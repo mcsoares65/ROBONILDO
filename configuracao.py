@@ -23,7 +23,11 @@ from versionamento import VERSAO
 # permanecem junto da instalacao em uso, independentemente do diretorio atual
 # do Prompt de Comando.
 RAIZ_PROJETO = Path(__file__).resolve().parent
-PASTA_LOGS = RAIZ_PROJETO / "logs"
+# V506: logs e analises ficam FORA da pasta do robo (que e substituida a cada atualizacao do codigo).
+PASTA_DAYTRADE = Path(r"D:\DAYTRADE")
+PASTA_LOGS = PASTA_DAYTRADE / "LOGS"          # D:\DAYTRADE\LOGS
+PASTA_ANALISE = PASTA_DAYTRADE / "ANALISE"    # D:\DAYTRADE\ANALISE (planilhas do classificacao.py modo A)
+PASTA_LOGS_ANTIGA = RAIZ_PROJETO / "logs"     # local ate a V505: copiado 1 vez para PASTA_LOGS na partida
 
 ATIVO = "WINV26"          # contrato vigente - ATUALIZAR a cada rolagem (bimestral, meses pares)
 TIMEFRAME_MINUTOS = 15
@@ -39,7 +43,7 @@ CAMINHO_HISTORICO_INICIAL = r"D:\DAYTRADE\HISTORICO\2026\WINFUT_F_0_15min.csv"  
 # dois robos AO MESMO TEMPO (ordens duplicadas e gravacao concorrente).
 PASTA_HISTORICO_ACUMULADO = r"D:\DAYTRADE\HISTORICO\ACUMULADO"
 CAMINHO_HISTORICO_PERSISTENTE = str(Path(PASTA_HISTORICO_ACUMULADO) / "historico_acumulado.csv")  # o robo mantem sozinho
-CAMINHO_HISTORICO_PERSISTENTE_LEGADO = str(PASTA_LOGS / "historico_acumulado.csv")  # local antigo (V498 e antes): copiado 1 vez
+CAMINHO_HISTORICO_PERSISTENTE_LEGADO = str(PASTA_LOGS_ANTIGA / "historico_acumulado.csv")  # local antigo (V498 e antes): copiado 1 vez
 CAMINHO_ESTADO_RISCO = str(PASTA_LOGS / "estado_risco.json")
 GAP_MAXIMO_HORAS_HISTORICO = 48   # se o robo ficar parado mais que isso, o historico
                                    # acumulado e descartado (misturar cenarios de
@@ -58,6 +62,7 @@ MODO_TESTE_REPLAY = False  # False = comportamento correto para operacao real co
 
 # ---------- Auditoria da execução ao vivo ----------
 AUDITORIA_EXECUCAO_ATIVA = True
+REGISTRO_PLANILHA_ATIVO = True   # V507: robo escreve cada operacao na aba REGISTRO_OPERACOES (nunca no replay)
 PASTA_LOGS_AUDITORIA = str(PASTA_LOGS)
 
 # ---------- Estrategia (regra congelada MA_v2) ----------
