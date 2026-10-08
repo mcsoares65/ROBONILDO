@@ -4,6 +4,16 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V515 — percentual do painel fino (ponto a ponto)
+
+Pedido do dono (08/10/2026): "o percentual ao final da linha poderia ser mais delicado ao sinal… eu gostava de ver o sinal oscilando ponto a ponto."
+- O `%` da linha de Escala deixa de ser só "condições atendidas ÷ total" (saltava entre 67% e 75%) e passa a ser a **média da proximidade de cada condição**: ex. Retomada MA21 a 996 pts da MA21 (máx. 90) vale ~9% naquela condição; a 120 pts, ~75%. Estocástico, corpo do candle e MACD (|MACD−sinal|, escala 75 pts) idem.
+- Só chega a **100% com o sinal confirmado** (testado em 6.000 candles de 2026: 0 divergências). O `X/X` segue contando condições atendidas.
+- Painel com 1 casa decimal; a cor do quadrado acompanha o valor fino. Narração de aproximação: no máximo 2 avisos por candle (≥70% e ≥90%), para não falar a cada ponto.
+- `gerar_sinal`, entradas, saídas e backtest inalterados.
+
+---
+
 ## V514 — alerta de pré-entrada com 3 beeps
 
 Pedido do dono (08/10/2026): o beep antes de entrar passa de 1 para 3. Mesmo gatilho de sempre (preço dentro da faixa, a `BEEP_SEGUNDOS_ANTES` do fechamento, uma vez por candle). Quantidade em `configuracao.BEEP_QUANTIDADE`; toca numa thread, sem atrasar a leitura do DDE.

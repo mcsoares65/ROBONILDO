@@ -1189,7 +1189,7 @@ def rodar():
                 # entrada nem poluir o áudio a cada leitura DDE.
                 if (not dentro_da_faixa and oportunidade_prioritaria
                         and progresso_radar >= 0.70):
-                    faixa = int(progresso_radar * 10)
+                    faixa = 9 if progresso_radar >= 0.90 else 7   # V515: % fino; no maximo 2 avisos por candle
                     chave_radar = (
                         candle_atual.horario,
                         oportunidade_prioritaria.get("estrategia"),
@@ -1414,7 +1414,7 @@ def rodar():
                           f"{tendencia_colorida} | Escala {status_sinal} | "
                           f"{confirmacoes_radar:^3} | {campo_detalhe}"
                           f"{sustentacao}"
-                          f" | {progresso_radar_pct:3.0f}% {quadro}{aviso_bloqueio}")
+                          f" | {progresso_radar_pct:5.1f}% {quadro}{aviso_bloqueio}")
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")

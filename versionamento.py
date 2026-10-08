@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V514"
+VERSAO = "V515"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1694,3 +1694,12 @@ VERSAO = "V514"
 # V514 - alerta sonoro antes da entrada: 3 beeps (configuracao.BEEP_QUANTIDADE), em thread
 #   Pedido do dono (08/10/2026). Antes: 1 beep. Mesmo gatilho (preco dentro da faixa, ate BEEP_SEGUNDOS_ANTES
 #   do fechamento, uma vez por candle). Beeps de 300 ms com 150 ms de pausa, sem bloquear o laco do robo.
+
+# ---------------------------------------------------------------------------
+# V515 - % do painel (Escala) fino: anda ponto a ponto com a proximidade de cada condicao
+#   Pedido do dono (08/10/2026): o percentual ao final da linha so saltava entre 67% e 75% (contagem de
+#   condicoes). Agora cada radar dos 3 titulares devolve `progresso` = media da PROXIMIDADE de cada condicao
+#   (0..0,99 enquanto nao atendida, 1,0 quando atendida); chega a 100% somente com o sinal (verificado em
+#   6.000 candles de 2026: 0 violacoes). O "X/X" continua sendo a contagem de condicoes atendidas.
+#   Painel mostra 1 casa decimal. Narracao de aproximacao: no maximo 2 avisos por candle (>=70% e >=90%).
+#   gerar_sinal, entrada, saida e backtest inalterados.
