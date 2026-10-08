@@ -1189,7 +1189,7 @@ def rodar():
                 # entrada nem poluir o áudio a cada leitura DDE.
                 if (not dentro_da_faixa and oportunidade_prioritaria
                         and progresso_radar >= 0.70):
-                    faixa = int(progresso_radar * 10)
+                    faixa = 9 if progresso_radar >= 0.90 else 7   # V515: % fino; no maximo 2 avisos por candle
                     chave_radar = (
                         candle_atual.horario,
                         oportunidade_prioritaria.get("estrategia"),

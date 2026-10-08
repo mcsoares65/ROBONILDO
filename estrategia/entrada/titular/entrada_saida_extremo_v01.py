@@ -52,6 +52,11 @@ def gerar_sinal(row) -> int:
 # ---------------------------------------------------------------------------
 
 
+def _fino(ok, proximidade):
+    """V515: 1.0 se a condicao esta atendida; senao a proximidade (0..0,99), para o % do painel
+    andar ponto a ponto. Nunca chega a 1.0 sem a condicao atendida."""
+    return 1.0 if ok else min(0.99, max(0.0, float(proximidade)))
+
 def diagnosticar_oportunidades(row):
     tendencia = row["trend"]
     hora = row["dt"].strftime("%H:%M")
@@ -70,7 +75,17 @@ def diagnosticar_oportunidades(row):
         (bool(cruzamento_extremo), "saída da zona extrema do estocástico"),
     ]
     elegivel = all(ok for ok, _ in elegibilidade)
+    # V515: proximidade fina de cada condicao (so painel; gerar_sinal nao usa)
+    proporcao = (corpo / amplitude) if amplitude > 0 else 1.0
+    nivel_extremo = 20.0 if tendencia == 1 else 80.0
+    scores = [
+        1.0 if amplitude > 0 else 0.0,
+        _fino(amplitude > 0 and corpo <= CORPO_MAXIMO_PROPORCAO * amplitude,
+              1.0 - (proporcao - CORPO_MAXIMO_PROPORCAO) / (1.0 - CORPO_MAXIMO_PROPORCAO)),
+        _fino(bool(cruzamento_extremo), 1.0 - abs(row["stoch"] - nivel_extremo) / 80.0),
+    ]
     confirmadas = sum(bool(ok) for ok, _ in condicoes) if elegivel else 0
+    progresso_fino = sum(scores) / len(scores) if elegivel else 0.0
     faltantes = ([t for ok, t in condicoes if not ok] if elegivel
                  else [t for ok, t in elegibilidade if not ok])
     sinal = (1 if tendencia == 1 else -1) if elegivel and all(ok for ok, _ in condicoes) else 0
@@ -89,7 +104,7 @@ def diagnosticar_oportunidades(row):
         "sinal": sinal,
         "confirmadas": confirmadas,
         "total": len(condicoes),
-        "progresso": confirmadas / len(condicoes),
+        "progresso": progresso_fino,
         "faltantes": faltantes,
         "detalhe": detalhe,
         "bloqueio_horario": bloqueio_horario,

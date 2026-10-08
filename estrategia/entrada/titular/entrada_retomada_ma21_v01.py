@@ -62,6 +62,17 @@ def gerar_sinal(row) -> int:
 # ---------------------------------------------------------------------------
 
 
+def _fino(ok, proximidade):
+    """V515: 1.0 se a condicao esta atendida; senao a proximidade (0..0,99), para o % do painel
+    andar ponto a ponto. Nunca chega a 1.0 sem a condicao atendida."""
+    return 1.0 if ok else min(0.99, max(0.0, float(proximidade)))
+
+
+def _prox_direcao_stoch(row, tendencia):
+    """Proximidade da condicao 'estocastico na direcao da tendencia' (delta a favor > 0)."""
+    delta = (row["stoch"] - row["stoch_prev"]) * tendencia
+    return 1.0 / (1.0 + max(0.0, -delta) / 2.0)
+
 def diagnosticar_oportunidades(row):
     tendencia = row["trend"]
     hora = row["dt"].strftime("%H:%M")
@@ -83,7 +94,16 @@ def diagnosticar_oportunidades(row):
         (bool(direcao_stoch), "estocástico na direção da tendência"),
     ]
     elegivel = all(ok for ok, _ in elegibilidade)
+    # V515: proximidade fina de cada condicao (so painel; gerar_sinal nao usa)
+    dist = row["distancia_ma21"]
+    fora_stoch = max(STOCH_MIN - row["stoch"], row["stoch"] - STOCH_MAX, 0.0)
+    scores = [
+        _fino(dist <= MAX_DISTANCIA_MA21, MAX_DISTANCIA_MA21 / dist if dist > 0 else 1.0),
+        _fino(STOCH_MIN <= row["stoch"] <= STOCH_MAX, 1.0 - fora_stoch / STOCH_MIN),
+        _fino(bool(direcao_stoch), _prox_direcao_stoch(row, tendencia)),
+    ]
     confirmadas = sum(bool(ok) for ok, _ in condicoes) if elegivel else 0
+    progresso_fino = sum(scores) / len(scores) if elegivel else 0.0
     faltantes = ([t for ok, t in condicoes if not ok] if elegivel
                  else [t for ok, t in elegibilidade if not ok])
     sinal = (1 if tendencia == 1 else -1) if elegivel and all(ok for ok, _ in condicoes) else 0
@@ -104,7 +124,7 @@ def diagnosticar_oportunidades(row):
         "sinal": sinal,
         "confirmadas": confirmadas,
         "total": len(condicoes),
-        "progresso": confirmadas / len(condicoes),
+        "progresso": progresso_fino,
         "faltantes": faltantes,
         "detalhe": detalhe,
         "bloqueio_horario": bloqueio_horario,
