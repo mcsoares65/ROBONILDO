@@ -4,10 +4,10 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
-## V509 — console e narração: "porta" vira "escalação", "Radar" vira "Escala"
+## V509 — console e narração: "porta" vira "jogador da escalação", "Radar" vira "Escala"
 
 Pedido do dono (08/10/2026). Só texto, nenhuma lógica mudou:
-- Narração: "(porta 2 de 3)" → "(escalação 2 de 3)"; "da Porta 2 perdeu confirmação" → "da escalação 2 perdeu confirmação".
+- Narração: "(porta 2 de 3)" → "(jogador 2 de 3 da escalação)"; "da Porta 2 perdeu confirmação" → "A expectativa de compra do jogador 2 da escalação perdeu confirmação" ("porta" era o jogador/estratégia; a escalação é o time).
 - Console: linha `[RADAR]` → `[ESCALA]`; no batimento, "Radar <status>" → "Escala <status>".
 
 ---

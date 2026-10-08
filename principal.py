@@ -1135,7 +1135,7 @@ def rodar():
                         # identifica a porta entre as possiveis.
                         total_portas = diagnostico.get("total_portas") if diagnostico else None
                         if porta and total_portas:
-                            explicacao = f"{explicacao} (escalação {porta} de {total_portas})"
+                            explicacao = f"{explicacao} (jogador {porta} de {total_portas} da escalação)"
                         # O candle em formacao fecha em horario + TIMEFRAME. Dizer
                         # so "no fechamento" gera leitura ambigua: logo apos um
                         # [CANDLE FECHADO] o operador le as duas frases em sequencia
@@ -1172,9 +1172,9 @@ def rodar():
                       and ultima_expectativa_narrada[0] == candle_atual.horario
                       and ultima_expectativa_perdida != ultima_expectativa_narrada):
                     _, porta_anterior, lado_anterior = ultima_expectativa_narrada
-                    origem = f"escalação {porta_anterior}" if porta_anterior else "estratégia"
+                    origem = f"do jogador {porta_anterior} da escalação" if porta_anterior else "da estratégia"
                     frase_perdida = (
-                        f"A expectativa de {lado_anterior.lower()} da {origem} perdeu "
+                        f"A expectativa de {lado_anterior.lower()} {origem} perdeu "
                         "confirmação durante a formação do candle. Nenhuma ordem será "
                         "enviada neste momento."
                     )

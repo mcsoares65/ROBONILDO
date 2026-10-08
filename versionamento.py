@@ -1656,6 +1656,6 @@ VERSAO = "V509"
 
 # ---------------------------------------------------------------------------
 # V509 - texto do console e da narracao: "porta" -> "escalacao", "Radar" -> "Escala"
-#   principal.py: "(porta N de M)" -> "(escalacao N de M)"; "da Porta N" -> "da escalacao N";
+#   principal.py: "(porta N de M)" -> "(jogador N de M da escalacao)"; "da Porta N" -> "do jogador N da escalacao";
 #   "[RADAR]" -> "[ESCALA]"; "Radar <status>" no heartbeat -> "Escala <status>". Somente texto;
 #   chaves internas (porta/total_portas) e logica inalteradas.
