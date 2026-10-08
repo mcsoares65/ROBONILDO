@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V510"
+VERSAO = "V511"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1662,7 +1662,21 @@ VERSAO = "V510"
 #   o nome da estrategia (antes o numero da porta). Somente texto/identificacao de narracao; logica inalterada.
 
 # ---------------------------------------------------------------------------
-# V510 - entrada_macd_estocastico_v01 sem o bloqueio de horario 11:45-12:30
+# V510 - duas candidatas novas, sem resultado medido (nao sao titulares)
+#   estrategia/entrada/entrada_varredura_liquidez_v01.py: varredura do ultimo
+#   swing confirmado pelo detector Nelogica de topos/fundos, periodo 2 (padrao
+#   da tela). Compra se o candle fura a minima do ultimo fundo e fecha de volta
+#   acima; venda o simetrico no ultimo topo. Os dois no mesmo candle = 0.
+#   Oposto do Donchian (ata 2026-10-05-AD, P3), que ja foi medido e nao promovido.
+#   estrategia/saida/saida_safezone_v01.py: stop movel Elder SafeZone, periodo 10
+#   e multiplicador 2 (rotulo da tela do artigo [10 2 0]; o terceiro numero nao
+#   e usado). Sem alvo. Cada chamada devolve o stop mais favoravel desde a
+#   entrada, porque o motor nao trava afrouxamento. Penetracao = leitura de
+#   Elder (media so das penetracoes adversas > 0); o artigo nao imprime a formula.
+#   Nada em titular/, motor.py ou classificacao.py foi alterado.
+
+# ---------------------------------------------------------------------------
+# V511 - entrada_macd_estocastico_v01 sem o bloqueio de horario 11:45-12:30
 #   Pedido do dono (08/10/2026). Removido o bloqueio da gerar_sinal e da elegibilidade do radar.
 #   Mantido o bloqueio por amplitude do candle (240-340 pts). Efeito medido (backtest, saida baseline,
 #   time de 3 titulares, K por ano): soma 2020-26 R$ 24.328 -> 19.820 (-4.508); so 2020 explica -3.626.

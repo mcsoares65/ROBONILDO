@@ -4,7 +4,7 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
-## V510 — MACD+Estocástico sem o bloqueio de horário 11:45–12:30
+## V511 — MACD+Estocástico sem o bloqueio de horário 11:45–12:30
 
 Pedido do dono (08/10/2026): "retire este bloqueio de horário da estratégia, podemos perder boas oportunidades com ele."
 - `entrada_macd_estocastico_v01`: removido o bloqueio 11:45–12:30 (sinal e elegibilidade do radar). Continua o filtro de
@@ -13,6 +13,16 @@ Pedido do dono (08/10/2026): "retire este bloqueio de horário da estratégia, p
   (−R$ 4.508)**. Por ano: 2020 −3.626 · 2021 −638 · 2022 −303 · 2023 +409 · 2024 +121 · 2025 +611 · 2026 −1.083
   (2026: R$ 17.070 → 15.988; drawdown −375 → −602). Sem 2020 a perda é −R$ 882. MACD sozinho: 2026 6.499 → 5.939.
 - Decisão do dono; se os dados ao vivo não confirmarem, basta reverter este PR.
+
+---
+
+## V510 — duas candidatas novas (não são titulares, sem resultado medido)
+
+Pedido do dono (08/10/2026): estratégia genuína, não cópia do time atual (MA21, MACD+estocástico, saída de extremo, stop estrutural + alvo 1,55R).
+- `estrategia/entrada/entrada_varredura_liquidez_v01.py`: varredura de liquidez. O último fundo (ou topo) confirmado pelo detector Nelogica de topos e fundos, período 2 (padrão da tela), é furado pelo candle e o fechamento volta para dentro. Compra na falha da mínima, venda na falha da máxima. Os dois no mesmo candle não operam. É o oposto do Donchian, já medido na ata de 05/10/2026 e não promovido.
+- `estrategia/saida/saida_safezone_v01.py`: stop móvel SafeZone (Elder, 2002). Período 10 e multiplicador 2, do rótulo da tela do artigo. Sem alvo. Não é trailing de ATR nem o alvo de 1,55R.
+- Nenhum backtest rodou nesta entrega. Não entram no time. O teste oficial é o `classificacao.py` depois do merge.
+- A V509 já estava na main (narração "escalada"). Esta entrega passou a V510 para não repetir o número.
 
 ---
 
