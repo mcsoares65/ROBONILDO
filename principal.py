@@ -822,7 +822,7 @@ def rodar():
     ultimo_candle_narracao_periodica = None  # evita repetir a narracao de acompanhamento no mesmo candle
     ultima_expectativa_narrada = None  # (candle, estratégia, lado), evita repetição da explicação
     ultima_expectativa_perdida = None  # evita repetir a perda da mesma expectativa
-    ultima_prioridade_radar_narrada = None  # (candle, estratégia, lado, faixa de 10%)
+    radar_narrados = set()  # V516: (candle, estratégia, lado) já narrados; cada um é falado UMA vez por candle
     radar_100_chave = None       # oportunidade que permanece continuamente em 100%
     radar_100_desde = None       # relogio real; mede estabilidade sem depender do DDE
     ultima_saida_especulativa_narrada = None  # (candle, horario_entrada), evita repetir o
@@ -1189,14 +1189,16 @@ def rodar():
                 # entrada nem poluir o áudio a cada leitura DDE.
                 if (not dentro_da_faixa and oportunidade_prioritaria
                         and progresso_radar >= 0.70):
-                    faixa = 9 if progresso_radar >= 0.90 else 7   # V515: % fino; no maximo 2 avisos por candle
+                    # V516: com o % fino a estratégia da frente e o valor oscilam a cada leitura; a chave
+                    # não leva mais a faixa de %, e o conjunto lembra de tudo que já foi dito no candle
+                    # (antes comparava só com a última fala e repetia ao alternar entre estratégias).
+                    radar_narrados = {k for k in radar_narrados if k[0] == candle_atual.horario}
                     chave_radar = (
                         candle_atual.horario,
                         oportunidade_prioritaria.get("estrategia"),
                         oportunidade_prioritaria.get("direcao"),
-                        faixa,
                     )
-                    if ultima_prioridade_radar_narrada != chave_radar:
+                    if chave_radar not in radar_narrados:
                         faltantes = oportunidade_prioritaria.get("faltantes") or []
                         proxima = faltantes[0] if faltantes else "confirmação no fechamento"
                         explicacao = (
@@ -1208,7 +1210,7 @@ def rodar():
                         )
                         print(f"[ESCALA] {explicacao}")
                         narrar(explicacao)
-                        ultima_prioridade_radar_narrada = chave_radar
+                        radar_narrados.add(chave_radar)
                         ultima_expectativa_perdida = None
 
                 if (dentro_da_faixa and 0 < segundos_restantes <= cfg.BEEP_SEGUNDOS_ANTES

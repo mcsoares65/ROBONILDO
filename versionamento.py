@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V515"
+VERSAO = "V516"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1703,3 +1703,11 @@ VERSAO = "V515"
 #   6.000 candles de 2026: 0 violacoes). O "X/X" continua sendo a contagem de condicoes atendidas.
 #   Painel mostra o % inteiro (xxx). Narracao de aproximacao: no maximo 2 avisos por candle (>=70% e >=90%).
 #   gerar_sinal, entrada, saida e backtest inalterados.
+
+# ---------------------------------------------------------------------------
+# V516 - narracao da Escala sem repeticao; textos do painel que estouravam a coluna
+#   Bug da V515: a chave da fala levava a faixa (>=90% / 70-90%) e so era comparada com a ULTIMA fala; com o % fino
+#   oscilando em torno de 90% (e a estrategia da frente alternando) a mesma frase saia varias vezes por candle.
+#   Agora cada (candle, estrategia, lado) e narrado uma unica vez (conjunto de ja narrados).
+#   Painel: "Falta saida da zona extrema do est..." -> "estoc. saindo da zona extrema"; "estocastico na direcao da
+#   tendencia" -> "estoc. a favor da tendencia" (cabem nos 29 caracteres). Logica de sinal inalterada.

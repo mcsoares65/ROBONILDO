@@ -115,6 +115,8 @@ def diagnosticar_oportunidades(row):
                    else "BLOQUEADA ATÉ 13:30" if almoco else "BLOQUEADA ATÉ 17:00")
     elif faltante == "aproximação da MA21":
         detalhe = f"dist. MA21 {row['distancia_ma21']:.0f} (máx. 90)"
+    elif faltante == "estocástico na direção da tendência":
+        detalhe = "estoc. a favor da tendência"   # V516: cabe na coluna do painel (29)
     elif faltante == "estocástico fora dos extremos":
         detalhe = f"estoc. {row['stoch']:.1f} (16,5-83,5)"
     return [{

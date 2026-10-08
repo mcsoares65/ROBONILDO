@@ -4,6 +4,15 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V516 — narração da Escala sem repetição; textos do painel sem reticências
+
+Defeito da V515 (visto pelo dono em 08/10/2026, 10:20–10:21): a narração "A estratégia Saída de Extremo assumiu a prioridade…" saía várias vezes seguidas. Causa: a chave da fala incluía a faixa de % e só era comparada com a última fala; com o % fino oscilando perto de 90% (e a estratégia da frente alternando) a chave mudava a cada leitura.
+- Agora cada (candle, estratégia, lado) é narrado **uma única vez** por candle.
+- Textos que estouravam a coluna de 29 caracteres: "saída da zona extrema do estocástico" → "estoc. saindo da zona extrema"; "estocástico na direção da tendência" → "estoc. a favor da tendência".
+- Sinal, entrada, saída e backtest inalterados.
+
+---
+
 ## V515 — percentual do painel fino (ponto a ponto)
 
 Pedido do dono (08/10/2026): "o percentual ao final da linha poderia ser mais delicado ao sinal… eu gostava de ver o sinal oscilando ponto a ponto."
