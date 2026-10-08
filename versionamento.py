@@ -1701,5 +1701,5 @@ VERSAO = "V515"
 #   condicoes). Agora cada radar dos 3 titulares devolve `progresso` = media da PROXIMIDADE de cada condicao
 #   (0..0,99 enquanto nao atendida, 1,0 quando atendida); chega a 100% somente com o sinal (verificado em
 #   6.000 candles de 2026: 0 violacoes). O "X/X" continua sendo a contagem de condicoes atendidas.
-#   Painel mostra 1 casa decimal. Narracao de aproximacao: no maximo 2 avisos por candle (>=70% e >=90%).
+#   Painel mostra o % inteiro (xxx). Narracao de aproximacao: no maximo 2 avisos por candle (>=70% e >=90%).
 #   gerar_sinal, entrada, saida e backtest inalterados.

@@ -1414,7 +1414,7 @@ def rodar():
                           f"{tendencia_colorida} | Escala {status_sinal} | "
                           f"{confirmacoes_radar:^3} | {campo_detalhe}"
                           f"{sustentacao}"
-                          f" | {progresso_radar_pct:5.1f}% {quadro}{aviso_bloqueio}")
+                          f" | {progresso_radar_pct:3.0f}% {quadro}{aviso_bloqueio}")
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")
