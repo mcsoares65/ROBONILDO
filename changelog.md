@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V513 — narração do candle sem "Nenhum sinal de entrada foi confirmado."
+
+Pedido do dono (08/10/2026): a fala do fechamento do candle agora termina na leitura da tendência das médias (ex.: "O candle fechou em alta, mas a tendência das médias ainda é de baixa."). Só texto; lógica inalterada.
+
+---
+
 ## V512 — sem a narração "Checagem de rotina"
 
 Pedido do dono (08/10/2026): removida a fala "Checagem de rotina: preço lido é X. Confira na tela do Profit." O checkpoint segue marcado; só a narração saiu.
