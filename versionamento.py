@@ -1649,7 +1649,7 @@ VERSAO = "V508"
 
 # ---------------------------------------------------------------------------
 # V508 - classificacao.py (C002): ranking de entradas com o time e os titulares no topo
-#   Modo E/A com escalacao: uma tabela so - time (negrito), titulares (azul), reservas (branco),
+#   Modo E/A com escalacao: uma tabela so - time e titulares (azul), reservas (branco),
 #   ultimo em vermelho; cada grupo por acumulado. Coluna pos = lugar no ranking de entradas (T = time).
 #   Substitui a tabela separada "ESCALACAO x TITULARES INDIVIDUAIS". rank_entrada, planilha e
 #   demais modos inalterados.

@@ -8,7 +8,7 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 Pedido do dono (07/10/2026): apresentar a classificação com o time, seguido dos titulares (azul), dos reservas
 (branco) e do último em vermelho, por resultado acumulado.
-- Modo E (e A) com escalação: uma única tabela — **time** (negrito) no topo, **titulares** em azul, **reservas** em
+- Modo E (e A) com escalação: uma única tabela — **time** e **titulares** em azul (a cor de sempre), time no topo, **reservas** em
   branco, o último da tabela em vermelho. Dentro de cada grupo a ordem é a de sempre (acumulado).
 - Coluna `pos` = lugar do cartucho no ranking de entradas (um reserva pode ter lugar melhor que um titular); `T` = time.
 - Some a tabela separada "ESCALAÇÃO x TITULARES INDIVIDUAIS" (a linha da Regra 17 continua abaixo). Ranking

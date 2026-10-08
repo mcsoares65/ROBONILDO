@@ -58,7 +58,6 @@ except ImportError:
 # direto (117 = azul celeste claro). Mesma tecnica ja usada no marcador de
 # posicao em principal.py.
 AZUL_CELESTE = "\x1b[38;5;117m" if RESET else ""
-NEGRITO = "\x1b[1m" if RESET else ""   # linha do time na classificacao de entradas (C002)
 
 
 def _progresso(etapa: str, atual: int, total: int, detalhe: str = "") -> None:
@@ -1751,7 +1750,7 @@ def _row_de_validacao(candles: list[Candle], dias_avaliacao: set) -> list[Option
 
 def _imprimir_entradas_com_time(titulo: str, pares_ok: list[dict], rank_entrada: list[dict]) -> None:
     """C002: classificação de entradas com a escalação: o time primeiro, depois os titulares
-    (azul), depois os reservas (branco), o último de todos em vermelho. Dentro de cada grupo,
+    (time e titulares em azul, como sempre), depois os reservas (branco), o último de todos em vermelho. Dentro de cada grupo,
     por resultado acumulado, como antes. A coluna pos mostra o lugar de cada cartucho no ranking
     de entradas (um reserva pode ter lugar melhor que um titular); T = o time, que fica fora do
     ranking (Regra 17)."""
@@ -1767,9 +1766,9 @@ def _imprimir_entradas_com_time(titulo: str, pares_ok: list[dict], rank_entrada:
     linhas = times + titulares + reservas
     if not linhas:
         return
-    cores = ([NEGRITO] * len(times) + [AZUL_CELESTE] * len(titulares) + [""] * len(reservas))
+    cores = ([AZUL_CELESTE] * (len(times) + len(titulares)) + [""] * len(reservas))
     cores[-1] = VERMELHO
-    legenda = (f"{NEGRITO}Negrito{RESET}=time | {AZUL_CELESTE}Azul{RESET}=titular | "
+    legenda = (f"{AZUL_CELESTE}Azul{RESET}=time e titulares | "
                f"Branco=reserva | {VERMELHO}Vermelho{RESET}=último | pos = lugar no ranking de entradas")
     _imprimir_ranking_simples(titulo, linhas, chave_nome="estrategia", cores=cores, legenda=legenda)
     if times:
