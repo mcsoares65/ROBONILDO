@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V506"
+VERSAO = "V507"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1636,3 +1636,13 @@ VERSAO = "V506"
 #   coleta DDE, estado_risco.json (motor), noticias_lidas.json e as planilhas do classificacao.py
 #   modo A. principal.py copia 1 vez, na partida, o que existir na pasta antiga e faltar na nova
 #   (nunca apaga nem sobrescreve).
+
+# ---------------------------------------------------------------------------
+# V507 - robo preenche a aba REGISTRO_OPERACOES da planilha (agora PLANO_TRADE.xlsx)
+#   leitor_dde.py: CAMINHO_PLANILHA = D:\DAYTRADE\PLANO_TRADE.xlsx, aceitando o nome antigo
+#   (PLANO_TRADE_MA_v2.xlsx) enquanto o arquivo nao for renomeado. preparar_registro_operacoes()
+#   (idempotente: troca o cabecalho do modelo MA_v2 pelo do robo e limpa a linha de exemplo; cabecalho
+#   desconhecido = nao escreve), registrar_abertura_planilha() e registrar_fechamento_planilha()
+#   (3 tentativas contra Excel ocupado; a coluna O guarda o id da operacao: sem duplicar apos reinicio).
+#   principal.py chama na abertura e nos 3 pontos de saida; nunca no replay (cfg.REGISTRO_PLANILHA_ATIVO).
+#   caminho_operacao.CaminhoOperacao.fechar() passou a devolver a linha do resumo (pico/devolucao).

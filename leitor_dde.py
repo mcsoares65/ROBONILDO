@@ -29,10 +29,30 @@ so pode ser validado na maquina onde o Profit roda de verdade.
 from datetime import datetime
 from typing import Optional
 
-CAMINHO_PLANILHA = r"D:\DAYTRADE\PLANO_TRADE_MA_v2.xlsx"  # AJUSTAR se o nome/local for outro
+CAMINHO_PLANILHA = r"D:\DAYTRADE\PLANO_TRADE.xlsx"  # AJUSTAR se o nome/local for outro
+# V507: a planilha passou a se chamar PLANO_TRADE.xlsx. Enquanto o arquivo ainda tiver o nome
+# antigo, o robo acha a planilha aberta por qualquer um destes nomes (o novo tem prioridade).
+CAMINHOS_PLANILHA_ANTIGOS = (r"D:\DAYTRADE\PLANO_TRADE_MA_v2.xlsx",)
 NOME_ABA_DDE = "DDE"          # aba onde o vínculo DDE do Profit esta configurado
 NOME_ABA_GESTAO_RISCO = "GESTAO_RISCO"  # aba do plano de trade ja existente na planilha
 CELULA_BANCA_ATUAL = "B3"     # celula onde o robo escreve a banca real, atualizada
+
+# V507 - aba REGISTRO_OPERACOES: o robo escreve uma linha por operacao (abre na entrada,
+# completa na saida). A coluna O guarda o id da operacao (horario de entrada ISO) para o robo
+# achar a linha certa mesmo depois de reiniciar.
+NOME_ABA_REGISTRO = "REGISTRO_OPERACOES"
+LINHA_CABECALHO_REGISTRO = 4
+PRIMEIRA_LINHA_REGISTRO = 5
+LINHAS_BUSCA_REGISTRO = 3000
+CABECALHO_REGISTRO = (
+    "DATA", "HORA ENTRADA", "LADO", "ENTRADA", "STOP", "ALVO", "HORA SAIDA", "SAIDA",
+    "MOTIVO SAIDA", "RESULTADO (pts)", "RESULTADO (R$)", "PICO (R$)", "DEVOLVEU (R$)",
+    "BANCA APOS (R$)", "ID OPERACAO (robo)",
+)
+CABECALHO_REGISTRO_ANTIGO = (   # modelo MA_v2 da planilha, preenchido a mao
+    "DATA", "HORARIO ENTRADA", "LADO", "FECHAMENTO", "MA21", "MA50", "DISTANCIA (pts)",
+    "STOP", "ALVO (2R)", "SAIDA", "RESULTADO (pts)", "RESULTADO (R$)",
+)
 
 # ---------- Localizacao dinamica da linha do ativo (coluna A) ----------
 # ANTES: linha fixa (D2/B2/C2) - exigia colar manualmente o ativo certo na
@@ -138,7 +158,12 @@ class LeitorDDE:
         # outra instancia nao tranca a leitura (RPC_E_CALL_REJECTED). Se nao achar, ou se
         # qualquer coisa falhar, segue EXATAMENTE o caminho de antes (GetActiveObject).
         try:
-            planilha_rot = self._achar_planilha_na_rot()
+            planilha_rot = None
+            for caminho in self._candidatos_planilha():   # V507: nome novo, depois o antigo
+                planilha_rot = self._achar_planilha_na_rot(caminho)
+                if planilha_rot is not None:
+                    self.caminho_planilha = caminho
+                    break
             if planilha_rot is not None:
                 planilha_rot.Sheets(NOME_ABA_DDE)  # teste de fogo: a aba do DDE responde?
         except Exception as e:
@@ -166,9 +191,11 @@ class LeitorDDE:
             ) from e
 
         aberta = None
+        candidatos = [c.lower() for c in self._candidatos_planilha()]
         for wb in self._excel.Workbooks:
-            if wb.FullName.lower() == self.caminho_planilha.lower():
+            if wb.FullName.lower() in candidatos:
                 aberta = wb
+                self.caminho_planilha = wb.FullName
                 break
         if aberta is None:
             raise RuntimeError(
@@ -178,7 +205,15 @@ class LeitorDDE:
             )
         self._planilha = aberta
 
-    def _achar_planilha_na_rot(self):
+    def _candidatos_planilha(self):
+        vistos, saida = set(), []
+        for c in (self.caminho_planilha, *CAMINHOS_PLANILHA_ANTIGOS):
+            if c.lower() not in vistos:
+                vistos.add(c.lower())
+                saida.append(c)
+        return saida
+
+    def _achar_planilha_na_rot(self, caminho=None):
         """Procura na Running Object Table a pasta de trabalho com o caminho configurado.
         NAO abre o arquivo se ele nao estiver aberto (so enumera o que ja esta em
         execucao). Devolve o Workbook ou None."""
@@ -186,7 +221,7 @@ class LeitorDDE:
         import win32com.client
         rot = pythoncom.GetRunningObjectTable()
         contexto = pythoncom.CreateBindCtx(0)
-        alvo = self.caminho_planilha.lower()
+        alvo = (caminho or self.caminho_planilha).lower()
         for moniker in rot.EnumRunning():
             try:
                 nome = moniker.GetDisplayName(contexto, None)
@@ -406,6 +441,151 @@ class LeitorDDE:
             self._planilha.Sheets(NOME_ABA_GESTAO_RISCO).Range(CELULA_BANCA_ATUAL).Value = valor
         except Exception as e:
             print(f"[LEITOR_DDE] Falha ao atualizar banca atual na planilha: {e}")
+
+    # ---------- V507: aba REGISTRO_OPERACOES ----------
+    @staticmethod
+    def _celula_texto(v):
+        return "" if v is None else str(v).strip()
+
+    def preparar_registro_operacoes(self) -> bool:
+        """Confere a aba REGISTRO_OPERACOES e a deixa pronta para o robo. Idempotente:
+        - cabecalho ja e o novo -> nada a fazer;
+        - cabecalho e o modelo antigo (MA_v2, preenchido a mao) -> troca titulo e cabecalho e
+          limpa a linha de exemplo que veio no modelo (so se for a conhecida);
+        - qualquer outra coisa -> NAO mexe e desliga o registro (nao sobrescrever dado do dono).
+        Devolve True se o robo pode gravar. Nunca lanca excecao."""
+        self._registro_ok = False
+        if self._planilha is None:
+            return False
+        try:
+            ws = self._planilha.Sheets(NOME_ABA_REGISTRO)
+            n = len(CABECALHO_REGISTRO)
+            lc = LINHA_CABECALHO_REGISTRO
+            atual = tuple(self._celula_texto(ws.Range(f"{chr(65 + i)}{lc}").Value) for i in range(n))
+            if atual == CABECALHO_REGISTRO:
+                self._registro_ok = True
+                return True
+            antigo = atual[:len(CABECALHO_REGISTRO_ANTIGO)] == CABECALHO_REGISTRO_ANTIGO and not any(atual[len(CABECALHO_REGISTRO_ANTIGO):])
+            if not antigo:
+                print(f"[REGISTRO] A aba '{NOME_ABA_REGISTRO}' tem um cabecalho que o robo nao conhece; "
+                      f"nao vou escrever nela. Apague a linha {lc} ou restaure o cabecalho do modelo.")
+                return False
+            ws.Range("A1").Value = "REGISTRO DE OPERAÇÕES — ROBONILDO"
+            ws.Range("A2").Value = ("Preenchido pelo robô: uma linha por operação (abre na entrada, completa na saída). "
+                                    "Resultado em R$ já líquido de custos. Não edite a coluna O.")
+            for i, nome in enumerate(CABECALHO_REGISTRO):
+                ws.Range(f"{chr(65 + i)}{lc}").Value = nome
+            # linha de exemplo do modelo antigo (17/08/2026) e a observacao logo abaixo
+            if (self._celula_texto(ws.Range("A5").Value).startswith("17/08/2026")
+                    and self._celula_texto(ws.Range("A6").Value).startswith("(linha de exemplo")):
+                ws.Range("A5:O6").ClearContents()
+            self._registro_ok = True
+            print(f"[REGISTRO] Aba '{NOME_ABA_REGISTRO}' preparada para o robo.")
+            return True
+        except Exception as e:
+            print(f"[REGISTRO] Nao foi possivel preparar a aba '{NOME_ABA_REGISTRO}': {e}")
+            return False
+
+    def _com_tentativas(self, funcao, tentativas=3, espera=0.5):
+        import time
+        ultimo = None
+        for _ in range(tentativas):
+            try:
+                return funcao()
+            except Exception as e:   # Excel ocupado recalculando o DDE: RPC_E_CALL_REJECTED
+                ultimo = e
+                time.sleep(espera)
+        raise ultimo
+
+    def _linha_da_operacao(self, ws, id_operacao):
+        """Linha onde esta o id (coluna O) ou None; devolve tambem a primeira linha livre."""
+        ini = PRIMEIRA_LINHA_REGISTRO
+        fim = ini + LINHAS_BUSCA_REGISTRO - 1
+        col_o = ws.Range(f"O{ini}:O{fim}").Value
+        col_a = ws.Range(f"A{ini}:A{fim}").Value
+        achada, livre = None, None
+        for k in range(len(col_o)):
+            o = col_o[k][0] if isinstance(col_o[k], (tuple, list)) else col_o[k]
+            a = col_a[k][0] if isinstance(col_a[k], (tuple, list)) else col_a[k]
+            if o is not None and self._celula_texto(o) == id_operacao:
+                achada = ini + k
+            if livre is None and o is None and a is None:
+                livre = ini + k
+        return achada, livre
+
+    @staticmethod
+    def _fracao_dia(dt):
+        return (dt.hour * 3600 + dt.minute * 60 + dt.second) / 86400.0
+
+    def registrar_abertura_planilha(self, posicao):
+        """Grava a linha da operacao ao abrir (data, hora, lado, entrada, stop, alvo)."""
+        if self._planilha is None or not getattr(self, "_registro_ok", False):
+            return
+        try:
+            self._com_tentativas(lambda: self._gravar_abertura(posicao))
+        except Exception as e:
+            print(f"[REGISTRO] Falha ao registrar a abertura na planilha: {e}")
+
+    def _gravar_abertura(self, posicao):
+        ws = self._planilha.Sheets(NOME_ABA_REGISTRO)
+        id_op = posicao.horario_entrada
+        achada, livre = self._linha_da_operacao(ws, id_op)
+        if achada is not None:
+            return   # ja existe (robo reiniciado com a posicao aberta): nao duplica
+        if livre is None:
+            raise RuntimeError("aba REGISTRO_OPERACOES cheia")
+        t = datetime.fromisoformat(id_op)
+        ws.Range(f"A{livre}").Value = t.replace(hour=0, minute=0, second=0, microsecond=0)
+        ws.Range(f"A{livre}").NumberFormat = "dd/mm/yyyy"
+        ws.Range(f"B{livre}").Value = self._fracao_dia(t)
+        ws.Range(f"B{livre}").NumberFormat = "hh:mm:ss"
+        ws.Range(f"C{livre}").Value = posicao.lado
+        ws.Range(f"D{livre}").Value = posicao.entrada
+        ws.Range(f"E{livre}").Value = "" if posicao.stop is None else posicao.stop
+        ws.Range(f"F{livre}").Value = "" if posicao.alvo is None else posicao.alvo
+        ws.Range(f"O{livre}").NumberFormat = "@"
+        ws.Range(f"O{livre}").Value = id_op
+
+    def registrar_fechamento_planilha(self, posicao, horario_saida, saida, motivo,
+                                      resultado_pts, resultado_reais, pico_reais=None, devolveu_reais=None,
+                                      banca=None):
+        """Completa a linha da operacao na saida. Se a linha de abertura nao existir (falhou ou
+        o robo foi iniciado depois), cria a linha ja completa."""
+        if self._planilha is None or not getattr(self, "_registro_ok", False):
+            return
+        try:
+            self._com_tentativas(lambda: self._gravar_fechamento(
+                posicao, horario_saida, saida, motivo, resultado_pts, resultado_reais, pico_reais,
+                devolveu_reais, banca))
+        except Exception as e:
+            print(f"[REGISTRO] Falha ao registrar o fechamento na planilha: {e}")
+
+    def _gravar_fechamento(self, posicao, horario_saida, saida, motivo, resultado_pts,
+                           resultado_reais, pico_reais, devolveu_reais, banca):
+        ws = self._planilha.Sheets(NOME_ABA_REGISTRO)
+        id_op = posicao.horario_entrada
+        achada, _ = self._linha_da_operacao(ws, id_op)
+        if achada is None:
+            self._gravar_abertura(posicao)
+            achada, _ = self._linha_da_operacao(ws, id_op)
+            if achada is None:
+                raise RuntimeError("linha da operacao nao encontrada")
+        r = achada
+        ws.Range(f"G{r}").Value = self._fracao_dia(horario_saida)
+        ws.Range(f"G{r}").NumberFormat = "hh:mm:ss"
+        ws.Range(f"H{r}").Value = saida
+        ws.Range(f"I{r}").Value = motivo
+        ws.Range(f"J{r}").Value = round(resultado_pts, 1)
+        ws.Range(f"K{r}").Value = round(resultado_reais, 2)
+        if pico_reais is not None:
+            ws.Range(f"L{r}").Value = round(pico_reais, 2)
+        if devolveu_reais is not None:
+            ws.Range(f"M{r}").Value = round(devolveu_reais, 2)
+        if banca is not None:
+            ws.Range(f"N{r}").Value = round(banca, 2)
+        # stop/alvo podem ter sido reconfigurados pelo cartucho de saida depois da abertura
+        ws.Range(f"E{r}").Value = "" if posicao.stop is None else posicao.stop
+        ws.Range(f"F{r}").Value = "" if posicao.alvo is None else posicao.alvo
 
     def desconectar(self):
         # NAO fecha o Excel (self._excel.Quit()) - a instancia e a que o usuario

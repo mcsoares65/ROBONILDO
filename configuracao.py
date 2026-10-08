@@ -62,6 +62,7 @@ MODO_TESTE_REPLAY = False  # False = comportamento correto para operacao real co
 
 # ---------- Auditoria da execução ao vivo ----------
 AUDITORIA_EXECUCAO_ATIVA = True
+REGISTRO_PLANILHA_ATIVO = True   # V507: robo escreve cada operacao na aba REGISTRO_OPERACOES (nunca no replay)
 PASTA_LOGS_AUDITORIA = str(PASTA_LOGS)
 
 # ---------- Estrategia (regra congelada MA_v2) ----------
