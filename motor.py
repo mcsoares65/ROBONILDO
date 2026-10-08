@@ -45,6 +45,28 @@ def media_movel(candles: List[Candle], periodo: int) -> Optional[float]:
     return sum(fechamentos) / periodo
 
 
+def wad_preco(candles: List[Candle], janela: int = 96) -> tuple[float, ...]:
+    """Williams A/D sem volume, alinhado aos candles fechados da janela.
+
+    O primeiro valor e zero arbitrario; somente diferencas sao comparadas.
+    Nao representa agressao nem fluxo de ordens observado no DDE.
+    """
+    if janela <= 0:
+        raise ValueError("A janela WAD deve ser positiva.")
+    serie = candles[-janela:]
+    if not serie:
+        return ()
+    valores = [0.0]
+    acumulado = 0.0
+    for anterior, atual in zip(serie, serie[1:]):
+        if atual.fechamento > anterior.fechamento:
+            acumulado += atual.fechamento - min(atual.minima, anterior.fechamento)
+        elif atual.fechamento < anterior.fechamento:
+            acumulado += atual.fechamento - max(atual.maxima, anterior.fechamento)
+        valores.append(acumulado)
+    return tuple(valores)
+
+
 def estocastico_lento(candles: List[Candle], periodo: int = 8, suavizacao: int = 3) -> Optional[float]:
     """
     Estocastico Lento, suavizacao EXPONENCIAL (EMA) - confirmado como o calculo
@@ -306,6 +328,9 @@ def construir_row(candles: List[Candle]) -> Optional[dict]:
         for candle in candles[-96:]
     )
 
+    # Serie WAD sem volume, alinhada 1:1 a ohlc_recentes e sem look-ahead.
+    wad_preco_recentes = wad_preco(candles, janela=96)
+
     # Janela isolada Gabriel: preserva seu próprio contrato e não fornece
     # volume quando o dado não está disponível.
     gabriel_barras = tuple(
@@ -335,6 +360,7 @@ def construir_row(candles: List[Candle]) -> Optional[dict]:
         "rsi": rsi, "rsi_prev": rsi_prev,
         "rsi_subindo": rsi_subindo, "rsi_descendo": rsi_descendo,
         "ohlc_recentes": ohlc_recentes,
+        "wad_preco_recentes": wad_preco_recentes,
         "gabriel_barras": gabriel_barras,
     }
 
