@@ -1,0 +1,97 @@
+# Ata ao conselho — candidata WAD como complemento, não como substituta
+
+Autoria: Manus (IA), 08/10/2026. Revisão humana: pendente. Base consultada:
+main `31471db760e586cec90fde0dad3a7caaa014105f` (código V512); alterações
+novas desde a proposta WAD: PR #113 mudou o MACD titular, PR #114 removeu
+narração, e a main recebeu entradas/saídas DeepSeek. `compliance.md` relido.
+Atas consultadas (Regra 15): 2026-10-01-V (reversões/volume),
+2026-10-05-AD (famílias de indicadores/anos consumidos), AE (sem OU interno),
+2026-10-06-AH (escalação, limites de saídas), 2026-10-07-AI (OHLC ao vivo).
+Proposta original: PR #111, já mergeado pelo dono. Esta ata não muda regra.
+
+1. PERGUNTA E DISTINÇÃO CONCEITUAL
+---------------------------------
+Pergunta do dono: basta AGREGAR à escalação, desde que a estratégia não seja
+cópia nem regra maquiada. A entrada_divergencia_wad_v01 é uma única hipótese:
+novo extremo do preço sem confirmação do Williams A/D calculado com preços,
+seguido de rompimento do extremo oposto do candle de preparação. Não usa
+MA21/MA50, MACD ou estocástico para gerar sinal. O WAD implementado NÃO mede
+volume/agressão DDE nem é a divergência de volume refutada na ata V.
+
+O novo cartucho entrada_varredura_liquidez_v01, surgido posteriormente na
+main, também acompanha extremos, mas sinaliza no próprio candle que varre
+um pivô confirmado e fecha de volta para dentro; o WAD exige comparação
+independente de preço vs indicador e confirmação no candle seguinte. Mesmo
+compartilhando o tema 'extremo', as regras e os sinais não são idênticos.
+
+2. MÉTODO FIXADO ANTES DA MEDIÇÃO
+--------------------------------
+Plano fechado local em /home/ubuntu/pesquisa_wad/PLANO_INCREMENTAL.md antes
+da execução. Uma simulação pareada, sem retocar nenhum parâmetro ou selecionar
+prioridade depois do resultado. Primeiro, os três titulares atuais
+(entrada_macd_estocastico_v01, entrada_retomada_ma21_v01,
+entrada_saida_extremo_v01) na sua `Escalacao` do motor; segundo, os mesmos
+três titulares com WAD como quarto membro de prioridade 1000, abaixo do padrão
+999. Lados opostos simultâneos cancelam entrada como no escalonador existente.
+Em ambos os cenários: mesmo `classificacao.preparar_rows`, `executar_jogo`,
+`MotorRobonildo` e saída titular `saida_baseline`. Nenhum titular ou código
+de execução foi modificado; a segunda escalação existiu apenas em memória.
+
+Fonte: CSV 2025 do `HISTORICO.zip` do dono, SHA-256
+12fe5484c41697a7b0ac30d41f25dd67ead23dae1e27b3728a0860a0def63286.
+Intervalo 02/01/2025 09:00 a 30/12/2025 18:15, 9.479 candles,
+250 pregões. Um contrato WIN, R$0,20/ponto, custo estimado R$0,50/op do
+projeto, sem modelagem adicional de spread/derrapagem. Métricas do motor:
+`acumulado = resultado - abs(drawdown)`. Os 2025 já foram vistos nas atas;
+estes números são EXPLORATÓRIOS e não constituem Validação oficial/Holdout.
+Nenhum dado de 2026 ou futuro foi aberto nesta análise incremental.
+
+3. RESULTADOS MEDIDOS (2025, IN-SAMPLE)
+--------------------------------------
+Sinais WAD brutos: 164 (149 em candles sem sinal de qualquer titular = 90,85%;
+15 coincidentes, todos do mesmo lado; zero conflitos com os três titulares).
+A escalação titular emitiu 601 sinais brutos. Somar WAD mudou o sinal final
+em 149 candles — sinal não implica operação, pois o motor pode já estar em
+posição ou aplicar controles. Diversidade NÃO é sinônimo de edge.
+
+Cenário                     Resultado R$   DD R$       Acumulado R$  Ops  Dias
+Escalação atual                3.040,31   -1.363,35       1.676,96  285   203
+Escalação + WAD em memória     4.087,03   -1.566,21       2.520,82  321   219
+Diferença                    +1.046,72     -202,86        +843,86   +36   +16
+
+71 dias tiveram resultado diário diferente: 38 com delta positivo e 33
+negativo. O dia 09/12/2025 acrescentou R$756,87, **72,31%** do ganho
+líquido incremental anual de R$1.046,72; retirando apenas esse dia da
+soma dos deltas diários, restariam R$289,85, sem recalcular nova curva de
+capital ou drawdown. Em novembro, a soma mensal dos deltas foi -R$921,14.
+Logo, o sinal de ganho observado não é suficientemente estável para alegar
+robustez nem extrapolar o acumulado para outro ano.
+
+Diagnóstico adicional de duplicidade, mesmo CSV, sinais por OHLC causal:
+WAD 164; entrada_varredura_liquidez_v01 1.118; 43 candles com sinais
+simultâneos (33 mesmo lado, 10 opostos); 121 sinais WAD sem sinal da
+varredura. Esta verificação não selecionou ou retocou o WAD. A proximidade
+conceitual merece revisão humana, mas os 121 sinais não compartilhados e
+a regra de confirmação distinta refutam equivalência literal em 2025.
+
+Os números da escalação V512 NÃO devem ser confundidos com a comparação
+V508 no PR #111 (o titular MACD foi alterado na main após aquele PR).
+
+4. POSICIONAMENTO
+----------------
+Voto: manter WAD como **candidata independente sob observação**, por
+complementaridade de sinais demonstrada; NÃO promovê-la nem colocá-la na
+escalação real por este replay. Um possível ganho financeiro marginal foi
+observado apenas em 2025 já consumido, com DD maior e dependência relevante
+de poucos dias. Exigir acompanhamento prospectivo em modo sombra, medição
+pareada com a mesma escalação e custos/preço de execução reais antes de
+considerar um PR próprio de escalação/titularidade; promoção segue Regras
+10, 11, 12 e 17 do compliance. Este documento não é instrução para negociar.
+
+Regra 11.2 — variações: 1 formulação de WAD e 1 contrafactual de inclusão
+predeterminado; sem calibração posterior. A comparação de sinais contra a
+varredura foi apenas auditoria de duplicidade, sem construir variante nova.
+Os artefatos locais de reprodução são
+/home/ubuntu/pesquisa_wad/incremental_2025.py,
+/home/ubuntu/pesquisa_wad/incremental_2025.json e
+/home/ubuntu/pesquisa_wad/incremental_2025.log (fora do repositório).
