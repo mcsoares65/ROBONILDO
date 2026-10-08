@@ -4,6 +4,15 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V517 — painel da Escala mais estável e sem "100%" falso
+
+Visto pelo dono no replay de 07/10 (10:29–10:32):
+- **Troca frenética da estratégia na frente:** agora há histerese; a que está na frente só perde o lugar se outra passar por mais de 5 pontos (ou confirmar o sinal).
+- **100% sem sinal:** a Saída de Extremo mostrava 100% com "Falta estoc. saindo da zona extrema". O painel arredondava 99,6 para 100 e a proximidade do cruzamento do estocástico era generosa demais (80 pts). Agora o painel trunca e só mostra 100% com o sinal confirmado; a escala caiu para 40 pts.
+- Sinal, entrada, saída e backtest inalterados.
+
+---
+
 ## V516 — narração da Escala sem repetição; textos do painel sem reticências
 
 Defeito da V515 (visto pelo dono em 08/10/2026, 10:20–10:21): a narração "A estratégia Saída de Extremo assumiu a prioridade…" saía várias vezes seguidas. Causa: a chave da fala incluía a faixa de % e só era comparada com a última fala; com o % fino oscilando perto de 90% (e a estratégia da frente alternando) a chave mudava a cada leitura.

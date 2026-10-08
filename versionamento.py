@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V516"
+VERSAO = "V517"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1711,3 +1711,10 @@ VERSAO = "V516"
 #   Agora cada (candle, estrategia, lado) e narrado uma unica vez (conjunto de ja narrados).
 #   Painel: "Falta saida da zona extrema do est..." -> "estoc. saindo da zona extrema"; "estocastico na direcao da
 #   tendencia" -> "estoc. a favor da tendencia" (cabem nos 29 caracteres). Logica de sinal inalterada.
+
+# ---------------------------------------------------------------------------
+# V517 - painel da Escala mais estavel e sem "100%" falso
+#   Visto no replay de 07/10 (10:29-10:32): (1) a estrategia da frente trocava a cada leitura; (2) Saida de Extremo
+#   aparecia com 100% sem sinal (o cruzamento do estocastico valia ~0,99 em qualquer ponto perto de 80, e o painel
+#   arredondava 99,6 para 100). Agora: histerese de 5 pontos para trocar a estrategia da frente; o painel trunca
+#   (99,6 -> 99) e so mostra 100% com o sinal confirmado; proximidade do cruzamento do estocastico passa de 80 para 40 pts.

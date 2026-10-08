@@ -822,6 +822,7 @@ def rodar():
     ultimo_candle_narracao_periodica = None  # evita repetir a narracao de acompanhamento no mesmo candle
     ultima_expectativa_narrada = None  # (candle, estratégia, lado), evita repetição da explicação
     ultima_expectativa_perdida = None  # evita repetir a perda da mesma expectativa
+    radar_frente_chave = None  # V517: (estratégia, lado) hoje na frente do painel (histerese)
     radar_narrados = set()  # V516: (candle, estratégia, lado) já narrados; cada um é falado UMA vez por candle
     radar_100_chave = None       # oportunidade que permanece continuamente em 100%
     radar_100_desde = None       # relogio real; mede estabilidade sem depender do DDE
@@ -1087,6 +1088,16 @@ def rodar():
         radar = gestor.radar_oportunidades(row_indicadores)
         if radar:
             oportunidade_prioritaria = radar[0]
+            # V517: histerese. Com o % fino as estratégias trocam de posição a cada leitura; a que já está na
+            # frente só perde o lugar se outra passar na frente por mais de 5 pontos (ou se confirmar o sinal).
+            if radar_frente_chave is not None and radar[0]["progresso"] < 1.0:
+                for _item in radar:
+                    if ((_item.get("estrategia"), _item.get("direcao")) == radar_frente_chave
+                            and _item["progresso"] >= radar[0]["progresso"] - 0.05):
+                        oportunidade_prioritaria = _item
+                        break
+            radar_frente_chave = (oportunidade_prioritaria.get("estrategia"),
+                                  oportunidade_prioritaria.get("direcao"))
             progresso_radar = oportunidade_prioritaria["progresso"]
         if oportunidade_prioritaria and progresso_radar >= 1.0:
             chave_100_atual = (
@@ -1329,7 +1340,9 @@ def rodar():
             quadro = _quadro_proximidade(
                 progresso_radar, segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
             )
-            progresso_radar_pct = max(0.0, min(1.0, float(progresso_radar))) * 100
+            # V517: 100% só quando o sinal está confirmado; antes disso o painel trunca (99,6 vira 99, não 100)
+            _p = max(0.0, min(1.0, float(progresso_radar)))
+            progresso_radar_pct = 100.0 if _p >= 1.0 else float(min(99, int(_p * 100)))
             if gestor.posicao_aberta:
                 pos = gestor.posicao_aberta
                 resultado_reais = _resultado_liquido_reais(pos, preco)

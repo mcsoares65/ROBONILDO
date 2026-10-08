@@ -82,7 +82,7 @@ def diagnosticar_oportunidades(row):
         1.0 if amplitude > 0 else 0.0,
         _fino(amplitude > 0 and corpo <= CORPO_MAXIMO_PROPORCAO * amplitude,
               1.0 - (proporcao - CORPO_MAXIMO_PROPORCAO) / (1.0 - CORPO_MAXIMO_PROPORCAO)),
-        _fino(bool(cruzamento_extremo), 1.0 - abs(row["stoch"] - nivel_extremo) / 80.0),
+        _fino(bool(cruzamento_extremo), 1.0 - abs(row["stoch"] - nivel_extremo) / 40.0),   # V517: 40 pts (antes 80)
     ]
     confirmadas = sum(bool(ok) for ok, _ in condicoes) if elegivel else 0
     progresso_fino = sum(scores) / len(scores) if elegivel else 0.0
