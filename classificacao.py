@@ -43,7 +43,7 @@ from motor import Candle, MotorRobonildo, construir_row
 # Versionamento próprio deste programa. Alterações em regras de validação,
 # ordenação ou apresentação da classificação incrementam esta constante sem
 # alterar a versão operacional do Robonildo definida em configuracao.py.
-VERSAO_CLASSIFICACAO = "C001"
+VERSAO_CLASSIFICACAO = "C002"
 
 try:
     import colorama
@@ -844,7 +844,9 @@ def _moeda(valor: float) -> str:
 
 
 
-def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: str = "estrategia") -> None:
+def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: str = "estrategia",
+                              cores: Optional[list] = None, legenda: Optional[str] = None) -> None:
+    """cores/legenda (C002): cor por linha e legenda próprias; sem elas, o padrão de sempre."""
     if not resultados:
         print(f"\n{titulo}: nenhuma combinação produziu resultado.")
         return
@@ -875,7 +877,8 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
 
     for indice, linha in enumerate(resultados):
         cor = (
-            AZUL_CELESTE if linha.get("titular")
+            cores[indice] if cores is not None
+            else AZUL_CELESTE if linha.get("titular")
             else VERDE if indice == 0
             else (VERMELHO if indice == len(resultados) - 1 else "")
         )
@@ -884,10 +887,10 @@ def _imprimir_ranking_simples(titulo: str, resultados: list[dict], chave_nome: s
             for chave, _, moeda, largura in colunas
         )
         print(f"{cor}{texto}{RESET}")
-    print(
+    print(legenda or (
         f"{VERDE}Verde{RESET}=1º | {VERMELHO}Vermelho{RESET}=último | "
         f"{AZUL_CELESTE}Azul{RESET}=titular do slot"
-    )
+    ))
     print("Acumulado = resultado - abs(drawdown). Maior acumulado vence.")
 
 
@@ -1745,25 +1748,31 @@ def _row_de_validacao(candles: list[Candle], dias_avaliacao: set) -> list[Option
     return [None]
 
 
-def _imprimir_time(pares_ok: list[dict], rank_entrada: list[dict], nome_saida: str) -> None:
-    """Linha de comparação (fora do ranking): a escalação contra cada titular individual."""
-    linhas = []
+def _imprimir_entradas_com_time(titulo: str, pares_ok: list[dict], rank_entrada: list[dict]) -> None:
+    """C002: classificação de entradas com a escalação: o time primeiro, depois os titulares
+    (time e titulares em azul, como sempre), depois os reservas (branco), o último de todos em vermelho. Dentro de cada grupo,
+    por resultado acumulado, como antes. A coluna pos mostra o lugar de cada cartucho no ranking
+    de entradas (um reserva pode ter lugar melhor que um titular); T = o time, que fica fora do
+    ranking (Regra 17)."""
+    times = []
     for r in pares_ok:
         if r.get("time") and r.get("titular_saida"):
             item = dict(r)
             item["estrategia"] = "ESCALAÇÃO (time)"
-            item["titular"] = True
-            linhas.append(item)
-    linhas += [dict(r) for r in rank_entrada if r.get("titular_entrada")]
+            item["pos"] = "T"
+            times.append(item)
+    titulares = [dict(r) for r in rank_entrada if r.get("titular")]
+    reservas = [dict(r) for r in rank_entrada if not r.get("titular")]
+    linhas = times + titulares + reservas
     if not linhas:
         return
-    linhas.sort(key=lambda r: (r["acumulado"], r["resultado"], r["drawdown"]), reverse=True)
-    for i, r in enumerate(linhas, 1):
-        r["pos"] = i
-    _imprimir_ranking_simples(
-        f"ESCALAÇÃO x TITULARES INDIVIDUAIS (fora do ranking; saída titular: {nome_saida})",
-        linhas, chave_nome="estrategia")
-    print("Regra 17: o time só se justifica se superar o melhor titular individual fora da amostra.")
+    cores = ([AZUL_CELESTE] * (len(times) + len(titulares)) + [""] * len(reservas))
+    cores[-1] = VERMELHO
+    legenda = (f"{AZUL_CELESTE}Azul{RESET}=time e titulares | "
+               f"Branco=reserva | {VERMELHO}Vermelho{RESET}=último | pos = lugar no ranking de entradas")
+    _imprimir_ranking_simples(titulo, linhas, chave_nome="estrategia", cores=cores, legenda=legenda)
+    if times:
+        print("Regra 17: o time só se justifica se superar o melhor titular individual fora da amostra.")
 
 
 def executar(
@@ -2060,13 +2069,14 @@ def executar(
             f"RANKING ENTRADA {VERSAO_CLASSIFICACAO} (motor {cfg.VERSAO}; "
             f"saída titular: {saida_titular.nome}){fonte_rotulo}"
         )
-        _imprimir_ranking_simples(
-            titulo_entrada,
-            rank_entrada,
-            chave_nome="estrategia",
-        )
         if time:
-            _imprimir_time(pares_ok, rank_entrada, saida_titular.nome)
+            _imprimir_entradas_com_time(titulo_entrada, pares_ok, rank_entrada)
+        else:
+            _imprimir_ranking_simples(
+                titulo_entrada,
+                rank_entrada,
+                chave_nome="estrategia",
+            )
 
     # ----- Ranking SAÍDA (modo S) -----
     if modo in ("S", "A"):

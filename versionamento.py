@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V507"
+VERSAO = "V508"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1646,3 +1646,10 @@ VERSAO = "V507"
 #   (3 tentativas contra Excel ocupado; a coluna O guarda o id da operacao: sem duplicar apos reinicio).
 #   principal.py chama na abertura e nos 3 pontos de saida; nunca no replay (cfg.REGISTRO_PLANILHA_ATIVO).
 #   caminho_operacao.CaminhoOperacao.fechar() passou a devolver a linha do resumo (pico/devolucao).
+
+# ---------------------------------------------------------------------------
+# V508 - classificacao.py (C002): ranking de entradas com o time e os titulares no topo
+#   Modo E/A com escalacao: uma tabela so - time e titulares (azul), reservas (branco),
+#   ultimo em vermelho; cada grupo por acumulado. Coluna pos = lugar no ranking de entradas (T = time).
+#   Substitui a tabela separada "ESCALACAO x TITULARES INDIVIDUAIS". rank_entrada, planilha e
+#   demais modos inalterados.
