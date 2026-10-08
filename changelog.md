@@ -4,6 +4,15 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V509 — duas candidatas novas (não são titulares, sem resultado medido)
+
+Pedido do dono (08/10/2026): estratégia genuína, não cópia do time atual (MA21, MACD+estocástico, saída de extremo, stop estrutural + alvo 1,55R).
+- `estrategia/entrada/entrada_varredura_liquidez_v01.py`: varredura de liquidez. O último fundo (ou topo) confirmado pelo detector Nelogica de topos e fundos, período 2 (padrão da tela), é furado pelo candle e o fechamento volta para dentro. Compra na falha da mínima, venda na falha da máxima. Os dois no mesmo candle não operam. É o oposto do Donchian, já medido na ata de 05/10/2026 e não promovido.
+- `estrategia/saida/saida_safezone_v01.py`: stop móvel SafeZone (Elder, 2002). Período 10 e multiplicador 2, do rótulo da tela do artigo. Sem alvo. Não é trailing de ATR nem o alvo de 1,55R.
+- Nenhum backtest rodou nesta entrega. Não entram no time. O teste oficial é o `classificacao.py` depois do merge.
+
+---
+
 ## V508 — classificacao.py (C002): time, titulares e reservas numa tabela só
 
 Pedido do dono (07/10/2026): apresentar a classificação com o time, seguido dos titulares (azul), dos reservas
