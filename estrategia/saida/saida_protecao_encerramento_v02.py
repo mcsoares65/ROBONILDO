@@ -1,5 +1,3 @@
-# TITULAR EM TRANSICAO (V496, Regra 16): une duas regras soltas (corte 17h15 e corte 18h). Segue em operacao
-# ate o dono trocar o titular por merge de PR. Ver conselho/2026-10-05-AG.txt.
 """Saída ChatGPT V4 — proteção proporcional no encerramento.
 
 Candidata S001. Preserva o stop estrutural e o alvo de 1,55R da V3. A partir

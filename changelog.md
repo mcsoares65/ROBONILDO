@@ -4,6 +4,17 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V504 — saída titular sem corte antecipado de operação em prejuízo
+
+Pedido do dono (07/10/2026): se a operação se desenrola em prejuízo, nenhum corte antes das 18:20:58.
+- Titular de saída agora é `saida_baseline` (stop dos últimos 5 candles + alvo 1,55R, sem regra de horário). A
+  `saida_protecao_encerramento_v02` (cortes das 17h15 e 18h) virou candidata em `estrategia/saida/`.
+- Só fecham a operação: stop, alvo e o corte absoluto das 18:20:58 do motor (inalterado).
+- Medição (time titular, K de volatilidade por ano): 2026 R$ 17.070 vs 17.494 (−424); 2020–25 R$ 7.259 vs 6.184 (+1.075).
+  Em 2026 os cortes ajudavam um pouco; nos anos anteriores atrapalhavam. Nenhum código de motor mudou.
+
+---
+
 ## V503 — classificacao.py modo A: colunas do Time na "Apuração diária"
 
 Pedido do dono (07/10/2026): na aba "Horários por dia" ele não achou o resultado do time num dia (06/10).

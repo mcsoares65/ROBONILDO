@@ -580,7 +580,9 @@ duas. A medição está na ata `conselho/2026-10-05-AE.txt`.
    saídas (empilhar cortes) segue o item 5: regra própria, com modo sombra e Holdout cego.
 8. **Escopo e transição.** Os titulares atuais (`entrada_tres_portas_v01`, que une três
    ideias, e `saida_protecao_encerramento_v02`, que une o corte das 17h15 e o das 18h)
-   continuam em operação até o dono trocá-los por merge de PR (Regra 12). Os agregadores
+   continuam em operação até o dono trocá-los por merge de PR (Regra 12). (Desde a V504 o
+   titular de saída é `saida_baseline`, sem corte por horário de operação em prejuízo; a
+   `saida_protecao_encerramento_v02` virou candidata na raiz de `saida/`.) Os agregadores
    candidatos existentes foram movidos para `desclassificada/` (entradas na V490 e V493,
    saídas na V496), com a tabela do que cada um equivale em `conselho/2026-10-05-AG.txt`.
 
