@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V512 — sem a narração "Checagem de rotina"
+
+Pedido do dono (08/10/2026): removida a fala "Checagem de rotina: preço lido é X. Confira na tela do Profit." O checkpoint segue marcado; só a narração saiu.
+
+---
+
 ## V511 — MACD+Estocástico sem o bloqueio de horário 11:45–12:30
 
 Pedido do dono (08/10/2026): "retire este bloqueio de horário da estratégia, podemos perder boas oportunidades com ele."
