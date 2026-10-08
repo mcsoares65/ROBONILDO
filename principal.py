@@ -605,7 +605,31 @@ def _salvar_historico_persistente(candles: List[Candle], sobrescrever: bool = Fa
                 pass
 
 
+def _migrar_logs_da_pasta_do_robo():
+    """V506: os logs saíram da pasta do robô (<robo>\\logs) para cfg.PASTA_LOGS
+    (D:\\DAYTRADE\\LOGS). Na partida, copia (nunca apaga nem sobrescreve) o que existir
+    na pasta antiga e ainda não existir na nova, principalmente o estado_risco.json, que
+    guarda posição aberta e banca. Depois disso só a pasta nova vale."""
+    antiga, nova = Path(cfg.PASTA_LOGS_ANTIGA), Path(cfg.PASTA_LOGS)
+    if not antiga.is_dir() or antiga.resolve() == nova.resolve():
+        return
+    copiados = 0
+    try:
+        nova.mkdir(parents=True, exist_ok=True)
+        for origem in antiga.iterdir():
+            destino = nova / origem.name
+            if origem.is_file() and not destino.exists():
+                shutil.copy2(origem, destino)
+                copiados += 1
+    except OSError as e:
+        print(f"[LOGS] Nao foi possivel copiar os logs antigos de {antiga}: {e}")
+        return
+    if copiados:
+        print(f"[LOGS] {copiados} arquivo(s) copiado(s) de {antiga} para {nova}.")
+
+
 def rodar():
+    _migrar_logs_da_pasta_do_robo()
     construtor = ConstrutorCandle(minutos=cfg.TIMEFRAME_MINUTOS)
     registrador = Registrador(pasta_logs=cfg.PASTA_LOGS_AUDITORIA)
     auditor = AuditorExecucao(

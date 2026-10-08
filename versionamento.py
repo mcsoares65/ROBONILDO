@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V505"
+VERSAO = "V506"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1628,3 +1628,11 @@ VERSAO = "V505"
 #   saida) e caminho.fechar() nos 3 pontos de saida (tick, corte final, fechamento de candle).
 #   Desligado no replay. analisar_caminhos.py le os arquivos e simula "estopar com X% de queda
 #   do pico" sobre a trilha real. Motor, risco, ordens e arquivos existentes inalterados.
+
+# ---------------------------------------------------------------------------
+# V506 - LOGS e ANALISE fora da pasta do robo
+#   configuracao.py: PASTA_LOGS = D:\DAYTRADE\LOGS, PASTA_ANALISE = D:\DAYTRADE\ANALISE,
+#   PASTA_LOGS_ANTIGA = <robo>\logs. Usam a nova pasta: registrador, auditoria, caminho (V505),
+#   coleta DDE, estado_risco.json (motor), noticias_lidas.json e as planilhas do classificacao.py
+#   modo A. principal.py copia 1 vez, na partida, o que existir na pasta antiga e faltar na nova
+#   (nunca apaga nem sobrescreve).

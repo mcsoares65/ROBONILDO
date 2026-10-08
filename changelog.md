@@ -4,6 +4,18 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V506 — LOGS e ANALISE fora da pasta do robô
+
+Pedido do dono (07/10/2026): as pastas de logs e de análise não ficam dentro da pasta do robô.
+- Logs (operações, auditoria, caminho das operações, coleta DDE, `estado_risco.json`, notícias lidas) passam a
+  `D:\DAYTRADE\LOGS`; as planilhas do `classificacao.py` modo A, a `D:\DAYTRADE\ANALISE` (continua valendo
+  a opção de escolher outra pasta ao rodar).
+- Na primeira partida o robô copia o que existir em `<pasta do robô>\logs` e ainda não existir na nova pasta
+  (principalmente o `estado_risco.json`, com posição aberta e banca). Nada é apagado nem sobrescrito.
+- Caminhos ficam em `configuracao.py` (`PASTA_LOGS`, `PASTA_ANALISE`).
+
+---
+
 ## V505 — robô grava o caminho de cada operação (pico, horário do pico, vale, derrapagem)
 
 Pergunta do dono (07/10/2026): o lucro de pico é mesmo devolvido antes da saída? O backtest só vê máxima/mínima de
