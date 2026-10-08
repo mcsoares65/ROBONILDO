@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V517"
+VERSAO = "V518"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1718,3 +1718,8 @@ VERSAO = "V517"
 #   aparecia com 100% sem sinal (o cruzamento do estocastico valia ~0,99 em qualquer ponto perto de 80, e o painel
 #   arredondava 99,6 para 100). Agora: histerese de 5 pontos para trocar a estrategia da frente; o painel trunca
 #   (99,6 -> 99) e so mostra 100% com o sinal confirmado; proximidade do cruzamento do estocastico passa de 80 para 40 pts.
+
+# ---------------------------------------------------------------------------
+# V518 - painel da Escala: colunas "% quadrado" fixas; "ha Ns" passa para depois delas
+#   Pedido do dono (08/10/2026): o "| ha 36s" de largura variavel empurrava o "100% quadrado" e quebrava o layout vertical.
+#   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.

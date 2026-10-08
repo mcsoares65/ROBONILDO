@@ -1428,8 +1428,8 @@ def rodar():
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
                           f"{tendencia_colorida} | Escala {status_sinal} | "
                           f"{confirmacoes_radar:^3} | {campo_detalhe}"
-                          f"{sustentacao}"
-                          f" | {progresso_radar_pct:3.0f}% {quadro}{aviso_bloqueio}")
+                          f" | {progresso_radar_pct:3.0f}% {quadro}"
+                          f"{sustentacao}{aviso_bloqueio}")   # V518: % e quadrado fixos; "há Ns" vai depois
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "
                           f"Aguardando indicadores")
