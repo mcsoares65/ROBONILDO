@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V510"
+VERSAO = "V511"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1674,3 +1674,10 @@ VERSAO = "V510"
 #   entrada, porque o motor nao trava afrouxamento. Penetracao = leitura de
 #   Elder (media so das penetracoes adversas > 0); o artigo nao imprime a formula.
 #   Nada em titular/, motor.py ou classificacao.py foi alterado.
+
+# ---------------------------------------------------------------------------
+# V511 - entrada_macd_estocastico_v01 sem o bloqueio de horario 11:45-12:30
+#   Pedido do dono (08/10/2026). Removido o bloqueio da gerar_sinal e da elegibilidade do radar.
+#   Mantido o bloqueio por amplitude do candle (240-340 pts). Efeito medido (backtest, saida baseline,
+#   time de 3 titulares, K por ano): soma 2020-26 R$ 24.328 -> 19.820 (-4.508); so 2020 explica -3.626.
+#   Por ano (time): 2020 -3.626 | 2021 -638 | 2022 -303 | 2023 +409 | 2024 +121 | 2025 +611 | 2026 -1.083.

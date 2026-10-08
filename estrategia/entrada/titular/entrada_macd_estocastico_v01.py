@@ -8,6 +8,9 @@ Entra a favor da tendência quando o preço já está afastado da média de 21
 (mais de 200 pontos), o estocástico varia o bastante a favor e o MACD cruza
 na mesma direção.
 
+V510 (pedido do dono, 08/10/2026): removido o bloqueio de horário 11:45–12:30, para não perder
+oportunidades. Demais condições e limiares inalterados.
+
 Origem: Porta 2 de estrategia/entrada/titular/entrada_tres_portas_v01.py. Extração LITERAL: nenhum limiar, horário ou condição foi
 alterado. Isola uma única ideia que hoje só existe combinada com outras num
 agregador; não duplica nenhum arquivo existente (Regra 6) porque, sozinha, ela
@@ -31,9 +34,8 @@ def gerar_sinal(row) -> int:
     tendencia = row["trend"]
     if tendencia == 0:
         return 0
-    hora = row["dt"].strftime("%H:%M")
     amplitude = row["Maximo"] - row["Minimo"]
-    if "11:45" <= hora <= "12:30" or (240.0 <= amplitude <= 340.0):
+    if 240.0 <= amplitude <= 340.0:
         return 0
     variacao_stoch = abs(row["stoch"] - row["stoch_prev"])
     direcao_stoch = (row["stoch_subindo"] if tendencia == 1
@@ -58,7 +60,6 @@ def gerar_sinal(row) -> int:
 
 def diagnosticar_oportunidades(row):
     tendencia = row["trend"]
-    hora = row["dt"].strftime("%H:%M")
     amplitude = row["Maximo"] - row["Minimo"]
     variacao_stoch = abs(row["stoch"] - row["stoch_prev"])
     direcao_stoch = (row["stoch_subindo"] if tendencia == 1
@@ -67,7 +68,6 @@ def diagnosticar_oportunidades(row):
                        else row["macd_cross_down"] if tendencia == -1 else False)
     elegibilidade = [
         (tendencia != 0, "definição de tendência"),
-        (not ("11:45" <= hora <= "12:30"), "horário permitido"),
         (not (240.0 <= amplitude <= 340.0), "amplitude fora da faixa fraca"),
     ]
     condicoes = [
@@ -83,10 +83,8 @@ def diagnosticar_oportunidades(row):
     sinal = (1 if tendencia == 1 else -1) if elegivel and all(ok for ok, _ in condicoes) else 0
     faltante = faltantes[0] if faltantes else "nenhuma"
     detalhe = faltante
-    bloqueio_horario = faltante == "horário permitido"
-    if bloqueio_horario:
-        detalhe = "BLOQUEADA ATÉ 12:45"
-    elif faltante == "afastamento superior a 200 pontos":
+    bloqueio_horario = False   # V510: a estratégia não tem mais janela de horário bloqueada
+    if faltante == "afastamento superior a 200 pontos":
         detalhe = f"afastamento {row['distancia_ma21']:.0f}/200 pts"
     elif faltante == "variação mínima do estocástico":
         detalhe = f"var. estoc. {variacao_stoch:.1f}/4,5"
