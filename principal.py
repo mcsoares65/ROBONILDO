@@ -1135,7 +1135,7 @@ def rodar():
                         # identifica a porta entre as possiveis.
                         total_portas = diagnostico.get("total_portas") if diagnostico else None
                         if porta and total_portas:
-                            explicacao = f"{explicacao} (porta {porta} de {total_portas})"
+                            explicacao = f"{explicacao} (escalação {porta} de {total_portas})"
                         # O candle em formacao fecha em horario + TIMEFRAME. Dizer
                         # so "no fechamento" gera leitura ambigua: logo apos um
                         # [CANDLE FECHADO] o operador le as duas frases em sequencia
@@ -1172,7 +1172,7 @@ def rodar():
                       and ultima_expectativa_narrada[0] == candle_atual.horario
                       and ultima_expectativa_perdida != ultima_expectativa_narrada):
                     _, porta_anterior, lado_anterior = ultima_expectativa_narrada
-                    origem = f"Porta {porta_anterior}" if porta_anterior else "estratégia"
+                    origem = f"escalação {porta_anterior}" if porta_anterior else "estratégia"
                     frase_perdida = (
                         f"A expectativa de {lado_anterior.lower()} da {origem} perdeu "
                         "confirmação durante a formação do candle. Nenhuma ordem será "
@@ -1204,7 +1204,7 @@ def rodar():
                             f"{oportunidade_prioritaria['total']} condições. "
                             f"Ainda aguardamos {proxima}."
                         )
-                        print(f"[RADAR] {explicacao}")
+                        print(f"[ESCALA] {explicacao}")
                         narrar(explicacao)
                         ultima_prioridade_radar_narrada = chave_radar
                         ultima_expectativa_perdida = None
@@ -1409,7 +1409,7 @@ def rodar():
                               if _horarios_sinteticos else "")
                     )
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
-                          f"{tendencia_colorida} | Radar {status_sinal} | "
+                          f"{tendencia_colorida} | Escala {status_sinal} | "
                           f"{confirmacoes_radar:^3} | {campo_detalhe}"
                           f"{sustentacao}"
                           f" | {progresso_radar_pct:3.0f}% {quadro}{aviso_bloqueio}")

@@ -4,6 +4,14 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V509 — console e narração: "porta" vira "escalação", "Radar" vira "Escala"
+
+Pedido do dono (08/10/2026). Só texto, nenhuma lógica mudou:
+- Narração: "(porta 2 de 3)" → "(escalação 2 de 3)"; "da Porta 2 perdeu confirmação" → "da escalação 2 perdeu confirmação".
+- Console: linha `[RADAR]` → `[ESCALA]`; no batimento, "Radar <status>" → "Escala <status>".
+
+---
+
 ## V508 — classificacao.py (C002): time, titulares e reservas numa tabela só
 
 Pedido do dono (07/10/2026): apresentar a classificação com o time, seguido dos titulares (azul), dos reservas

@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V508"
+VERSAO = "V509"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1653,3 +1653,9 @@ VERSAO = "V508"
 #   ultimo em vermelho; cada grupo por acumulado. Coluna pos = lugar no ranking de entradas (T = time).
 #   Substitui a tabela separada "ESCALACAO x TITULARES INDIVIDUAIS". rank_entrada, planilha e
 #   demais modos inalterados.
+
+# ---------------------------------------------------------------------------
+# V509 - texto do console e da narracao: "porta" -> "escalacao", "Radar" -> "Escala"
+#   principal.py: "(porta N de M)" -> "(escalacao N de M)"; "da Porta N" -> "da escalacao N";
+#   "[RADAR]" -> "[ESCALA]"; "Radar <status>" no heartbeat -> "Escala <status>". Somente texto;
+#   chaves internas (porta/total_portas) e logica inalteradas.
