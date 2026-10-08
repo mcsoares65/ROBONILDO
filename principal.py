@@ -1869,7 +1869,7 @@ def rodar():
                                 f"O candle fechou em {direcao_candle}, mas a tendência "
                                 f"das médias ainda é de {tendencia_medias}."
                             )
-                        narrar(f"{frase_candle} Nenhum sinal de entrada foi confirmado.")
+                        narrar(frase_candle)   # V513: sem a frase final "Nenhum sinal de entrada foi confirmado."
             elif not gestor.posicao_aberta and houve_saida_neste_candle:
                 decisao_auditoria = "SAIDA_SEM_REENTRADA"
                 motivo_auditoria = "Regra de paridade: não reutilizar o candle da saída"

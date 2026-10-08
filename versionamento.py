@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V512"
+VERSAO = "V513"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1685,3 +1685,7 @@ VERSAO = "V512"
 # ---------------------------------------------------------------------------
 # V512 - removida a narracao "Checagem de rotina: preco lido e X. Confira na tela do Profit." (principal.py)
 #   Pedido do dono (08/10/2026). O checkpoint continua sendo marcado; so a fala saiu.
+
+# ---------------------------------------------------------------------------
+# V513 - narracao do fechamento de candle sem a frase final "Nenhum sinal de entrada foi confirmado." (principal.py)
+#   Pedido do dono (08/10/2026). Fica so a leitura do candle e da tendencia das medias.
