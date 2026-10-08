@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V511"
+VERSAO = "V512"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1681,3 +1681,7 @@ VERSAO = "V511"
 #   Mantido o bloqueio por amplitude do candle (240-340 pts). Efeito medido (backtest, saida baseline,
 #   time de 3 titulares, K por ano): soma 2020-26 R$ 24.328 -> 19.820 (-4.508); so 2020 explica -3.626.
 #   Por ano (time): 2020 -3.626 | 2021 -638 | 2022 -303 | 2023 +409 | 2024 +121 | 2025 +611 | 2026 -1.083.
+
+# ---------------------------------------------------------------------------
+# V512 - removida a narracao "Checagem de rotina: preco lido e X. Confira na tela do Profit." (principal.py)
+#   Pedido do dono (08/10/2026). O checkpoint continua sendo marcado; so a fala saiu.

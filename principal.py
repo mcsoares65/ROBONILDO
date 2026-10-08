@@ -1050,7 +1050,8 @@ def rodar():
             print(f"[{agora.strftime('%H:%M:%S')}] [INTEGRIDADE DDE] {aviso}")
             narrar(aviso, descartavel=True)
         if leitor.checkpoint_devido():
-            narrar(f"Checagem de rotina: preço lido é {preco:.0f}. Confira na tela do Profit.")
+            # V512: a narracao "Checagem de rotina: preco lido e X. Confira na tela do Profit." foi removida
+            # a pedido do dono; o checkpoint continua sendo marcado (estado do leitor inalterado).
             leitor.marcar_checkpoint_feito()
 
         # ---------- Calculo de tendencia/faixa a cada iteracao (nao so no heartbeat) ----------
