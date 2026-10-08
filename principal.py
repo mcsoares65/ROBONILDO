@@ -191,12 +191,18 @@ def _inicio_proximo_bloco(horario: datetime, minutos: int) -> datetime:
 
 
 def _tocar_beep():
-    """Toca um beep sonoro de alerta - so funciona no Windows (winsound e nativo la)."""
-    try:
-        import winsound
-        winsound.Beep(1200, 300)  # 1200 Hz, 300 ms
-    except ImportError:
-        print("\a", end="", flush=True)  # fallback: beep do proprio terminal (ASCII bell)
+    """V514: toca BEEP_QUANTIDADE beeps seguidos de alerta (Windows: winsound). Roda numa thread
+    para nao atrasar a leitura do DDE nem o fechamento do candle."""
+    def _tocar():
+        for i in range(cfg.BEEP_QUANTIDADE):
+            try:
+                import winsound
+                winsound.Beep(1200, 300)  # 1200 Hz, 300 ms
+            except ImportError:
+                print("\a", end="", flush=True)  # fallback: beep do proprio terminal (ASCII bell)
+            if i < cfg.BEEP_QUANTIDADE - 1:
+                time.sleep(0.15)
+    threading.Thread(target=_tocar, daemon=True).start()
 
 
 _narrador_local = threading.local()  # um objeto de voz POR THREAD - COM (usado pelo
