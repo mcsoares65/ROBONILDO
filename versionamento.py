@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V509"
+VERSAO = "V510"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1655,7 +1655,14 @@ VERSAO = "V509"
 #   demais modos inalterados.
 
 # ---------------------------------------------------------------------------
-# V509 - duas candidatas novas, sem resultado medido (nao sao titulares)
+# V509 - texto da narracao e do console: estrategia "escalada"; sem "porta", "jogador" nem "em campo"
+#   principal.py: ao abrir posicao com a escalacao, narra "A estrategia X foi escalada e assumiu a posicao.";
+#   removido o sufixo "(porta N de M)"; expectativa perdida cita a estrategia pelo nome; "[ESCALACAO] A estrategia X
+#   foi escalada"; "[RADAR]" -> "[ESCALA]"; "Radar <status>" -> "Escala <status>". A chave da expectativa passou a ser
+#   o nome da estrategia (antes o numero da porta). Somente texto/identificacao de narracao; logica inalterada.
+
+# ---------------------------------------------------------------------------
+# V510 - duas candidatas novas, sem resultado medido (nao sao titulares)
 #   estrategia/entrada/entrada_varredura_liquidez_v01.py: varredura do ultimo
 #   swing confirmado pelo detector Nelogica de topos/fundos, periodo 2 (padrao
 #   da tela). Compra se o candle fura a minima do ultimo fundo e fecha de volta
@@ -1667,4 +1674,3 @@ VERSAO = "V509"
 #   entrada, porque o motor nao trava afrouxamento. Penetracao = leitura de
 #   Elder (media so das penetracoes adversas > 0); o artigo nao imprime a formula.
 #   Nada em titular/, motor.py ou classificacao.py foi alterado.
-

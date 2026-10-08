@@ -4,12 +4,26 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
-## V509 — duas candidatas novas (não são titulares, sem resultado medido)
+## V510 — duas candidatas novas (não são titulares, sem resultado medido)
 
 Pedido do dono (08/10/2026): estratégia genuína, não cópia do time atual (MA21, MACD+estocástico, saída de extremo, stop estrutural + alvo 1,55R).
 - `estrategia/entrada/entrada_varredura_liquidez_v01.py`: varredura de liquidez. O último fundo (ou topo) confirmado pelo detector Nelogica de topos e fundos, período 2 (padrão da tela), é furado pelo candle e o fechamento volta para dentro. Compra na falha da mínima, venda na falha da máxima. Os dois no mesmo candle não operam. É o oposto do Donchian, já medido na ata de 05/10/2026 e não promovido.
 - `estrategia/saida/saida_safezone_v01.py`: stop móvel SafeZone (Elder, 2002). Período 10 e multiplicador 2, do rótulo da tela do artigo. Sem alvo. Não é trailing de ATR nem o alvo de 1,55R.
 - Nenhum backtest rodou nesta entrega. Não entram no time. O teste oficial é o `classificacao.py` depois do merge.
+- A V509 já estava na main (narração "escalada"). Esta entrega passou a V510 para não repetir o número.
+
+---
+
+## V509 — narração e console: estratégia "escalada", sem "porta"/"jogador"/"em campo"; "Radar" vira "Escala"
+
+Pedido do dono (08/10/2026): a narração não usa "jogador" (soa como jogo, mal visto no mercado financeiro) nem "porta".
+- Ao abrir a posição, a narração diz: **"A estratégia <nome> foi escalada e assumiu a posição."** (só com a escalação de
+  titulares; com um titular só, nada muda).
+- Mantida a narração de aproximação/distanciamento e motivos ("A estratégia X está com N de M confirmações. Próxima
+  condição: …"). Saiu o sufixo "(porta N de M)". Quando a expectativa se desfaz: "A expectativa de compra da estratégia X
+  perdeu confirmação…".
+- Console: `[ESCALAÇÃO] A estratégia X foi escalada: COMPRA.` (antes "entrou em campo"); `[RADAR]` → `[ESCALA]`;
+  no batimento, "Radar <status>" → "Escala <status>". Só texto; a lógica não mudou.
 
 ---
 
