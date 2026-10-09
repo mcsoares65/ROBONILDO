@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V532"
+VERSAO = "V533"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,13 @@ VERSAO = "V532"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V533 - narracao de serenidade curta e basica (09/10/2026)
+# Pedido do dono: evitar narracoes longas e detalhadas ("...recuou 215 pontos do pico, mas o stop esta a 1625 pontos...").
+# principal._frase_calma passa a dizer so frases curtas, sem numeros: "Fique tranquilo, mantenha a operacao aberta.",
+# "Respire e siga o plano.", "Mantenha a calma. O recuo e normal.", "Fique tranquilo. O lucro ja esta protegido." (stop no
+# lucro) e, na perda pequena, "Fique tranquilo. O risco ja esta definido.". Mesmas condicoes de V532 (120 s, calada com
+# 2+ alertas, stop colado, alvo ou sem 1 R). So texto de voz.
+
 # V532 - capitao saida_trailing_pico_v02 (distancia 0,15 R) + narracao de serenidade (09/10/2026)
 # Pedido do dono: reduzir a devolucao do lucro e narrar com tom de calma, porque com a operacao aberta o emocional pesa.
 # (1) estrategia/saida/titular/capitao/saida_trailing_pico_v02.py substitui o v01 (git mv): so muda a distancia do stop ao pico,
