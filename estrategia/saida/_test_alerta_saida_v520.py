@@ -285,6 +285,61 @@ class SaudeTradeTest(unittest.TestCase):
         self.assertIn("147;51;234", self.pr._saude_posicao(pos, 99800.0)[1])
 
 
+class TrailingVisivelTest(unittest.TestCase):
+    """V531: o trailing avisa quando ARMA (ganho maximo chegou a 1 R, stop ainda e o inicial) e quando ASSUME."""
+    @classmethod
+    def setUpClass(cls):
+        cls.pr = importlib.import_module("principal")
+
+    def _pos(self, hora, lado="COMPRA", entrada=207050.0, stop=205780.0, maxima=0.0, minima=0.0):
+        return importlib.import_module("types").SimpleNamespace(
+            lado=lado, entrada=entrada, stop=stop, alvo=None, horario_entrada=hora,
+            maxima_desde_entrada=maxima, minima_desde_entrada=minima)
+
+    def test_sem_aviso_antes_de_1r(self):
+        pos = self._pos("v1", maxima=208165.0)
+        self.pr._risco_inicial_pts(pos)                       # 1 R = 1270 pts
+        self.assertIsNone(self.pr._frase_trailing(pos, 208165.0))
+        self.assertFalse(self.pr._estado_trailing(pos, 208165.0)["armado"])
+
+    def test_arma_uma_vez_e_depois_assume_uma_vez(self):
+        pos = self._pos("v2", maxima=208330.0)
+        self.pr._risco_inicial_pts(pos)
+        hora = datetime(2026, 10, 8, 14, 15)
+        fala = self.pr._frase_trailing(pos, 208330.0, hora)
+        self.assertIn("100%", fala)
+        self.assertIn("14:15", fala)
+        self.assertIsNone(self.pr._frase_trailing(pos, 208340.0, hora))      # nao repete
+        pos.stop = 208330.0 - 0.4 * 1270                                      # candle fechou: stop subiu
+        fala = self.pr._frase_trailing(pos, 208340.0, hora)
+        self.assertIn("O trailing assumiu", fala)
+        self.assertIn("protegendo", fala)
+        self.assertIsNone(self.pr._frase_trailing(pos, 208500.0, hora))      # nao repete
+        self.assertTrue(self.pr._estado_trailing(pos, 208500.0)["assumiu"])
+
+    def test_assumiu_sem_ter_avisado_o_armado_nao_fala_dos_dois(self):
+        pos = self._pos("v3", maxima=208400.0)
+        self.pr._risco_inicial_pts(pos)
+        pos.stop = 207900.0
+        self.assertIn("O trailing assumiu", self.pr._frase_trailing(pos, 208400.0))
+        self.assertIsNone(self.pr._frase_trailing(pos, 208400.0))
+
+    def test_venda_simetrica(self):
+        pos = self._pos("v4", lado="VENDA", entrada=207050.0, stop=208320.0, minima=205700.0)
+        self.pr._risco_inicial_pts(pos)
+        self.assertIn("100%", self.pr._frase_trailing(pos, 205700.0))
+        pos.stop = 205700.0 + 0.4 * 1270
+        self.assertIn("O trailing assumiu", self.pr._frase_trailing(pos, 205700.0))
+
+    def test_com_alvo_ou_sem_1r_medido_fica_calado(self):
+        pos = self._pos("v5", maxima=209000.0)
+        pos.alvo = 210000.0
+        self.pr._risco_inicial_pts(pos)
+        self.assertIsNone(self.pr._frase_trailing(pos, 209000.0))
+        recuperada = self._pos("v6", stop=207900.0, maxima=209000.0)          # stop ja acima da entrada, nunca medido
+        self.assertIsNone(self.pr._frase_trailing(recuperada, 209000.0))
+
+
 class EstruturaTest(unittest.TestCase):
     def test_um_unico_capitao(self):
         arquivos = [p for p in (PASTA_SAIDA / "titular" / "capitao").glob("*.py") if not p.stem.startswith("_")]

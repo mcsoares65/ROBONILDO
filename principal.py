@@ -100,6 +100,50 @@ def _risco_inicial_pts(posicao):
     return _RISCO_INICIAL_PTS.get(chave)
 
 
+_TRAILING_AVISADO = {}   # horario_entrada -> {"armado": bool, "assumiu": bool}
+
+
+def _estado_trailing(posicao, preco_atual: float):
+    """V531: situacao do trailing do capitao numa posicao SEM alvo. Devolve None se nao da para saber
+    (tem alvo, sem stop, ou o stop inicial nao foi medido). Senao: dict com
+      stop_inicial, armado (o ganho maximo ja chegou a 1 R mas o stop ainda e o inicial: o stop so e
+      atualizado no fechamento do candle) e assumiu (o stop ja passou do inicial, a favor da posicao)."""
+    risco = _risco_inicial_pts(posicao)
+    if posicao.alvo is not None or posicao.stop is None or risco is None:
+        return None
+    direcao = 1 if posicao.lado == "COMPRA" else -1
+    stop_inicial = posicao.entrada - direcao * risco
+    assumiu = (posicao.stop - stop_inicial) * direcao > 1e-9
+    extremo = posicao.maxima_desde_entrada if direcao == 1 else posicao.minima_desde_entrada
+    melhor = max((preco_atual - posicao.entrada) * direcao,
+                 ((extremo - posicao.entrada) * direcao) if extremo else 0.0)
+    return {"stop_inicial": stop_inicial, "risco": risco, "assumiu": assumiu,
+            "armado": (not assumiu) and melhor >= risco}
+
+
+def _frase_trailing(posicao, preco_atual: float, proximo_fechamento=None):
+    """V531: frase a narrar UMA vez quando o trailing arma e UMA vez quando assume; None nos demais casos."""
+    estado = _estado_trailing(posicao, preco_atual)
+    if estado is None:
+        return None
+    avisado = _TRAILING_AVISADO.setdefault(posicao.horario_entrada, {"armado": False, "assumiu": False})
+    if estado["assumiu"] and not avisado["assumiu"]:
+        avisado["assumiu"] = avisado["armado"] = True
+        direcao = 1 if posicao.lado == "COMPRA" else -1
+        reais = (posicao.stop - posicao.entrada) * direcao * cfg.VALOR_PONTO_REAIS \
+            - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        efeito = (f"protegendo {reais:.0f} reais de lucro" if reais >= 0
+                  else f"reduzindo o prejuízo máximo para {abs(reais):.0f} reais")
+        return f"O trailing assumiu. O stop passou a {posicao.stop:.0f}, {efeito}."
+    if estado["armado"] and not avisado["armado"]:
+        avisado["armado"] = True
+        quando = (f"No fechamento do candle das {proximo_fechamento:%H:%M}" if proximo_fechamento
+                  else "No fechamento deste candle")
+        return (f"A saúde da operação chegou a 100%: o preço andou {estado['risco']:.0f} pontos a favor. "
+                f"{quando}, o trailing passa a seguir o pico.")
+    return None
+
+
 def _progresso_posicao(posicao, preco_atual: float, risco_ref_pts=None) -> float:
     """
     Progresso da posicao aberta, de -1.0 (no stop) a +1.0 (no alvo), em
@@ -1458,7 +1502,12 @@ def rodar():
                 campos_exaustao = monitor_alertas.campos_painel(agora_real) if pos.alvo is None else None
                 if campos_exaustao is not None:
                     resultado_curto = f"{cor_resultado}{resultado_reais:+7.2f}{COR_RESET}"
-                    stop_curto = f"Stop {pos.stop:6.0f}" if pos.stop is not None else "Stop      -"
+                    estado_trail = _estado_trailing(pos, preco)
+                    rotulo_stop = "Trail" if (estado_trail and estado_trail["assumiu"]) else "Stop "
+                    stop_curto = f"{rotulo_stop} {pos.stop:6.0f}" if pos.stop is not None else "Stop       -"
+                    fala_trailing = _frase_trailing(pos, preco, proximo_fechamento)
+                    if fala_trailing:
+                        narrar(fala_trailing)
                     quadro_exaustao = _quadro_proximidade(
                         campos_exaustao["progresso"], segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
                     )
