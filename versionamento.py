@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V518"
+VERSAO = "V519"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1723,3 +1723,14 @@ VERSAO = "V518"
 # V518 - painel da Escala: colunas "% quadrado" fixas; "ha Ns" passa para depois delas
 #   Pedido do dono (08/10/2026): o "| ha 36s" de largura variavel empurrava o "100% quadrado" e quebrava o layout vertical.
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
+
+# ---------------------------------------------------------------------------
+# V519 - saida candidata "Trailing de Pico" + stop/alvo proposto no fechamento so vale do candle seguinte
+#   Pedido do dono (08/10/2026): "precisamos encontrar uma solucao para nao devolver todo o lucro".
+#   (1) estrategia/saida/saida_trailing_pico_v01.py (candidata, nao titular): sem alvo fixo; apos 1,0 R a favor o stop passa
+#       a seguir o pico a 0,4 R. Historico 2020-02/10/2026, mesmas entradas: R$ 28.555 contra R$ 19.821 da saida titular,
+#       melhor em 6 de 7 anos, acerto 46,5% -> 52,7%, pior queda em um ano -6.066 -> -4.578. Nos 12 meses mais recentes fica
+#       empatada com a saida atual. O stop e atualizado so no fechamento do candle (atualizar a cada leitura piorou).
+#   (2) motor.verificar_saida: o novo stop/alvo que o cartucho propoe no FECHAMENTO do candle deixa de valer para os extremos
+#       do proprio candle que o gerou (ao vivo ele so existe depois). Saida titular (stop/alvo fixos) nao muda. Cartuchos que
+#       mexem no stop depois da abertura passam a ser medidos como o ao vivo os trataria (antes eram penalizados).

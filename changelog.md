@@ -4,6 +4,15 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V519 — saída candidata "Trailing de Pico"; stop novo só vale do candle seguinte
+
+Pedido do dono (08/10/2026): não devolver todo o lucro.
+- **Cartucho candidato `saida_trailing_pico_v01`** (não é titular): sem alvo fixo; depois que o preço anda 1,0 R a favor, o stop segue o pico a 0,4 R de distância. O stop só é atualizado no fechamento do candle de 15 min; o fechamento por toque no stop continua valendo a cada leitura, inclusive no meio do candle.
+- **Resultado (2020 a 02/10/2026, mesmas 1.739 entradas, motor corrigido):** R$ 28.555 contra R$ 19.821 da saída titular; melhor em 6 de 7 anos; acerto 46,5% → 52,7%; pior queda num ano −6.066 → −4.578. Nos 12 meses mais recentes (dados de 5 min) fica empatada com a atual (R$ 17.004 contra 17.216), com acerto maior. Cerca de 40 combinações foram testadas; a faixa estável é gatilho 0,75–1,25 R e distância 0,25–0,5 R.
+- **Correção no motor:** o stop/alvo proposto pelo cartucho no fechamento de um candle valia também para os extremos desse mesmo candle, o que não acontece ao vivo. Agora a reconfiguração é aplicada depois de testar o candle e vale a partir do próximo. Sem essa correção o trailing medido caía para R$ 9.326. A saída titular (stop/alvo fixos) não muda.
+
+---
+
 ## V518 — painel: "% ■" em coluna fixa, "há Ns" depois
 
 Pedido do dono (08/10/2026): o "há 36s" tem largura variável e empurrava o "100% ■", quebrando o layout vertical.
