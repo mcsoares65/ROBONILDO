@@ -381,6 +381,40 @@ class ConsensoTimeTest(unittest.TestCase):
         self.assertEqual(item["detalhe"], "estoc. cruzar 80 para baixo")
 
 
+class PavioTextoTest(unittest.TestCase):
+    """V539: a condicao do corpo e dita pelo lado do pavio, no painel e na voz."""
+    @staticmethod
+    def _mod():
+        import importlib.util
+        caminho = RAIZ / "estrategia" / "entrada" / "titular" / "entrada_saida_extremo_v01.py"
+        spec = importlib.util.spec_from_file_location("ent_extremo_pavio", caminho)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    @staticmethod
+    def _row(abertura, fechamento, minimo=0.0, maximo=100.0):
+        from datetime import datetime as _dt
+        return {"trend": 1, "dt": _dt(2026, 10, 9, 15, 0), "Maximo": maximo, "Minimo": minimo, "Abertura": abertura,
+                "Fechamento": fechamento, "stoch_cross_up_20": False, "stoch_cross_down_80": False, "stoch": 50.0}
+
+    def test_painel_e_voz_dizem_pavio(self):
+        mod = self._mod()
+        item = mod.diagnosticar_oportunidades(self._row(5.0, 95.0))[0]            # corpo 90% da amplitude
+        self.assertEqual(item["detalhe"], "pavio: tem 10%, precisa 30%")
+        self.assertEqual(item["faltantes"][0], "o candle mostrar mais pavio. Hoje tem 10 por cento e precisa de 30")
+        self.assertEqual(f"Ainda aguardamos {item['faltantes'][0]}.",
+                         "Ainda aguardamos o candle mostrar mais pavio. Hoje tem 10 por cento e precisa de 30.")
+        self.assertLessEqual(len("Falta " + item["detalhe"]), 6 + 29)
+
+    def test_tem_arredonda_para_baixo_e_a_condicao_nao_mudou(self):
+        mod = self._mod()
+        item = mod.diagnosticar_oportunidades(self._row(0.0, 70.4))[0]            # corpo 70,4%: ainda nao vale
+        self.assertEqual(item["detalhe"], "pavio: tem 29%, precisa 30%")
+        item = mod.diagnosticar_oportunidades(self._row(0.0, 70.0))[0]            # corpo 70%: condicao atendida
+        self.assertNotIn("pavio", item["detalhe"])
+
+
 class VozMediaMovelTest(unittest.TestCase):
     """V537: a voz diz 'Média Móvel 21' em vez de 'MA21'."""
     @classmethod

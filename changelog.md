@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V539 — Saída de Extremo fala em "pavio"
+
+Pedido do dono (09/10/2026): "Falta corpo 90% (máx. 70%)" era confuso. A mesma condição (corpo de no máximo 70% da amplitude) agora é dita pelo lado do pavio. No painel: "Falta pavio: tem 10%, precisa 30%". Na voz: "Ainda aguardamos o candle mostrar mais pavio. Hoje tem 10 por cento e precisa de 30." O valor de "tem" arredonda para baixo, para nunca parecer que já chegou. Só texto; a condição e o sinal não mudam.
+
+---
+
 ## V538 — consenso do time no painel e texto claro da Saída de Extremo
 
 Pedido do dono (09/10/2026). **Texto:** "Falta estoc. saindo da zona extrema" virou "Falta estoc. cruzar 20 para cima" (compra) ou "…80 para baixo" (venda). O que a estratégia espera é o cruzamento do estocástico, e não ele estar em alguma zona. A voz também passou a dizer "Ainda aguardamos estocástico cruzar os 20 para cima". O sinal da estratégia não mudou. **Painel de pré-operação:** a primeira coluna ("85% ■") continua mostrando a estratégia escalada. Foi criada uma segunda coluna, logo depois dela, com o consenso do time: a média de opinião de todos os titulares de entrada, mesmo os não escalados, com a mesma cor e com a regra de só chegar a 100% quando todos confirmam. Cada titular conta uma vez; quem aponta para o lado contrário conta zero. Só painel; nenhuma decisão muda.

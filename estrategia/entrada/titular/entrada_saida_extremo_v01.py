@@ -73,9 +73,15 @@ def diagnosticar_oportunidades(row):
     rotulo_cruzamento = ("estocástico cruzar os 20 para cima" if tendencia == 1
                          else "estocástico cruzar os 80 para baixo" if tendencia == -1
                          else "cruzamento do estocástico")
+    # V539: "corpo <= 70% da amplitude" dito pelo lado do PAVIO (o que sobra): precisa de pelo menos 30% de pavio. So texto
+    # (painel e voz); a condicao e o sinal sao os mesmos. "tem" arredonda para baixo para nunca parecer que ja chegou.
+    pavio_minimo = int(round((1.0 - CORPO_MAXIMO_PROPORCAO) * 100))
+    pavio_atual = int(max(0.0, (amplitude - corpo) / amplitude * 100.0 + 1e-9)) if amplitude > 0 else 0
+    rotulo_corpo = (f"o candle mostrar mais pavio. Hoje tem {pavio_atual} por cento "
+                    f"e precisa de {pavio_minimo}")
     condicoes = [
         (amplitude > 0, "amplitude válida"),
-        (amplitude > 0 and corpo <= CORPO_MAXIMO_PROPORCAO * amplitude, "corpo sem exaustão"),
+        (amplitude > 0 and corpo <= CORPO_MAXIMO_PROPORCAO * amplitude, rotulo_corpo),
         (bool(cruzamento_extremo), rotulo_cruzamento),
     ]
     elegivel = all(ok for ok, _ in elegibilidade)
@@ -101,9 +107,8 @@ def diagnosticar_oportunidades(row):
     elif faltante == rotulo_cruzamento:
         detalhe = ("estoc. cruzar 20 para cima" if tendencia == 1          # V538 (antes V516: "estoc. saindo da zona extrema")
                    else "estoc. cruzar 80 para baixo" if tendencia == -1 else "cruzamento do estoc.")
-    elif faltante == "corpo sem exaustão":
-        proporcao_corpo = (corpo / amplitude * 100.0) if amplitude > 0 else 0.0
-        detalhe = f"corpo {proporcao_corpo:.0f}% (máx. 70%)"
+    elif faltante == rotulo_corpo:
+        detalhe = f"pavio: tem {pavio_atual}%, precisa {pavio_minimo}%"   # V539 (antes: "corpo 90% (máx. 70%)")
     return [{
         "estrategia": "Saída de Extremo",
         "prioridade": 3,
