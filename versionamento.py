@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V536"
+VERSAO = "V537"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,11 @@ VERSAO = "V536"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V537 - voz diz "Media Movel 21" em vez de "MA21" (09/10/2026)
+# Pedido do dono. principal._texto_para_voz troca a palavra inteira MA21 (qualquer caixa; tambem em nomes como
+# entrada_retomada_ma21_v01) por "Média Móvel 21" dentro de narrar(), entao vale para todas as frases, na tela e na voz.
+# Painel, logs e decisao nao mudam.
+
 # V536 - sem "Nenhuma ordem sera enviada neste momento" (09/10/2026)
 # Pedido do dono: a ordem so sai no fechamento do candle, entao avisar que "nenhuma ordem sera enviada" quando a expectativa
 # perde confirmacao no meio do candle e redundante. principal.py: a frase passa a terminar em "...durante a formacao do candle."

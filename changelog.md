@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V537 — voz diz "Média Móvel 21"
+
+Pedido do dono (09/10/2026): sempre que a narração citar MA21 (inclusive no nome da estratégia, como "Retomada MA21"), passa a dizer "Média Móvel 21". A troca é feita na própria função de narração, então vale para todas as frases. Painel, logs e decisão não mudam.
+
+---
+
 ## V536 — voz sem "Nenhuma ordem será enviada"
 
 Pedido do dono (09/10/2026): a ordem só é disparada no fechamento do candle, então a frase "…perdeu confirmação durante a formação do candle. Nenhuma ordem será enviada neste momento." tinha o final redundante. Agora termina em "…durante a formação do candle." Só texto de voz.
