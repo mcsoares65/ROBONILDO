@@ -84,7 +84,23 @@ def _resultado_liquido_reais(posicao, preco_atual: float) -> float:
     return resultado_pts * cfg.VALOR_PONTO_REAIS - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
 
 
-def _progresso_posicao(posicao, preco_atual: float) -> float:
+_RISCO_INICIAL_PTS = {}   # horario_entrada -> distancia (pts) entre a entrada e o stop inicial (1R)
+
+
+def _risco_inicial_pts(posicao):
+    """V525: 1R da operacao = distancia da entrada ao stop INICIAL, memorizada na primeira vez que o
+    stop aparece do lado do prejuizo (o stop do capitao trailing depois sobe e deixa de servir de
+    referencia). None se ainda nao foi possivel medir."""
+    chave = posicao.horario_entrada
+    if chave not in _RISCO_INICIAL_PTS and posicao.stop is not None:
+        direcao = 1 if posicao.lado == "COMPRA" else -1
+        distancia = (posicao.entrada - posicao.stop) * direcao
+        if distancia > 0:
+            _RISCO_INICIAL_PTS[chave] = distancia
+    return _RISCO_INICIAL_PTS.get(chave)
+
+
+def _progresso_posicao(posicao, preco_atual: float, risco_ref_pts=None) -> float:
     """
     Progresso da posicao aberta, de -1.0 (no stop) a +1.0 (no alvo), em
     termos de RESULTADO LIQUIDO (ja descontado o custo) - nao de pontos
@@ -92,6 +108,9 @@ def _progresso_posicao(posicao, preco_atual: float) -> float:
     pouco alem dele (o suficiente para cobrir o custo). Qualquer lucro
     liquido real (por menor que seja) ja da progresso > 0, e qualquer
     prejuizo liquido real ja da progresso < 0 - sem zona neutra artificial.
+
+    V525: sem alvo (capitao trailing) o lado do lucro nao tinha referencia e ficava em 0.0. Com
+    `risco_ref_pts` (1R) o lado do lucro vai de 0 a +1.0 quando o lucro liquido chega a 1R.
     """
     resultado_liquido = _resultado_liquido_reais(posicao, preco_atual)
     direcao = 1 if posicao.lado == "COMPRA" else -1
@@ -103,7 +122,10 @@ def _progresso_posicao(posicao, preco_atual: float) -> float:
     # subtrair None.
     if resultado_liquido >= 0:
         if posicao.alvo is None:
-            return 0.0
+            if not risco_ref_pts or risco_ref_pts <= 0:
+                return 0.0
+            lucro_1r = risco_ref_pts * cfg.VALOR_PONTO_REAIS - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+            return min(1.0, resultado_liquido / lucro_1r) if lucro_1r > 0 else 0.0
         resultado_liquido_no_alvo = (
             (posicao.alvo - posicao.entrada) * direcao * cfg.VALOR_PONTO_REAIS
             - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
@@ -130,7 +152,14 @@ _LIMA = (163, 255, 30)      # verde-limao, progresso = +1.0 (alvo)
 _ROXO = (147, 51, 234)      # roxo, progresso = -1.0 (stop)
 
 
-def _quadro_resultado(posicao, preco_atual: float) -> str:
+def _saude_posicao(posicao, preco_atual: float):
+    """V525: saude do trade em 0..100 (0 = no stop, pior; 50 = neutro, no zero a zero liquido;
+    100 = melhor: no alvo ou, sem alvo, com lucro liquido >= 1R). Devolve (saude_pct, quadrado)."""
+    progresso = _progresso_posicao(posicao, preco_atual, _risco_inicial_pts(posicao))
+    return (progresso + 1.0) * 50.0, _quadro_resultado(posicao, preco_atual, progresso)
+
+
+def _quadro_resultado(posicao, preco_atual: float, progresso=None) -> str:
     """
     Marcador da posicao: BRANCO (neutro) quando o resultado liquido esta em
     zero, e varia de forma CONTINUA (interpolacao RGB real, sem degraus de
@@ -138,7 +167,8 @@ def _quadro_resultado(posicao, preco_atual: float) -> str:
     ou para verde-limao conforme o lucro liquido cresce em direcao ao alvo.
     """
     quadrado = "■"
-    progresso = _progresso_posicao(posicao, preco_atual)
+    if progresso is None:
+        progresso = _progresso_posicao(posicao, preco_atual)
 
     if not COR_RESET:
         if progresso > 0:
@@ -1431,8 +1461,10 @@ def rodar():
                     quadro_exaustao = _quadro_proximidade(
                         campos_exaustao["progresso"], segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
                     )
+                    saude_pct, quadro_saude = _saude_posicao(pos, preco)
                     print(linha_posicao(agora.strftime('%H:%M:%S'), lado_colorido, preco, resultado_curto,
-                                        stop_curto, campos_exaustao, quadro_exaustao))
+                                        stop_curto, campos_exaustao, quadro_exaustao,
+                                        saude_pct, quadro_saude))
                 else:
                     alvo_campo = (f"Alvo {pos.alvo:6.0f} ({abs(pos.alvo - preco):4.0f}) | "
                                   if pos.alvo is not None else "")

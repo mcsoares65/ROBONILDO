@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V524"
+VERSAO = "V525"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,16 @@ VERSAO = "V524"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V525 - saude do trade de volta na linha da posicao (09/10/2026)
+# Pedido do dono: o indicador comeca branco (zero a zero liquido); quanto melhor a saude (100%), mais verde; quanto pior
+# (0%), mais roxo; mesma regra de coloracao da entrada. Na V523 o "% ■" da linha sem alvo passou a mostrar a exaustao e a saude
+# sumiu. Agora a linha traz os dois: saude junto do "Res" e a exaustao no fim, como na Escala.
+# - saude 0% = no stop, 50% = zero a zero liquido (branco), 100% = melhor. Sem alvo (capitao trailing) o lado do lucro nao tinha
+#   referencia; passa a ser 1 R = distancia da entrada ao stop INICIAL (memorizado), 100% com lucro liquido >= 1 R.
+# - principal.py: _risco_inicial_pts, _saude_posicao, _progresso_posicao(..., risco_ref_pts) (padrao None: narracao e
+#   linha antiga inalteradas); alerta_saida.linha_posicao ganhou saude_pct/quadro_saude ("Exaust." virou "Ex."; largura 123).
+# Apenas painel. Nenhuma decisao de entrada/saida muda.
+
 # V524 - remove a impressao duplicada de [CENARIO EM FORMACAO] e [EXAUSTAO] (09/10/2026)
 # Pedido do dono: narrar() ja imprime a mesma frase como [NARRADOR]. O ajuste era da V522, mas o commit chegou a PR #129
 # depois do merge e ficou fora da main. So texto do terminal; nenhuma decisao muda. Arquivos: principal.py,

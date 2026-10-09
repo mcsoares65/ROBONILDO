@@ -31,17 +31,20 @@ CAMPOS_LOG = [
 ]
 
 
-def linha_posicao(hora, lado_colorido, preco, resultado_colorido, stop, campos, quadro):
-    """Linha do painel com a posicao aberta, no padrao da Escala de entrada (120 colunas visiveis):
-    `hora lado | preco | Res | Stop | Exaust. <alerta> | n/N | Falta ... | % quadro`.
+def linha_posicao(hora, lado_colorido, preco, resultado_colorido, stop, campos, quadro,
+                  saude_pct=None, quadro_saude=""):
+    """Linha do painel com a posicao aberta, no padrao da Escala de entrada (123 colunas visiveis):
+    `hora lado | preco | Res <res> <saude% ■> | Stop | Ex. <alerta> | n/N | Falta ... | % quadro`.
+    V525: a saude do trade (0% pior/roxo, 50% neutro/branco, 100% melhor/verde) fica junto do Res.
     Com o alerta confirmado, o lugar do 'Falta' mostra o nivel e o 'ha Ns'.
     `resultado_colorido` ja vem formatado (+7.2f) e `stop` como texto de 11 colunas."""
     if campos["ok"]:
         meio = f"Nível {campos['nivel']}/{campos['total_alertas']} há {campos['segundos']}s".ljust(26)
     else:
         meio = f"Falta {str(campos['detalhe'])[:20]:<20}"
-    return (f"[{hora}] {lado_colorido} | {preco:6.0f} | Res {resultado_colorido} | {stop} | "
-            f"Exaust. {str(campos['nome'])[:11]:<11} | {campos['confirmadas']}/{campos['total']} | "
+    saude = f" {quadro_saude} {saude_pct:3.0f}%" if saude_pct is not None else ""
+    return (f"[{hora}] {lado_colorido} | {preco:6.0f} | Res {resultado_colorido}{saude} | {stop} | "
+            f"Ex. {str(campos['nome'])[:11]:<11} | {campos['confirmadas']}/{campos['total']} | "
             f"{meio} | {campos['pct']:3.0f}% {quadro}")
 
 
