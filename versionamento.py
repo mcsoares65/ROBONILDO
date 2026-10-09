@@ -1735,7 +1735,8 @@ VERSAO = "V520"
 #   cada 10 s; log alertas_saida_AAAA-MM-DD.csv. Nao decide nada.
 # - principal.py: _descobrir_capitao_saida / _descobrir_alertas_saida; linha da posicao mostra "Exaustao n/total ha Ns".
 # - classificacao.py: so o capitao e titular; alertas entram no ranking como candidatas.
-# - compliance.md: Regra 18.
+# - compliance.md: Regra 18 (capitao/alertas) e Regra 19 (estrategia genuina, nao maquiagem); saida_eficiencia_adaptativa_v01
+#   desclassificada (trailing de pico com distancia variavel; o fixo em 0,15 R rende mais).
 # Arquivos alterados: principal.py, classificacao.py, configuracao.py (ALERTA_SAIDA_INTERVALO_SEGUNDOS),
 # alerta_saida.py, tests/test_alerta_saida_v520.py, compliance.md, versionamento.py, changelog.md.
 # A decisao de saida muda SO pela troca de titular (baseline -> trailing); o resto e aviso.

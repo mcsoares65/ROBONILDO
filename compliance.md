@@ -654,6 +654,34 @@ estrategia/saida/*.py               candidatos: só ranking no classificacao.py
 
 ---
 
+## 19. Estratégia genuína, não maquiagem de outra (V520)
+
+Uma estratégia, de entrada ou de saída, precisa ser uma ideia própria. Não vale trocar um
+número fixo de uma estratégia existente por uma fórmula que o faça variar e apresentar o resultado
+como cartucho novo. Isso aumenta o número de candidatas sem aumentar o conhecimento, e polui o
+ranking e o risco de ajuste ao passado (Regras 11 e 16).
+
+1. **Teste de maquiagem.** Antes de entrar como candidata, o autor (humano ou IA) compara o
+   cartucho com a estratégia mais próxima **com o parâmetro que ele faz variar fixo**, varrendo a
+   mesma faixa, nos mesmos dados e com o mesmo motor. Se a versão fixa empata ou vence, a parte
+   "adaptativa" não acrescenta nada: é maquiagem.
+2. **Sinais de alerta.** Mesmo stop inicial, mesmo gatilho e mesma lógica de saída da estratégia
+   original, mudando só um parâmetro que passa a ser função de um indicador; mais de 60% dos
+   trades com resultado idêntico ao da original; melhora que desaparece quando a original é
+   reajustada para a mesma faixa de parâmetro.
+3. **Consequência.** Cartucho que não passa vai para `estrategia/entrada/desclassificada/` ou
+   `estrategia/saida/desclassificadas/`, preservado sem alteração de código, com a justificativa e
+   os números no cabeçalho. A descoberta útil, se houver (por exemplo, que o parâmetro da original
+   estava mal escolhido), vira ajuste da original em PR própria, não um cartucho novo.
+4. **Declaração.** O cabeçalho de toda candidata diz qual é a estratégia mais próxima e o que a
+   distingue dela. Quem não consegue dizer o que a distingue, além de um parâmetro, não tem
+   candidata nova.
+5. **Caso de referência.** `saida_eficiencia_adaptativa_v01` (V520): trailing de pico com a
+   distância dada pela razão de Kaufman (0,15 a 0,55 R). R$ 32.030 em 2020–2026 contra R$ 34.408 do
+   trailing fixo em 0,15 R e R$ 32.240 em 0,20 R. Desclassificada.
+
+---
+
 ## Termo de concordância
 
 ### Estratégias derivadas por desmembramento

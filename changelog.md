@@ -11,6 +11,8 @@ Pedido do dono (08/10/2026): em vez de só "subir o stop", uma saída que perceb
 - **3 alertas** (ideia única cada): `saida_exaustao_estocastico_v01` (estocástico sai da zona 80/20 com lucro ≥ 0,5 R; no motor R$ 25.321), `saida_exaustao_reversao_v01` (candle contrário de corpo ≥ 0,5 ATR; R$ 22.840) e `saida_exaustao_esticado_v01` (2 ATR além da MA21 + pavio contrário ≥ 40%; R$ 21.910). Sozinhos perdem para o trailing (R$ 27.8–28.6 mil); somados a ele ganhariam cerca de 2%, por isso são alertas.
 - **Nível de confiança** = quantos alertas concordam. Contador "há Ns" em relógio real, narração ao subir e a cada 10 s enquanto se mantém, aviso ao desfazer, campo "Exaustão n/3 há Ns" no painel da posição e log `alertas_saida_AAAA-MM-DD.csv`.
 - `classificacao.py` rankeia capitão, alertas e candidatos; só o capitão é titular. Regra 18 no `compliance.md`.
+- **Regra 19 (estratégia genuína, não maquiagem)** e desclassificação de `saida_eficiencia_adaptativa_v01`: é o trailing de pico com a distância variando pela razão de Kaufman; o trailing fixo em 0,15 R rende mais (R$ 34.408 contra R$ 32.030). Achado útil: a distância de 0,4 R do capitão está folgada; varredura própria em PR futura.
+- **Atenção ao atualizar:** o `classificacao.py` antigo exige exatamente 1 arquivo em `saida/titular/`; com a pasta no formato novo ele falha. É preciso trazer a V520 inteira.
 
 ---
 

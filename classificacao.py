@@ -373,8 +373,9 @@ def descobrir_saidas() -> tuple[list[CartuchoSaida], list[tuple[str, str]]]:
     titulares = inv["saida_titular"]
     if len(titulares) != 1:
         raise RuntimeError(
-            "A pasta estrategia/saida/titular/capitao/ deve conter exatamente um arquivo. "
-            f"Encontrados: {[p.name for p in titulares]}"
+            "A pasta estrategia/saida/titular/capitao/ deve conter exatamente um arquivo (o capitão da saída; "
+            "V520). Os titulares de alerta ficam em estrategia/saida/titular/, FORA de capitao/. "
+            f"Encontrados em capitao/: {[p.name for p in titulares]}"
         )
     caminho_titular = titulares[0]
 
