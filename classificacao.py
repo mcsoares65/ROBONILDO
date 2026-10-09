@@ -470,6 +470,7 @@ def interpretar_periodo(texto: Optional[str], dias: list) -> tuple[list, str]:
     Aceita (vazio ou 'tudo' = todo o histórico):
       01/03/2026 31/03/2026   intervalo de datas (também aaaa-mm-dd, ou com ':' / 'a' / 'ate')
       01/03/2026              deste dia até o fim do histórico
+      dia 01/03/2026          somente este pregão (V527; também 'dia 2026-03-01')
       ultimos 40              os 40 últimos pregões
       mes 2026-03             um mês (também 03/2026)
     Levanta ValueError com mensagem clara se o texto não for entendido ou o
@@ -479,6 +480,19 @@ def interpretar_periodo(texto: Optional[str], dias: list) -> tuple[list, str]:
     t = bruto.lower().replace("é", "e").replace("ú", "u").replace("ê", "e")
     if t in ("", "tudo", "todo", "todos"):
         return list(dias), "tudo"
+
+    m = re.fullmatch(r"dia\s+(.+)", t)
+    if m:
+        try:
+            datas_dia = _datas_do_texto(m.group(1))
+        except ValueError as erro:
+            raise ValueError(f"data inválida em '{bruto}': {erro}") from erro
+        if len(datas_dia) != 1 or _RE_DATA.sub("", m.group(1)).strip():
+            raise ValueError(f"'dia' pede uma data só. Exemplo: dia 01/03/2026 (recebi '{bruto}')")
+        if datas_dia[0] not in set(dias):
+            raise ValueError(f"não há pregão em {datas_dia[0].strftime('%d/%m/%Y')} "
+                             f"(histórico: {dias[0].strftime('%d/%m/%Y')} a {dias[-1].strftime('%d/%m/%Y')})")
+        return [datas_dia[0]], datas_dia[0].isoformat()
 
     m = re.fullmatch(r"(?:ultimos|ultimo|u)\s*(\d+)", t)
     if m:
@@ -515,7 +529,23 @@ def interpretar_periodo(texto: Optional[str], dias: list) -> tuple[list, str]:
                              f"(histórico: {dias[0].strftime('%d/%m/%Y')} a {dias[-1].strftime('%d/%m/%Y')})")
         return sel, f"{sel[0].isoformat()}_{sel[-1].isoformat()}"
     raise ValueError(
-        f"não entendi o período '{bruto}'. Exemplos: 01/03/2026 31/03/2026 | ultimos 40 | mes 2026-03 | Enter = tudo")
+        f"não entendi o período '{bruto}'. Exemplos: 01/03/2026 31/03/2026 | dia 01/03/2026 | ultimos 40 | "
+        "mes 2026-03 | Enter = tudo")
+
+
+def _perguntar_periodo(dias: list) -> str:
+    """V527: pergunta o período a apurar (Enter = tudo); repete até o texto ser entendido."""
+    while True:
+        resp = input(
+            f"Período [Enter = tudo ({dias[0]:%d/%m/%Y} a {dias[-1]:%d/%m/%Y}) | "
+            f"{dias[-1]:%d/%m/%Y} {dias[-1]:%d/%m/%Y} | dia {dias[-1]:%d/%m/%Y} | ultimos 40 | "
+            f"mes {dias[-1]:%Y-%m}]: "
+        ).strip()
+        try:
+            interpretar_periodo(resp, dias)
+            return resp
+        except ValueError as erro:
+            print(f"[PERÍODO] {erro}")
 
 
 def validar_contrato_saida(cartucho: CartuchoSaida, rows: list[Optional[dict]]) -> tuple[bool, str]:
@@ -1798,7 +1828,7 @@ def executar(
     planilha .xlsx em saida_dir, padrão D:\\DAYTRADE\\ANALISE (único modo que grava arquivo); D = diagnóstico por
     cenário, só leitura, com todos os cenários; metades=True mostra o que se repete
     nas duas metades do período, None = pergunta). periodo: texto aceito por
-    interpretar_periodo (None ou '' = tudo, o conteúdo do arquivo). simulacao: dict do
+    interpretar_periodo ('' = tudo, o conteúdo do arquivo; None = pergunta, como os anos). simulacao: dict do
     simulador (modo/dias/semente/escala_vol/espelhar); None = pergunta a fonte;
     False = força o histórico real sem perguntar. cenario: nome de um cenário
     (cenario.py) para apurar o campeonato SÓ naquela situação; '' = todos;
@@ -1877,9 +1907,11 @@ def executar(
         candles, quantidade_aquecimento = candles_avaliacao, 0
     else:
         todos_dias = sorted({c.horario.date() for c in candles_reais})
-        # O período apurado é o do conteúdo do arquivo. Só um --periodo explícito
-        # na linha de comando recorta; nunca há pergunta.
-        dias, rotulo_periodo = interpretar_periodo(periodo or "", todos_dias)
+        # V527: sem --periodo (None) pergunta, como os anos; na linha de comando com --modo/--simular
+        # o __main__ passa "" (= tudo) e não pergunta.
+        if periodo is None:
+            periodo = _perguntar_periodo(todos_dias)
+        dias, rotulo_periodo = interpretar_periodo(periodo, todos_dias)
         if len(anos_escolhidos) > 1:
             # anos não consecutivos: os primeiros pregões depois do buraco só aquecem
             fora_buraco = dias_pos_buraco(todos_dias)
@@ -2200,7 +2232,7 @@ def _ler_argumentos(argv=None):
     ap.add_argument("--anos", help="anos do backtest (pastas ...\\HISTORICO\\AAAA): 'todos', '2023', '2023-2025', '2022,2024' ou 'ultimos 2'")
     ap.add_argument("--processos", type=int, help="processos em paralelo nos modos E/S/C/A (padrão: núcleos-1; 1 = em série)")
     ap.add_argument("--sem-paralelo", action="store_true", help="roda em série (igual a --processos 1)")
-    ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'ultimos 40' ou 'mes 2026-03'")
+    ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'dia 01/03/2026', 'ultimos 40' ou 'mes 2026-03'")
     ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
                     + ", ".join(cen_mod.NOMES))
     ap.add_argument("--simular", choices=["reamostragem", "regimes"],
@@ -2227,7 +2259,10 @@ if __name__ == "__main__":
     anos = args.anos
     if anos is None and (args.modo or args.periodo is not None or args.simular):
         anos = ""           # rodou por linha de comando: não pergunta, vale todos os anos
-    executar(args.csv, modo=args.modo, periodo=args.periodo, simulacao=simulacao,
+    periodo = args.periodo
+    if periodo is None and (args.modo or args.simular):
+        periodo = ""        # idem: sem --periodo na linha de comando vale o histórico todo
+    executar(args.csv, modo=args.modo, periodo=periodo, simulacao=simulacao,
              cenario=cenario, saida_dir=args.saida_dir, anos=anos,
              processos=1 if args.sem_paralelo else args.processos,
              metades=True if args.metades else (False if args.modo else None))
