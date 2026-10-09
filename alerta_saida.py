@@ -58,12 +58,15 @@ class MonitorAlertasSaida:
             return 0
         return max(0, int((agora_real - self.desde).total_seconds()))
 
-    def texto_painel(self, agora_real):
-        """Trecho para a linha da posicao no painel ('' se nao ha titulares de alerta)."""
+    def texto_painel(self, agora_real, compacto=False):
+        """Trecho para a linha da posicao no painel ('' se nao ha titulares de alerta).
+        `compacto` (so o nivel, sem o 'ha Ns') quando a linha ja esta cheia."""
         if not self.habilitado:
             return ""
+        if compacto:
+            return f" | Ex {self.nivel}/{self.total}"
         if self.nivel <= 0:
-            return f" | Exaustão 0/{self.total}"
+            return f" | Exaustão {self.nivel}/{self.total}"
         return f" | Exaustão {self.nivel}/{self.total} há {self.segundos(agora_real)}s"
 
     # ---------- avaliacao ----------
