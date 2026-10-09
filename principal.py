@@ -1939,8 +1939,8 @@ def rodar():
                     distancia_fechamento = abs(candle_fechado.fechamento - ma21_fechamento)
                     print(f"[{agora}] [CANDLE FECHADO] Fechamento={candle_fechado.fechamento} "
                           f"MA21={ma21_fechamento:.2f} MA50={ma50_fechamento:.2f} "
-                          f"Tendência={tendencia_fechamento} Distância={distancia_fechamento:.1f}pts "
-                          f"(limite {cfg.TOLERANCIA_TOQUE_PONTOS})")
+                          f"Tendência={tendencia_fechamento} "
+                          f"Fechamento a {distancia_fechamento:.0f} pts da MA21")   # V541: sem o "(limite 40)" antigo
 
                 sinal = gestor.avaliar_candle(historico_candles)
                 sinal_auditoria = sinal

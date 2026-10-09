@@ -381,6 +381,46 @@ class ConsensoTimeTest(unittest.TestCase):
         self.assertEqual(item["detalhe"], "estoc. cruzar 80 para baixo")
 
 
+class DistanciaTextoTest(unittest.TestCase):
+    """V541: mensagens de distancia dizem quanto FALTA andar, nao dois numeros soltos."""
+    @staticmethod
+    def _mod(nome):
+        import importlib.util
+        caminho = RAIZ / "estrategia" / "entrada" / "titular" / f"{nome}.py"
+        spec = importlib.util.spec_from_file_location(nome + "_teste_dist", caminho)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    @staticmethod
+    def _row(distancia):
+        from datetime import datetime as _dt
+        return {"trend": 1, "dt": _dt(2026, 10, 9, 17, 45), "MA21": 208958.0, "MA50": 208268.0, "atr_relativo": 0.9,
+                "stoch": 50.0, "stoch_prev": 49.0, "stoch_subindo": True, "stoch_descendo": False,
+                "distancia_ma21": distancia, "Maximo": 209100.0, "Minimo": 208900.0, "Abertura": 208950.0,
+                "Fechamento": 209045.0, "macd": 1.0, "macd_signal": 2.0, "macd_cross_up": False,
+                "macd_cross_down": False}
+
+    def test_retomada_diz_quanto_aproximar(self):
+        mod = self._mod("entrada_retomada_ma21_v01")
+        item = mod.diagnosticar_oportunidades(self._row(91.0))[0]
+        self.assertEqual(item["detalhe"], "aproximar 1 pt da MA21")
+        self.assertEqual(item["faltantes"][0], "o preço chegar mais perto da MA21. Hoje está 1 ponto acima do limite")
+        item = mod.diagnosticar_oportunidades(self._row(546.0))[0]
+        self.assertEqual(item["detalhe"], "aproximar 456 pts da MA21")
+        self.assertLessEqual(len("Falta " + item["detalhe"]), 35)
+        item = mod.diagnosticar_oportunidades(self._row(86.7))[0]            # dentro do limite: a condicao nao falta
+        self.assertNotIn("aproximar", item["detalhe"])
+
+    def test_macd_diz_quanto_afastar(self):
+        mod = self._mod("entrada_macd_estocastico_v01")
+        item = mod.diagnosticar_oportunidades(self._row(128.0))[0]
+        self.assertEqual(item["detalhe"], "afastar 72 pts da MA21")
+        self.assertEqual(item["faltantes"][0], "o preço se afastar mais da MA21. Faltam 72 pontos")
+        item = mod.diagnosticar_oportunidades(self._row(199.5))[0]
+        self.assertEqual(item["detalhe"], "afastar 1 pt da MA21")
+
+
 class PavioTextoTest(unittest.TestCase):
     """V539: a condicao do corpo e dita pelo lado do pavio, no painel e na voz."""
     @staticmethod

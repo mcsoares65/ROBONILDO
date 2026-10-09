@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V540"
+VERSAO = "V541"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,16 @@ VERSAO = "V540"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V541 - mensagens de distancia dizem quanto FALTA (09/10/2026)
+# Pedido do dono: "Falta dist. MA21 91 (max. 90)" nao era claro. Tres textos (so painel/voz; sinais nao mudam):
+# (1) Retomada MA21: painel "Falta aproximar 1 pt da MA21" (N = distancia - 90, arredondado para cima, minimo 1); voz "Ainda
+#     aguardamos o preco chegar mais perto da Media Movel 21. Hoje esta 1 ponto acima do limite.";
+# (2) MACD + Estocastico: antes "Falta afastamento 128/200 pts", agora "Falta afastar 72 pts da MA21"; voz "...o preco se afastar
+#     mais da Media Movel 21. Faltam 72 pontos.";
+# (3) linha [CANDLE FECHADO]: "Distancia=336.0pts (limite 40)" virou "Fechamento a 336 pts da MA21" (o "limite 40" era a tolerancia
+#     antiga de toque, que nenhuma estrategia usa mais).
+# Conferido em 4.000 leituras reais de 2026: o sinal do radar continua igual ao gerar_sinal.
+
 # V540 - sem falas de calma; painel nao diz mais "Falta nenhuma" (09/10/2026)
 # Pedido do dono: as falas de calma (V532/V533: "Fique tranquilo...", "Mantenha a calma e o plano") irritavam mais do que ajudavam.
 # principal: removidos _frase_calma, _CALMA, CALMA_* e a chamada no heartbeat; as falas do trailing (arma/assume) e a narracao

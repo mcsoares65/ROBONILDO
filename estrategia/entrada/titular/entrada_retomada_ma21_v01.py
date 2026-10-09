@@ -21,6 +21,7 @@ motor, não realiza I/O, não mantém estado e não importa módulos do projeto
 (Regra 3).
 """
 
+import math
 
 MAX_DISTANCIA_MA21 = 90.0
 STOCH_MIN = 16.5
@@ -88,8 +89,12 @@ def diagnosticar_oportunidades(row):
         (not (SEPARACAO_FRACA_MIN <= separacao <= SEPARACAO_FRACA_MAX), "separação saudável das médias"),
         (not (row["atr_relativo"] > ATR_RELATIVO_MAX), "volatilidade aceitável"),
     ]
+    # V541: quanto o preco ainda precisa se aproximar da MA21 (so texto de painel e voz; o sinal nao muda)
+    falta_aproximar = max(1, int(math.ceil(row["distancia_ma21"] - MAX_DISTANCIA_MA21)))
+    rotulo_aproximacao = (f"o preço chegar mais perto da MA21. Hoje está {falta_aproximar} "
+                          f"{'ponto' if falta_aproximar == 1 else 'pontos'} acima do limite")
     condicoes = [
-        (row["distancia_ma21"] <= MAX_DISTANCIA_MA21, "aproximação da MA21"),
+        (row["distancia_ma21"] <= MAX_DISTANCIA_MA21, rotulo_aproximacao),
         (STOCH_MIN <= row["stoch"] <= STOCH_MAX, "estocástico fora dos extremos"),
         (bool(direcao_stoch), "estocástico na direção da tendência"),
     ]
@@ -113,8 +118,8 @@ def diagnosticar_oportunidades(row):
     if bloqueio_horario:
         detalhe = ("BLOQUEADA NESTA QUINTA" if quinta
                    else "BLOQUEADA ATÉ 13:30" if almoco else "BLOQUEADA ATÉ 17:00")
-    elif faltante == "aproximação da MA21":
-        detalhe = f"dist. MA21 {row['distancia_ma21']:.0f} (máx. 90)"
+    elif faltante == rotulo_aproximacao:
+        detalhe = f"aproximar {falta_aproximar} {'pt' if falta_aproximar == 1 else 'pts'} da MA21"   # V541 (antes: "dist. MA21 91 (máx. 90)")
     elif faltante == "estocástico na direção da tendência":
         detalhe = "estoc. a favor da tendência"   # V516: cabe na coluna do painel (29)
     elif faltante == "estocástico fora dos extremos":
