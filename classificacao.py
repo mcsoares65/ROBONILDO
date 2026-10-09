@@ -2150,7 +2150,9 @@ def executar(
     planilha = None
     if modo == "A":
         pasta_xlsx = Path(saida_dir or PASTA_ANALISES_PADRAO)
-        nome_xlsx = re.sub(r"\s+", "_", f"analise_{dias[0]:%Y%m%d}_{dias[-1]:%Y%m%d}{fonte_arquivo}.xlsx")
+        # V526: a hora da geracao entra no nome; antes, rodar de novo com o .xlsx anterior aberto no Excel
+        # dava PermissionError (mesmo nome). Agora cada execucao grava um arquivo proprio.
+        nome_xlsx = re.sub(r"\s+", "_", f"analise_{dias[0]:%Y%m%d}_{dias[-1]:%Y%m%d}{fonte_arquivo}_{datetime.now():%H%M%S}.xlsx")
         meta = {
             "entrada_titular": entrada_titular.nome,
             "saida_titular": saida_titular.nome,
