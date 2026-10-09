@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V542 — banca atual lida da planilha
+
+Pedido do dono (09/10/2026): `BANCA_ATUAL_REAIS` saiu de `configuracao.py`. A banca agora vive na planilha, na aba `GESTAO_RISCO`, célula `B3`. O robô lê o valor ao iniciar e, ao fim de cada operação, lê de novo, soma o resultado em R$ e grava a célula. Por isso uma correção feita à mão em B3 vale já na próxima saída. O robô precisa da planilha aberta no Excel, a mesma do DDE. Se a leitura falhar (célula vazia, texto ilegível, Excel ocupado), mantém o último valor conhecido; se a gravação falhar, usa o valor em memória e tenta de novo na saída seguinte. Sem banca lida, o robô avisa e não soma. A banca saiu do `estado_risco.json` (o valor antigo no arquivo é ignorado). No replay a célula não é lida nem gravada. Nenhuma decisão de entrada ou saída muda.
+
+---
+
 ## V541 — mensagens de distância mais claras
 
 Pedido do dono (09/10/2026): "Falta dist. MA21 91 (máx. 90)" confundia, porque "Falta" parecia quanto falta e 91 contra 90 parecia erro de 1 ponto. **Retomada MA21:** "Falta aproximar 1 pt da MA21"; na voz, "Ainda aguardamos o preço chegar mais perto da Média Móvel 21. Hoje está 1 ponto acima do limite." **MACD + Estocástico:** "Falta afastamento 128/200 pts" virou "Falta afastar 72 pts da MA21". **Candle fechado:** "Distância=336.0pts (limite 40)" virou "Fechamento a 336 pts da MA21", porque o "limite 40" era a tolerância antiga de toque, que nenhuma estratégia usa mais. Só texto; os sinais não mudam (conferido em 4.000 leituras reais de 2026).

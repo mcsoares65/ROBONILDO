@@ -35,7 +35,7 @@ CAMINHO_PLANILHA = r"D:\DAYTRADE\PLANO_TRADE.xlsx"  # AJUSTAR se o nome/local fo
 CAMINHOS_PLANILHA_ANTIGOS = (r"D:\DAYTRADE\PLANO_TRADE_MA_v2.xlsx",)
 NOME_ABA_DDE = "DDE"          # aba onde o vínculo DDE do Profit esta configurado
 NOME_ABA_GESTAO_RISCO = "GESTAO_RISCO"  # aba do plano de trade ja existente na planilha
-CELULA_BANCA_ATUAL = "B3"     # celula onde o robo escreve a banca real, atualizada
+CELULA_BANCA_ATUAL = "B3"     # V542: fonte da banca atual - o robo LE daqui e, ao fim de cada operacao, grava aqui
 
 # V507 - aba REGISTRO_OPERACOES: o robo escreve uma linha por operacao (abre na entrada,
 # completa na saida). A coluna O guarda o id da operacao (horario de entrada ISO) para o robo
@@ -432,15 +432,55 @@ class LeitorDDE:
             return None
         return int(valor)
 
-    def escrever_banca_atual(self, valor: float):
-        """Atualiza a celula da banca atual na aba GESTAO_RISCO da planilha,
-        assim o plano de trade reflete o capital real, nao um valor fixo estatico."""
-        if self._planilha is None:
-            return
+    @staticmethod
+    def _numero_da_celula(bruto) -> Optional[float]:
+        """Converte o conteudo da celula da banca em float; None se vazio ou ilegivel.
+        Aceita numero, moeda do Excel e texto no formato brasileiro ('R$ 1.490,50')."""
+        if bruto is None or isinstance(bruto, bool):
+            return None
         try:
-            self._planilha.Sheets(NOME_ABA_GESTAO_RISCO).Range(CELULA_BANCA_ATUAL).Value = valor
+            if isinstance(bruto, str):
+                t = bruto.replace("R$", "").replace("\xa0", "").replace(" ", "").strip()
+                if not t:
+                    return None
+                if "," in t:
+                    t = t.replace(".", "").replace(",", ".")
+                valor = float(t)
+            else:
+                valor = float(bruto)
+        except (TypeError, ValueError, ArithmeticError):
+            return None
+        return valor if valor == valor and valor not in (float("inf"), float("-inf")) else None
+
+    def ler_banca_atual(self) -> Optional[float]:
+        """V542: le a banca atual da celula GESTAO_RISCO!B3 (planilha aberta no Excel).
+        Devolve None se nao deu para ler (celula vazia, texto, Excel ocupado/em edicao): quem
+        chama mantem o ultimo valor conhecido. Nunca lanca excecao."""
+        if self._planilha is None:
+            return None
+        try:
+            bruto = self._com_tentativas(
+                lambda: self._planilha.Sheets(NOME_ABA_GESTAO_RISCO).Range(CELULA_BANCA_ATUAL).Value2)
         except Exception as e:
-            print(f"[LEITOR_DDE] Falha ao atualizar banca atual na planilha: {e}")
+            print(f"[LEITOR_DDE] Falha ao ler a banca atual da planilha: {e}")
+            return None
+        valor = self._numero_da_celula(bruto)
+        if valor is None:
+            print(f"[LEITOR_DDE] Banca atual ilegivel em {NOME_ABA_GESTAO_RISCO}!{CELULA_BANCA_ATUAL}: {bruto!r}")
+        return valor
+
+    def escrever_banca_atual(self, valor: float) -> bool:
+        """Grava a banca atual em GESTAO_RISCO!B3 ao fim da operacao. True se gravou."""
+        if self._planilha is None:
+            return False
+        try:
+            self._com_tentativas(
+                lambda: setattr(self._planilha.Sheets(NOME_ABA_GESTAO_RISCO).Range(CELULA_BANCA_ATUAL),
+                                "Value", round(float(valor), 2)))
+        except Exception as e:
+            print(f"[LEITOR_DDE] Falha ao atualizar a banca atual na planilha: {e}")
+            return False
+        return True
 
     # ---------- V507: aba REGISTRO_OPERACOES ----------
     @staticmethod

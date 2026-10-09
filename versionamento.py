@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V541"
+VERSAO = "V542"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1898,3 +1898,13 @@ VERSAO = "V541"
 #   (2) motor.verificar_saida: o novo stop/alvo que o cartucho propoe no FECHAMENTO do candle deixa de valer para os extremos
 #       do proprio candle que o gerou (ao vivo ele so existe depois). Saida titular (stop/alvo fixos) nao muda. Cartuchos que
 #       mexem no stop depois da abertura passam a ser medidos como o ao vivo os trataria (antes eram penalizados).
+
+# V542 - banca atual lida da planilha (GESTAO_RISCO!B3) (09/10/2026)
+#   Pedido do dono: eliminar BANCA_ATUAL_REAIS de configuracao.py, ler a banca da celula B3 da aba GESTAO_RISCO e atualiza-la
+#   ao fim de cada operacao (planilha aberta no Excel, a mesma do DDE).
+#   configuracao.py: BANCA_ATUAL_REAIS removida (BANCA_REAL_REAIS, do limite de risco desligado, nao mudou).
+#   leitor_dde.py: ler_banca_atual() (Value2; aceita numero, moeda e texto "R$ 1.490,50"; None se ilegivel/Excel ocupado) e
+#   escrever_banca_atual() agora tenta de novo e devolve True/False. motor.py: banca_atual nasce None, definir_banca() e
+#   fechar_posicao() soma o resultado; a banca saiu do estado_risco.json (valor antigo no arquivo e ignorado).
+#   principal.py: le na partida e, em cada saida (tick, corte final, fechamento de candle), relê a celula, soma e grava;
+#   se a gravacao falhar usa o valor em memoria na proxima saida; no replay nao le nem grava. Nenhuma decisao de entrada/saida muda.

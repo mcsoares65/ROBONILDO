@@ -486,7 +486,9 @@ class MotorRobonildo:
         self.operacoes_hoje = 0
         self.perdas_hoje = 0
         self.data_atual: date = (horario_mercado_inicial or datetime.now()).date()
-        self.banca_atual = cfg.BANCA_ATUAL_REAIS
+        # V542: a banca vem da planilha (GESTAO_RISCO!B3); o motor so a acumula entre leituras.
+        # None = ainda nao lida (replay, planilha fechada): nesse caso o resultado nao e somado.
+        self.banca_atual: Optional[float] = None
         self.operacoes_fechadas: list[dict] = []
         self._noticias = queue.Queue()
         self._carregar_estado()
@@ -560,13 +562,17 @@ class MotorRobonildo:
             except queue.Empty:
                 return eventos
 
+    def definir_banca(self, valor: Optional[float]) -> None:
+        """V542: recebe a banca lida da planilha. None (leitura falhou) mantem o ultimo valor."""
+        if valor is not None:
+            self.banca_atual = float(valor)
+
     # ---------- Persistência do jogo ao vivo ----------
     def _carregar_estado(self) -> None:
         if not self.arquivo_estado or not self.arquivo_estado.exists():
             return
         try:
             estado = json.loads(self.arquivo_estado.read_text(encoding="utf-8"))
-            self.banca_atual = estado.get("banca_atual", cfg.BANCA_ATUAL_REAIS)
             data_salva = date.fromisoformat(estado["data"])
             if data_salva != self.data_atual:
                 self._resetar_dia()
@@ -586,7 +592,6 @@ class MotorRobonildo:
             "operacoes_hoje": self.operacoes_hoje,
             "perdas_hoje": self.perdas_hoje,
             "posicao": asdict(self.posicao_aberta) if self.posicao_aberta else None,
-            "banca_atual": self.banca_atual,
         }
         self.arquivo_estado.write_text(
             json.dumps(estado, indent=2, ensure_ascii=False), encoding="utf-8"
@@ -897,11 +902,15 @@ class MotorRobonildo:
         )
         if resultado_pontos < 0:
             self.perdas_hoje += 1
-        self.banca_atual += resultado_reais
+        if self.banca_atual is not None:
+            self.banca_atual += resultado_reais
+            texto_banca = f"Banca atual: R${self.banca_atual:.2f}"
+        else:
+            texto_banca = "Banca atual: indisponível (planilha não lida)"
         mensagem = (
             f"Posição fechada: {pos.lado} | Entrada={pos.entrada} Saída={preco_saida} | "
             f"Resultado={resultado_pontos:.1f}pts (R${resultado_reais:.2f}) | "
-            f"Motivo={motivo} | Banca atual: R${self.banca_atual:.2f}"
+            f"Motivo={motivo} | {texto_banca}"
         )
         self.posicao_aberta = None
         self._salvar_estado()

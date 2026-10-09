@@ -867,6 +867,36 @@ def rodar():
         avaliar_saida=_modulo_saida.avaliar_saida,
         diagnosticar_oportunidades=diagnosticar_oportunidades,
     )
+    # V542: a banca atual vem da planilha (GESTAO_RISCO!B3, ver leitor_dde.CELULA_BANCA_ATUAL).
+    # Le na partida e de novo antes de somar cada operacao (assim uma correcao manual na celula vale
+    # na proxima saida); ao fechar, grava o valor atualizado. No replay a planilha nao e tocada.
+    _banca_sem_gravar = [False]   # True se a ultima gravacao falhou: a memoria vale mais que a celula
+
+    def _sincronizar_banca():
+        if _MODO_REPLAY or _banca_sem_gravar[0]:
+            return
+        gestor.definir_banca(leitor.ler_banca_atual())
+
+    def _fechar_posicao_e_gravar_banca(preco_saida, motivo):
+        _sincronizar_banca()
+        resultado_pts, msg = gestor.fechar_posicao(preco_saida, motivo)
+        if not _MODO_REPLAY and gestor.banca_atual is not None:
+            _banca_sem_gravar[0] = not leitor.escrever_banca_atual(gestor.banca_atual)
+            if _banca_sem_gravar[0]:
+                print("[ALERTA] Nao consegui gravar a banca na planilha; "
+                      "vou usar o valor em memoria e tentar de novo na proxima saida.")
+        return resultado_pts, msg
+
+    _sincronizar_banca()
+    if _MODO_REPLAY:
+        print("[BANCA] Replay: a planilha nao e lida nem gravada.")
+    elif gestor.banca_atual is None:
+        print(f"[ALERTA] Banca atual ilegivel na planilha (aba GESTAO_RISCO, celula "
+              f"{_leitor_dde_mod.CELULA_BANCA_ATUAL}). Preencha a celula com a banca; ate la o robo nao soma "
+              f"o resultado das operacoes.")
+    else:
+        print(f"[BANCA] Banca atual lida da planilha: R${gestor.banca_atual:.2f}")
+
     if gestor.posicao_aberta:
         pos = gestor.posicao_aberta
         print(f"[AVISO] Posicao aberta RECUPERADA de uma sessao anterior (mesmo dia "
@@ -1672,8 +1702,7 @@ def rodar():
                     contratos_dde=contratos_reais,
                 )
                 if ordem_ok or not cfg.ENVIAR_ORDENS:
-                    resultado_pts, msg = gestor.fechar_posicao(preco_saida, motivo)
-                    leitor.escrever_banca_atual(gestor.banca_atual)
+                    resultado_pts, msg = _fechar_posicao_e_gravar_banca(preco_saida, motivo)
                     resultado_reais = resultado_pts * cfg.VALOR_PONTO_REAIS - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
                     print(f"[{agora}] {msg}")
                     narrar(frases.FRASES_FECHAMENTO.get(motivo, frases.FRASE_FECHAMENTO_PADRAO_LUCRO if resultado_pts > 0 else frases.FRASE_FECHAMENTO_PADRAO_PREJUIZO))
@@ -1717,8 +1746,7 @@ def rodar():
                     contratos_dde=contratos_reais,
                 )
                 if ordem_ok or not cfg.ENVIAR_ORDENS:
-                    resultado_pts, msg = gestor.fechar_posicao(preco_saida, motivo)
-                    leitor.escrever_banca_atual(gestor.banca_atual)
+                    resultado_pts, msg = _fechar_posicao_e_gravar_banca(preco_saida, motivo)
                     resultado_reais = resultado_pts * cfg.VALOR_PONTO_REAIS - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
                     print(f"[{agora}] {msg}")
                     narrar(frases.FRASES_FECHAMENTO.get(motivo, frases.FRASE_FECHAMENTO_PADRAO_LUCRO if resultado_pts > 0 else frases.FRASE_FECHAMENTO_PADRAO_PREJUIZO))
@@ -1875,8 +1903,7 @@ def rodar():
                         contratos_dde=contratos_reais,
                     )
                     if ordem_ok or not cfg.ENVIAR_ORDENS:
-                        resultado_pts, msg = gestor.fechar_posicao(preco_saida, motivo)
-                        leitor.escrever_banca_atual(gestor.banca_atual)
+                        resultado_pts, msg = _fechar_posicao_e_gravar_banca(preco_saida, motivo)
                         resultado_reais = resultado_pts * cfg.VALOR_PONTO_REAIS - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
                         print(f"[{agora}] {msg}")
                         frase_fechamento = frases.FRASES_FECHAMENTO.get(

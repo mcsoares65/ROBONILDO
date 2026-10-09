@@ -108,8 +108,9 @@ HORARIO_LIMITE_ABSOLUTO = "18:20:58"   # UNICO horario de saida forcada do proje
 # horario e "o" corte de saida forcada - a resposta e sempre
 # HORARIO_LIMITE_ABSOLUTO, exclusivamente.
 
-# ---------- Gestao de risco (banca atual: R$200 - ajustar conforme o extrato real) ----------
-BANCA_ATUAL_REAIS = 200.00   # contador inicial do estado de risco (acumula resultado; persistido em estado_risco.json)
+# ---------- Gestao de risco ----------
+# V542: a banca atual NAO fica mais aqui. O robo le da planilha (aba GESTAO_RISCO, celula B3,
+# ver leitor_dde.CELULA_BANCA_ATUAL) e, a cada operacao encerrada, grava la o valor atualizado.
 # V461: BANCA REAL na corretora, informada pelo dono em 01/10/2026. E a base do
 # limite de risco por operacao (abaixo) - NAO e o contador acima.
 BANCA_REAL_REAIS = 1490.00
