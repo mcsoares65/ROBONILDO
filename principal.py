@@ -153,10 +153,11 @@ _ROXO = (147, 51, 234)      # roxo, progresso = -1.0 (stop)
 
 
 def _saude_posicao(posicao, preco_atual: float):
-    """V525: saude do trade em 0..100 (0 = no stop, pior; 50 = neutro, no zero a zero liquido;
-    100 = melhor: no alvo ou, sem alvo, com lucro liquido >= 1R). Devolve (saude_pct, quadrado)."""
+    """V525/V530: saude do trade. Abre em 0% (branco, zero a zero liquido) e anda em direcao ao destino:
+    verde no ganho (100% = alvo ou, sem alvo, lucro liquido de 1 R) ou roxo na perda (100% = stop). O
+    percentual e a distancia percorrida (sempre >= 0); quem diz o lado e a cor. Devolve (percentual, quadrado)."""
     progresso = _progresso_posicao(posicao, preco_atual, _risco_inicial_pts(posicao))
-    return (progresso + 1.0) * 50.0, _quadro_resultado(posicao, preco_atual, progresso)
+    return abs(progresso) * 100.0, _quadro_resultado(posicao, preco_atual, progresso)
 
 
 def _quadro_resultado(posicao, preco_atual: float, progresso=None) -> str:

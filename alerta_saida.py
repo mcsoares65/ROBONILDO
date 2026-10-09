@@ -31,21 +31,27 @@ CAMPOS_LOG = [
 ]
 
 
-def linha_posicao(hora, lado_colorido, preco, resultado_colorido, stop, campos, quadro,
+def linha_posicao(hora, lado_colorido, preco, resultado_colorido, stop, campos, quadro_exaustao,
                   saude_pct=None, quadro_saude=""):
-    """Linha do painel com a posicao aberta, no padrao da Escala de entrada (123 colunas visiveis):
-    `hora lado | preco | Res <res> <saude% ■> | Stop | Ex. <alerta> | n/N | Falta ... | % quadro`.
-    V525: a saude do trade (0% pior/roxo, 50% neutro/branco, 100% melhor/verde) fica junto do Res.
-    Com o alerta confirmado, o lugar do 'Falta' mostra o nivel e o 'ha Ns'.
+    """Linha do painel com a posicao aberta (~119 colunas visiveis), no padrao da Escala de entrada:
+    `hora lado | preco | Res | Stop | Ex. <alerta> | n/N <quadrado> | Falta ... | saude% quadrado`.
+    V530: o FIM da linha e a saude do trade (abre em 0% branco; verde no ganho, roxo na perda), como o
+    `% quadrado` do fim da linha antes da operacao; a maturacao do alerta de exaustao fica no quadrado
+    colorido logo apos o `n/N`. Com o alerta confirmado, o lugar do 'Falta' mostra o nivel e o 'ha Ns'.
     `resultado_colorido` ja vem formatado (+7.2f) e `stop` como texto de 11 colunas."""
     if campos["ok"]:
         meio = f"Nível {campos['nivel']}/{campos['total_alertas']} há {campos['segundos']}s".ljust(26)
     else:
         meio = f"Falta {str(campos['detalhe'])[:20]:<20}"
-    saude = f" {quadro_saude} {saude_pct:3.0f}%" if saude_pct is not None else ""
-    return (f"[{hora}] {lado_colorido} | {preco:6.0f} | Res {resultado_colorido}{saude} | {stop} | "
-            f"Ex. {str(campos['nome'])[:11]:<11} | {campos['confirmadas']}/{campos['total']} | "
-            f"{meio} | {campos['pct']:3.0f}% {quadro}")
+    if saude_pct is None:        # compatibilidade: sem saude, o fim da linha volta a ser a exaustao
+        fim = f"{campos['pct']:3.0f}% {quadro_exaustao}"
+        exaustao = ""
+    else:
+        fim = f"{saude_pct:3.0f}% {quadro_saude}"
+        exaustao = f" {quadro_exaustao}"
+    return (f"[{hora}] {lado_colorido} | {preco:6.0f} | Res {resultado_colorido} | {stop} | "
+            f"Ex. {str(campos['nome'])[:11]:<11} | {campos['confirmadas']}/{campos['total']}{exaustao} | "
+            f"{meio} | {fim}")
 
 
 class MonitorAlertasSaida:

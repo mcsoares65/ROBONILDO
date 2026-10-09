@@ -208,7 +208,8 @@ class RadarTest(unittest.TestCase):
         linha = linha_posicao("12:15:06", "VENDA ", 206225, f"{6.5:+7.2f}", "Stop 208130", campos, "■", 62.0, "■")
         self.assertLessEqual(len(linha), 123)
         self.assertIn("Falta estoc. saindo zona", linha)
-        self.assertIn(" 62%", linha)
+        self.assertTrue(linha.endswith(" 62% ■"))          # fim da linha = saude do trade
+        self.assertIn("1/2 ■ | Falta", linha)               # exaustao: quadrado logo apos o n/N
         campos.update(ok=True, pct=100.0, nivel=4, segundos=120, confirmadas=2)
         linha = linha_posicao("12:15:06", "COMPRA", 206225, f"{-234.5:+7.2f}", "Stop 208130", campos, "■", 100.0, "■")
         self.assertLessEqual(len(linha), 123)
@@ -222,7 +223,7 @@ class RadarTest(unittest.TestCase):
 
 
 class SaudeTradeTest(unittest.TestCase):
-    """V525: saude do trade 0% (roxo, no stop) .. 50% (branco, zero a zero) .. 100% (verde)."""
+    """V525/V530: saude do trade abre em 0% (branco) e anda ate 100% (verde no ganho, roxo na perda)."""
     @classmethod
     def setUpClass(cls):
         cls.pr = importlib.import_module("principal")
@@ -237,23 +238,25 @@ class SaudeTradeTest(unittest.TestCase):
         pts = (reais + self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS) / self.cfg.VALOR_PONTO_REAIS
         return pos.entrada + (pts if pos.lado == "COMPRA" else -pts)
 
-    def test_sem_alvo_1r_de_lucro_e_100_e_stop_e_0(self):
+    def test_sem_alvo_abre_em_zero_1r_de_lucro_e_100_e_stop_e_100(self):
         pos = self._pos(hora="t1")
         self.pr._risco_inicial_pts(pos)                        # memoriza 1R = 200 pts
         um_r = 200 * self.cfg.VALOR_PONTO_REAIS - self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
-        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r))[0], 100.0, places=3)
-        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r * 5))[0], 100.0, places=3)
-        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, 0))[0], 50.0, places=3)
-        self.assertAlmostEqual(self.pr._saude_posicao(pos, pos.stop)[0], 0.0, places=0)
-        meio = self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r / 2))[0]
-        self.assertAlmostEqual(meio, 75.0, places=3)
+        saude = lambda preco: self.pr._saude_posicao(pos, preco)[0]
+        self.assertAlmostEqual(saude(self._preco_liquido(pos, 0)), 0.0, places=3)           # abre em 0%
+        self.assertAlmostEqual(saude(self._preco_liquido(pos, um_r / 2)), 50.0, places=3)
+        self.assertAlmostEqual(saude(self._preco_liquido(pos, um_r)), 100.0, places=3)      # ganho: 1 R
+        self.assertAlmostEqual(saude(self._preco_liquido(pos, um_r * 5)), 100.0, places=3)  # trava em 100
+        self.assertAlmostEqual(saude(pos.stop), 100.0, places=0)                            # perda: stop
+        self.assertLess(saude(pos.entrada - 20), 20.0)                                       # perda pequena
 
     def test_venda_e_simetrica(self):
         pos = self._pos(lado="VENDA", stop=100200.0, hora="t2")
         self.pr._risco_inicial_pts(pos)
         um_r = 200 * self.cfg.VALOR_PONTO_REAIS - self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
         self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r))[0], 100.0, places=3)
-        self.assertAlmostEqual(self.pr._saude_posicao(pos, 100200.0)[0], 0.0, places=0)
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, 100200.0)[0], 100.0, places=0)
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, 0))[0], 0.0, places=3)
 
     def test_1r_vem_do_stop_inicial_e_nao_do_stop_que_sobe(self):
         pos = self._pos(hora="t3")
