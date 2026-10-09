@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V541"
+VERSAO = "V542"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1723,6 +1723,15 @@ VERSAO = "V541"
 # V518 - painel da Escala: colunas "% quadrado" fixas; "ha Ns" passa para depois delas
 #   Pedido do dono (08/10/2026): o "| ha 36s" de largura variavel empurrava o "100% quadrado" e quebrava o layout vertical.
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
+
+# ---------------------------------------------------------------------------
+# V542 - ata: nao apertar o stop do capitao (09/10/2026)
+# Pedido do dono: escrever a proposta e salvar em ata. So conselho/2026-10-09-AK.txt,
+# changelog e este numero. Nenhum cartucho, motor ou regra mudou.
+# A operacao real de 09/10 saiu no corte das 18:20; o trailing nao ligou (pico 120 pts,
+# 1 R = 270). Simulacao em memoria no motor V541, time titular x capitao v02, distancias
+# 0,40/0,15/0,10/0,05 e escorregamento fixo so no STOP: a ordem nao vira, e o ganho de
+# 0,10/0,05 neste um ano e pequeno. Voto da ata: manter 0,15 R.
 
 # ---------------------------------------------------------------------------
 # V541 - mensagens de distancia dizem quanto FALTA (09/10/2026)
