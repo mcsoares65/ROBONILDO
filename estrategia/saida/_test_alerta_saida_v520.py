@@ -547,6 +547,174 @@ class DebounceVozTest(unittest.TestCase):
         self.assertEqual(eventos, ["SUBIU", "DESFEZ"])
 
 
+class _Celula:
+    def __init__(self, valor=None, falha=False):
+        self.Value = valor
+        self.Value2 = valor
+        self._falha = falha
+
+    def __getattribute__(self, nome):
+        if nome in ("Value", "Value2") and object.__getattribute__(self, "_falha"):
+            raise RuntimeError("Excel ocupado")
+        return object.__getattribute__(self, nome)
+
+    def __setattr__(self, nome, valor):
+        if nome == "Value" and self.__dict__.get("_falha"):
+            raise RuntimeError("Excel ocupado")
+        object.__setattr__(self, nome, valor)
+
+
+class _PlanilhaFalsa:
+    def __init__(self, celula):
+        self.celula = celula
+        self.pedidos = []
+
+    def Sheets(self, aba):
+        planilha = self
+
+        class _Aba:
+            def Range(self, endereco):
+                planilha.pedidos.append((aba, endereco))
+                return planilha.celula
+        return _Aba()
+
+
+class BancaPlanilhaTest(unittest.TestCase):
+    """V542: a banca vem da celula GESTAO_RISCO!B3 e e regravada ao fim de cada operacao."""
+
+    def setUp(self):
+        self.ld = importlib.import_module("leitor_dde")
+        self.motor = importlib.import_module("motor")
+        self.cfg = importlib.import_module("configuracao")
+
+    def _leitor(self, celula):
+        leitor = self.ld.LeitorDDE()
+        leitor._planilha = _PlanilhaFalsa(celula)
+        leitor._com_tentativas = lambda f, tentativas=3, espera=0: f()   # sem esperar no teste
+        return leitor
+
+    def _motor_com_posicao(self):
+        m = self.motor.MotorRobonildo(gerar_sinal=lambda row: 0, arquivo_estado=None,
+                                      horario_mercado_inicial=datetime(2026, 10, 9, 10, 0))
+        m.posicao_aberta = self.motor.Posicao("COMPRA", 100000.0, 99900.0, None,
+                                              "2026-10-09T10:00:00", "teste")
+        return m
+
+    def test_configuracao_nao_tem_mais_banca_atual_fixa(self):
+        self.assertFalse(hasattr(self.cfg, "BANCA_ATUAL_REAIS"))
+
+    def test_leitura_usa_a_celula_certa(self):
+        leitor = self._leitor(_Celula(1490.5))
+        self.assertEqual(leitor.ler_banca_atual(), 1490.5)
+        self.assertEqual(leitor._planilha.pedidos[-1], ("GESTAO_RISCO", "B3"))
+
+    def test_interpreta_o_conteudo_da_celula(self):
+        f = self.ld.LeitorDDE._numero_da_celula
+        self.assertEqual(f(1490), 1490.0)
+        self.assertEqual(f("R$ 1.490,50"), 1490.5)
+        self.assertEqual(f("1490.5"), 1490.5)
+        for ruim in (None, "", "   ", "abc", True, float("nan"), float("inf")):
+            self.assertIsNone(f(ruim), repr(ruim))
+
+    def test_celula_ilegivel_ou_excel_ocupado_devolve_none(self):
+        self.assertIsNone(self._leitor(_Celula("abc")).ler_banca_atual())
+        self.assertIsNone(self._leitor(_Celula(1490.0, falha=True)).ler_banca_atual())
+        self.assertIsNone(self.ld.LeitorDDE().ler_banca_atual())    # sem planilha conectada
+
+    def test_gravacao(self):
+        celula = _Celula(1000.0)
+        leitor = self._leitor(celula)
+        self.assertTrue(leitor.escrever_banca_atual(1000.126))
+        self.assertEqual(celula.Value, 1000.13)
+        self.assertEqual(leitor._planilha.pedidos[-1], ("GESTAO_RISCO", "B3"))
+        self.assertFalse(self._leitor(_Celula(1.0, falha=True)).escrever_banca_atual(5.0))
+        self.assertFalse(self.ld.LeitorDDE().escrever_banca_atual(5.0))
+
+    def test_motor_nasce_sem_banca_e_nao_soma_sem_ela(self):
+        m = self._motor_com_posicao()
+        self.assertIsNone(m.banca_atual)
+        pts, msg = m.fechar_posicao(100100.0, "ALVO")
+        self.assertEqual(pts, 100.0)
+        self.assertIsNone(m.banca_atual)
+        self.assertIn("indisponível", msg)
+
+    def test_motor_soma_o_resultado_na_banca_lida(self):
+        m = self._motor_com_posicao()
+        m.definir_banca(1490.0)
+        pts, msg = m.fechar_posicao(100100.0, "ALVO")
+        esperado = 1490.0 + 100.0 * self.cfg.valor_ponto_total() - self.cfg.custo_total_operacao()
+        self.assertAlmostEqual(m.banca_atual, esperado)
+        self.assertIn(f"Banca atual: R${esperado:.2f}", msg)
+
+    def test_leitura_que_falha_mantem_o_ultimo_valor(self):
+        m = self._motor_com_posicao()
+        m.definir_banca(1490.0)
+        m.definir_banca(None)
+        self.assertEqual(m.banca_atual, 1490.0)
+        m.definir_banca(1500)
+        self.assertEqual(m.banca_atual, 1500.0)
+
+    def test_banca_nao_vai_mais_para_o_estado_de_risco(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            arq = Path(pasta) / "estado_risco.json"
+            arq.write_text('{"data": "2026-10-09", "banca_atual": 176.5}', encoding="utf-8")
+            m = self.motor.MotorRobonildo(gerar_sinal=lambda row: 0, arquivo_estado=arq,
+                                          horario_mercado_inicial=datetime(2026, 10, 9, 10, 0))
+            self.assertIsNone(m.banca_atual)           # o valor antigo do arquivo e ignorado
+            m._salvar_estado()
+            self.assertNotIn("banca_atual", arq.read_text(encoding="utf-8"))
+
+
+class ContratosTest(unittest.TestCase):
+    """V543: o numero de contratos multiplica valor do ponto e custo no calculo ao vivo."""
+
+    def setUp(self):
+        self.cfg = importlib.import_module("configuracao")
+        self.motor = importlib.import_module("motor")
+        self._antes = self.cfg.CONTRATOS
+
+    def tearDown(self):
+        self.cfg.CONTRATOS = self._antes
+
+    def test_pergunta_da_partida(self):
+        f = self.cfg.interpretar_contratos
+        self.assertEqual(f(""), 1)
+        self.assertEqual(f("  "), 1)
+        self.assertEqual(f("3"), 3)
+        self.assertEqual(f(" 10 "), 10)
+        self.assertEqual(f(str(self.cfg.CONTRATOS_MAXIMO)), self.cfg.CONTRATOS_MAXIMO)
+        for ruim in ("0", "-1", "2,5", "abc", str(self.cfg.CONTRATOS_MAXIMO + 1)):
+            self.assertIsNone(f(ruim), ruim)
+
+    def test_um_contrato_nao_muda_nada(self):
+        self.assertEqual(self.cfg.CONTRATOS, 1)
+        self.assertEqual(self.cfg.valor_ponto_total(), self.cfg.VALOR_PONTO_REAIS)
+        self.assertEqual(self.cfg.custo_total_operacao(), self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS)
+
+    def _fechar(self, contratos):
+        self.cfg.CONTRATOS = contratos
+        m = self.motor.MotorRobonildo(gerar_sinal=lambda row: 0, arquivo_estado=None,
+                                      horario_mercado_inicial=datetime(2026, 10, 9, 10, 0))
+        m.posicao_aberta = self.motor.Posicao("COMPRA", 100000.0, 99900.0, None,
+                                              "2026-10-09T10:00:00", "teste")
+        m.definir_banca(1000.0)
+        m.fechar_posicao(100100.0, "ALVO")
+        return m.banca_atual
+
+    def test_banca_soma_o_resultado_de_todos_os_contratos(self):
+        v, c = self.cfg.VALOR_PONTO_REAIS, self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        self.assertAlmostEqual(self._fechar(1), 1000.0 + 100 * v - c)
+        self.assertAlmostEqual(self._fechar(3), 1000.0 + 3 * (100 * v - c))
+
+    def test_resultado_do_painel_acompanha_os_contratos(self):
+        pr = importlib.import_module("principal")
+        pos = importlib.import_module("types").SimpleNamespace(
+            lado="COMPRA", entrada=100000.0, stop=99800.0, alvo=None, horario_entrada="2026-10-09T10:00:00")
+        um = pr._resultado_liquido_reais(pos, 100100.0)
+        self.cfg.CONTRATOS = 5
+        self.assertAlmostEqual(pr._resultado_liquido_reais(pos, 100100.0), 5 * um)
+
+
 class EstruturaTest(unittest.TestCase):
     def test_um_unico_capitao(self):
         arquivos = [p for p in (PASTA_SAIDA / "titular" / "capitao").glob("*.py") if not p.stem.startswith("_")]

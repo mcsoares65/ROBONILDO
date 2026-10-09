@@ -106,13 +106,13 @@ class AuditorExecucao:
         entrada_dde = self.entradas_dde.pop(id_operacao, None)
         direcao = 1 if posicao.lado == "COMPRA" else -1
         resultado_teorico = (
-            (saida_teorica - posicao.entrada) * direcao * cfg.VALOR_PONTO_REAIS
-            - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+            (saida_teorica - posicao.entrada) * direcao * cfg.valor_ponto_total()
+            - cfg.custo_total_operacao()
             if saida_teorica is not None else None
         )
         resultado_dde = (
-            (saida_dde - entrada_dde) * direcao * cfg.VALOR_PONTO_REAIS
-            - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+            (saida_dde - entrada_dde) * direcao * cfg.valor_ponto_total()
+            - cfg.custo_total_operacao()
             if saida_dde is not None and entrada_dde is not None else None
         )
         diferenca = saida_dde - saida_teorica if saida_dde is not None and saida_teorica is not None else None
