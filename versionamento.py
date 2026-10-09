@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V535"
+VERSAO = "V536"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,11 @@ VERSAO = "V535"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V536 - sem "Nenhuma ordem sera enviada neste momento" (09/10/2026)
+# Pedido do dono: a ordem so sai no fechamento do candle, entao avisar que "nenhuma ordem sera enviada" quando a expectativa
+# perde confirmacao no meio do candle e redundante. principal.py: a frase passa a terminar em "...durante a formacao do candle."
+# So texto de voz.
+
 # V535 - narracao da Escala sem "Proxima condicao: nenhuma" (09/10/2026)
 # Pedido do dono: "O candle fechou em alta..." seguido de "3 de 3 confirmacoes. Proxima condicao: nenhuma. Se confirmado no
 # fechamento, a ordem sera disparada" era contraditorio. escalacao.diagnosticar_sinal so cita "Proxima condicao: X" quando falta

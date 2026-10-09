@@ -1359,8 +1359,7 @@ def rodar():
                     origem = f"da estratégia {estrategia_anterior}" if estrategia_anterior else "da estratégia"
                     frase_perdida = (
                         f"A expectativa de {lado_anterior.lower()} {origem} perdeu "
-                        "confirmação durante a formação do candle. Nenhuma ordem será "
-                        "enviada neste momento."
+                        "confirmação durante a formação do candle."
                     )
                     narrar(frase_perdida)
                     ultima_expectativa_perdida = ultima_expectativa_narrada
