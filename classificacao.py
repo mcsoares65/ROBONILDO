@@ -174,21 +174,6 @@ def carregar_historico_anos(pastas_ano: dict, anos: list[int]) -> tuple[list[Can
     return candles, rotulo, n_arquivos
 
 
-def _perguntar_anos(disponiveis: list[int]) -> str:
-    """Pergunta quais anos do backtest usar; repete até o texto ser entendido."""
-    exemplo = f"{disponiveis[0]}-{disponiveis[-1]}" if len(disponiveis) > 1 else str(disponiveis[0])
-    while True:
-        resp = input(
-            f"Anos do backtest [Enter = todos ({disponiveis[0]}–{disponiveis[-1]}) | {exemplo} | "
-            f"{disponiveis[-1]} | ultimos 2 | 2023,2025]: "
-        ).strip()
-        try:
-            interpretar_anos(resp, disponiveis)
-            return resp
-        except ValueError as erro:
-            print(f"[ANOS] {erro}")
-
-
 def preparar_aquecimento(candles_avaliacao: list[Candle]) -> tuple[list[Candle], int]:
     """Completa históricos curtos com candles anteriores, sem pontuá-los."""
     if len(candles_avaliacao) >= 66:
@@ -469,8 +454,9 @@ def interpretar_periodo(texto: Optional[str], dias: list) -> tuple[list, str]:
 
     Aceita (vazio ou 'tudo' = todo o histórico):
       01/03/2026 31/03/2026   intervalo de datas (também aaaa-mm-dd, ou com ':' / 'a' / 'ate')
-      01/03/2026              deste dia até o fim do histórico
-      dia 01/03/2026          somente este pregão (V527; também 'dia 2026-03-01')
+      01/03/2026              somente este pregão (V529; também 'dia 01/03/2026' ou '2026-03-01')
+      01/03/2026-31/03/2026   intervalo (V529: o traço também separa as datas)
+      desde 01/03/2026        deste dia até o fim do histórico
       ultimos 40              os 40 últimos pregões
       mes 2026-03             um mês (também 03/2026)
     Levanta ValueError com mensagem clara se o texto não for entendido ou o
@@ -480,6 +466,20 @@ def interpretar_periodo(texto: Optional[str], dias: list) -> tuple[list, str]:
     t = bruto.lower().replace("é", "e").replace("ú", "u").replace("ê", "e")
     if t in ("", "tudo", "todo", "todos"):
         return list(dias), "tudo"
+
+    m = re.fullmatch(r"desde\s+(.+)", t)
+    if m:
+        try:
+            datas_desde = _datas_do_texto(m.group(1))
+        except ValueError as erro:
+            raise ValueError(f"data inválida em '{bruto}': {erro}") from erro
+        if len(datas_desde) != 1 or _RE_DATA.sub("", m.group(1)).strip():
+            raise ValueError(f"'desde' pede uma data só. Exemplo: desde 01/03/2026 (recebi '{bruto}')")
+        sel = [d for d in dias if d >= datas_desde[0]]
+        if not sel:
+            raise ValueError(f"nenhum pregão a partir de {datas_desde[0].strftime('%d/%m/%Y')} "
+                             f"(histórico: {dias[0].strftime('%d/%m/%Y')} a {dias[-1].strftime('%d/%m/%Y')})")
+        return sel, f"{sel[0].isoformat()}_{sel[-1].isoformat()}"
 
     m = re.fullmatch(r"dia\s+(.+)", t)
     if m:
@@ -520,32 +520,76 @@ def interpretar_periodo(texto: Optional[str], dias: list) -> tuple[list, str]:
         raise ValueError(f"data inválida em '{bruto}': {erro}") from erro
     if len(datas) in (1, 2):
         ini = datas[0]
-        fim = datas[1] if len(datas) == 2 else dias[-1]
+        fim = datas[1] if len(datas) == 2 else datas[0]      # V529: data sozinha = só aquele dia
         if fim < ini:
             ini, fim = fim, ini
         sel = [d for d in dias if ini <= d <= fim]
         if not sel:
             raise ValueError(f"nenhum pregão entre {ini.strftime('%d/%m/%Y')} e {fim.strftime('%d/%m/%Y')} "
                              f"(histórico: {dias[0].strftime('%d/%m/%Y')} a {dias[-1].strftime('%d/%m/%Y')})")
+        if len(sel) == 1:
+            return sel, sel[0].isoformat()
         return sel, f"{sel[0].isoformat()}_{sel[-1].isoformat()}"
     raise ValueError(
-        f"não entendi o período '{bruto}'. Exemplos: 01/03/2026 31/03/2026 | dia 01/03/2026 | ultimos 40 | "
+        f"não entendi o período '{bruto}'. Exemplos: 01/03/2026 | 01/03/2026-31/03/2026 | ultimos 40 | "
         "mes 2026-03 | Enter = tudo")
 
 
 def _perguntar_periodo(dias: list) -> str:
-    """V527: pergunta o período a apurar (Enter = tudo); repete até o texto ser entendido."""
+    """V527: sem pastas de ano (CSV único), pergunta só o período; Enter = tudo."""
     while True:
         resp = input(
-            f"Período [Enter = tudo ({dias[0]:%d/%m/%Y} a {dias[-1]:%d/%m/%Y}) | "
-            f"{dias[-1]:%d/%m/%Y} {dias[-1]:%d/%m/%Y} | dia {dias[-1]:%d/%m/%Y} | ultimos 40 | "
-            f"mes {dias[-1]:%Y-%m}]: "
+            f"Período [Enter = tudo ({dias[0]:%d/%m/%Y} a {dias[-1]:%d/%m/%Y}) | {dias[-1]:%d/%m/%Y} | "
+            f"{dias[-1]:%d/%m/%Y}-{dias[-1]:%d/%m/%Y}]: "
         ).strip()
         try:
             interpretar_periodo(resp, dias)
             return resp
         except ValueError as erro:
             print(f"[PERÍODO] {erro}")
+
+
+def _escopo_eh_periodo(texto: str) -> bool:
+    """V529: o texto do escopo é um período (tem data, 'dia', 'desde' ou 'mes') e não uma lista de anos?"""
+    t = (texto or "").strip().lower().replace("ê", "e")
+    return bool(_RE_DATA.search(t)) or t.startswith(("dia ", "desde ", "mes "))
+
+
+def _anos_para_periodo(texto: str, disponiveis: list) -> list:
+    """V529: pastas de ano a carregar para um período: os anos citados (e os do meio) mais o ano anterior,
+    que serve só de aquecimento dos indicadores. ValueError se algum ano citado não tem pasta."""
+    citados = sorted({int(x) for x in re.findall(r"(?<!\d)((?:19|20)\d{2})(?!\d)", texto)})
+    if not citados:
+        raise ValueError("não encontrei o ano no período informado")
+    sem_pasta = [a for a in citados if a not in disponiveis]
+    if sem_pasta:
+        raise ValueError(f"sem histórico para {', '.join(map(str, sem_pasta))}; "
+                         f"anos disponíveis: {', '.join(map(str, disponiveis))}")
+    pedidos = set(range(citados[0], citados[-1] + 1)) | {citados[0] - 1}
+    return sorted(a for a in pedidos if a in disponiveis)
+
+
+def _perguntar_escopo(pastas_ano: dict) -> tuple:
+    """V529: UMA pergunta para ano(s) e período. Aceita 2026 | 2020-2026 | 08/10/2026 | 01/10/2026-08/10/2026
+    (e os formatos antigos). Enter = todo o histórico. Devolve (anos_carregados, candles, rótulo, n_arquivos, periodo)."""
+    disponiveis = sorted(pastas_ano)
+    exemplo_data = "08/10/2026"
+    while True:
+        resp = input(
+            f"Ano ou período [Enter = tudo ({disponiveis[0]}–{disponiveis[-1]}) | {disponiveis[-1]} | "
+            f"{disponiveis[0]}-{disponiveis[-1]} | {exemplo_data} | 01/10/2026-08/10/2026]: "
+        ).strip()
+        try:
+            if _escopo_eh_periodo(resp):
+                anos_carregar = _anos_para_periodo(resp, disponiveis)
+                candles, rotulo, n_arquivos = carregar_historico_anos(pastas_ano, anos_carregar)
+                interpretar_periodo(resp, sorted({c.horario.date() for c in candles}))   # valida antes de seguir
+                return anos_carregar, candles, rotulo, n_arquivos, resp
+            anos_carregar = interpretar_anos(resp, disponiveis)
+            candles, rotulo, n_arquivos = carregar_historico_anos(pastas_ano, anos_carregar)
+            return anos_carregar, candles, rotulo, n_arquivos, ""
+        except ValueError as erro:
+            print(f"[ESCOPO] {erro}")
 
 
 def validar_contrato_saida(cartucho: CartuchoSaida, rows: list[Optional[dict]]) -> tuple[bool, str]:
@@ -1872,11 +1916,14 @@ def executar(
     rotulo_base = ""
     if pastas_ano:
         disponiveis = sorted(pastas_ano)
-        texto_anos = anos
-        if texto_anos is None:
-            texto_anos = _perguntar_anos(disponiveis) if len(disponiveis) > 1 else ""
-        anos_escolhidos = interpretar_anos(texto_anos, disponiveis)
-        candles_reais, rotulo_base, n_arquivos = carregar_historico_anos(pastas_ano, anos_escolhidos)
+        if anos is None and periodo is None:
+            # V529: uma pergunta só (ano, intervalo de anos, data ou intervalo de datas)
+            anos_escolhidos, candles_reais, rotulo_base, n_arquivos, periodo = _perguntar_escopo(pastas_ano)
+        else:
+            anos_escolhidos = interpretar_anos(anos or "", disponiveis)
+            candles_reais, rotulo_base, n_arquivos = carregar_historico_anos(pastas_ano, anos_escolhidos)
+            if periodo is None:
+                periodo = ""        # só --anos na linha de comando: período = tudo, sem pergunta
         caminho = Path(cfg.PASTA_HISTORICO_BACKTEST)
         rotulo_base = f"backtest {rotulo_base} ({len(anos_escolhidos)} ano(s), {n_arquivos} arquivo(s))"
     else:
@@ -1907,8 +1954,8 @@ def executar(
         candles, quantidade_aquecimento = candles_avaliacao, 0
     else:
         todos_dias = sorted({c.horario.date() for c in candles_reais})
-        # V527: sem --periodo (None) pergunta, como os anos; na linha de comando com --modo/--simular
-        # o __main__ passa "" (= tudo) e não pergunta.
+        # V527/V529: sem --periodo (None) só chega aqui sem pastas de ano (CSV único) e pergunta o período;
+        # com pastas de ano o período já veio da pergunta única, e na linha de comando o __main__ passa "".
         if periodo is None:
             periodo = _perguntar_periodo(todos_dias)
         dias, rotulo_periodo = interpretar_periodo(periodo, todos_dias)
@@ -2232,7 +2279,7 @@ def _ler_argumentos(argv=None):
     ap.add_argument("--anos", help="anos do backtest (pastas ...\\HISTORICO\\AAAA): 'todos', '2023', '2023-2025', '2022,2024' ou 'ultimos 2'")
     ap.add_argument("--processos", type=int, help="processos em paralelo nos modos E/S/C/A (padrão: núcleos-1; 1 = em série)")
     ap.add_argument("--sem-paralelo", action="store_true", help="roda em série (igual a --processos 1)")
-    ap.add_argument("--periodo", help="'tudo', '01/03/2026 31/03/2026', 'dia 01/03/2026', 'ultimos 40' ou 'mes 2026-03'")
+    ap.add_argument("--periodo", help="'tudo', '01/03/2026' (um dia), '01/03/2026-31/03/2026', 'desde 01/03/2026', 'ultimos 40' ou 'mes 2026-03'")
     ap.add_argument("--cenario", help="apura o campeonato só neste cenário (cenario.py): "
                     + ", ".join(cen_mod.NOMES))
     ap.add_argument("--simular", choices=["reamostragem", "regimes"],
