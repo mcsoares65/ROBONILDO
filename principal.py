@@ -817,6 +817,7 @@ def rodar():
         _alertas_saida,
         pasta_logs=None if _MODO_REPLAY else cfg.PASTA_LOGS_AUDITORIA,
         intervalo_s=cfg.ALERTA_SAIDA_INTERVALO_SEGUNDOS,
+        estabilidade_s=cfg.ALERTA_SAIDA_ESTABILIDADE_SEGUNDOS,
     )
     executor = ExecutorOrdem()
     fila_noticias = queue.Queue()

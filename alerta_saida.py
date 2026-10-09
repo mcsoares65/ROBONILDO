@@ -23,6 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 INTERVALO_NARRACAO_S = 10
+ESTABILIDADE_NARRACAO_S = 15   # V534: um nivel so e narrado depois de ficar estavel por tanto tempo
 
 CAMPOS_LOG = [
     "horario", "evento", "horario_entrada", "lado", "entrada", "preco", "candle",
@@ -55,12 +56,14 @@ def linha_posicao(hora, lado_colorido, preco, resultado_colorido, stop, campos, 
 
 
 class MonitorAlertasSaida:
-    def __init__(self, alertas, pasta_logs=None, intervalo_s=INTERVALO_NARRACAO_S, habilitado=True):
+    def __init__(self, alertas, pasta_logs=None, intervalo_s=INTERVALO_NARRACAO_S, habilitado=True,
+                 estabilidade_s=ESTABILIDADE_NARRACAO_S):
         """alertas: lista de (nome, modulo) com avaliar_saida e (opcional) diagnosticar_saida."""
         self.alertas = list(alertas)
         self.total = len(self.alertas)
         self.pasta = Path(pasta_logs) if pasta_logs else None
         self.intervalo_s = intervalo_s
+        self.estabilidade_s = estabilidade_s
         self.habilitado = habilitado and self.total > 0
         self._zerar()
 
@@ -72,6 +75,8 @@ class MonitorAlertasSaida:
         self.nomes = []
         self.desde = None            # relogio real em que o nivel atual comecou
         self.ultima_fala = None      # relogio real da ultima narracao
+        self.nivel_falado = 0        # V534: ultimo nivel que a voz anunciou (a voz so segue o que ficou estavel)
+        self.mudou_em = None         # V534: relogio real da ultima mudanca de nivel
         self.nivel_max = 0
         self.sustentacao_max_s = 0
         self._ctx = None
@@ -116,9 +121,12 @@ class MonitorAlertasSaida:
             if self.chave[1] == chave[1]:
                 nivel_max, sust_max = self.nivel_max, self.sustentacao_max_s
                 lider_chave, narrados = self.lider_chave, {k for k in self._narrados if k[0] == chave[0]}
+                falado, ultima = self.nivel_falado, self.ultima_fala
                 self._zerar()
                 self.nivel_max, self.sustentacao_max_s = nivel_max, sust_max
                 self.lider_chave, self._narrados = lider_chave, narrados
+                # V534: o candle novo nao e motivo para anunciar tudo de novo; a voz lembra o que ja disse
+                self.nivel_falado, self.ultima_fala, self.mudou_em = falado, ultima, agora_real
             else:
                 self.encerrar(agora_real)
         self.chave = chave
@@ -158,29 +166,38 @@ class MonitorAlertasSaida:
         nomes = [n for n, _ in votos]
 
         fala = None
+        if self.mudou_em is None:
+            self.mudou_em = agora_real
         if nivel != self.nivel:
             anterior = self.nivel
             self.nivel, self.nomes = nivel, nomes
             self.desde = agora_real if nivel > 0 else None
+            self.mudou_em = agora_real
+            # o log registra cada mudanca na hora; so a VOZ espera o nivel estabilizar (V534)
             if nivel > anterior:
                 self.nivel_max = max(self.nivel_max, nivel)
                 self._gravar("SUBIU", agora_real)
-                fala = self._frase_subiu(votos, row, posicao_especulativa, contexto)
-                self.ultima_fala = agora_real
             elif nivel == 0:
                 self._gravar("DESFEZ", agora_real)
-                fala = "A exaustão se desfez."
-                self.ultima_fala = None
             else:  # caiu mas ainda ha votos
                 self._gravar("CAIU", agora_real)
-                self.ultima_fala = agora_real
         elif nivel > 0:
             self.nomes = nomes
-            seg = self.segundos(agora_real)
-            self.sustentacao_max_s = max(self.sustentacao_max_s, seg)
+            self.sustentacao_max_s = max(self.sustentacao_max_s, self.segundos(agora_real))
+        estavel = (agora_real - self.mudou_em).total_seconds() >= self.estabilidade_s
+        if nivel != self.nivel_falado:
+            if estavel:
+                if nivel > self.nivel_falado:
+                    fala = self._frase_subiu(votos, row, posicao_especulativa, contexto)
+                elif nivel == 0:
+                    fala = "A exaustão se desfez."
+                # caiu mas ainda ha votos: a voz so passa a seguir o novo nivel, sem falar
+                self.nivel_falado = nivel
+                self.ultima_fala = agora_real if nivel > 0 else None
+        elif nivel > 0:
             if self.ultima_fala is None or (agora_real - self.ultima_fala).total_seconds() >= self.intervalo_s:
                 self._gravar("SUSTENTA", agora_real)
-                fala = self._frase_sustenta(seg, contexto)
+                fala = self._frase_sustenta(self.segundos(agora_real), contexto)
                 self.ultima_fala = agora_real
         if fala_lider:
             fala = f"{fala} {fala_lider}" if fala else fala_lider

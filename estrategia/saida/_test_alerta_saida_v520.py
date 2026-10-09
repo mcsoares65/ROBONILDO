@@ -52,7 +52,7 @@ class MonitorTest(unittest.TestCase):
         self.a = _Alerta("Primeira condição")
         self.b = _Alerta("Segunda condição")
         self.pasta = tempfile.TemporaryDirectory()
-        self.m = MonitorAlertasSaida([("a", self.a), ("b", self.b)], pasta_logs=self.pasta.name)
+        self.m = MonitorAlertasSaida([("a", self.a), ("b", self.b)], pasta_logs=self.pasta.name, estabilidade_s=0)
         self.chave = ("10:15", "2026-10-08T10:00:00")
 
     def tearDown(self):
@@ -109,7 +109,7 @@ class MonitorTest(unittest.TestCase):
         self.av(0)
         self.av(10)
         fala = self.av(15, chave=("10:30", self.chave[1]))
-        self.assertIn("nível 1", fala)             # recomeca e fala de novo
+        self.assertIsNone(fala)                    # V534: candle novo nao repete o anuncio do mesmo nivel
         self.assertEqual(self.m.segundos(self.t0 + timedelta(seconds=15)), 0)
 
     def test_log_e_resumo(self):
@@ -131,12 +131,12 @@ class MonitorTest(unittest.TestCase):
         class Quebrado:
             def avaliar_saida(self, row, posicao):
                 raise ValueError("x")
-        m = MonitorAlertasSaida([("q", Quebrado()), ("a", self.a)], pasta_logs=None)
+        m = MonitorAlertasSaida([("q", Quebrado()), ("a", self.a)], pasta_logs=None, estabilidade_s=0)
         self.a.ligado = True
         self.assertIn("nível 1 de 2", m.avaliar({}, {}, self.chave, self.t0, _contexto()))
 
     def test_sem_titulares_de_alerta_fica_desligado(self):
-        m = MonitorAlertasSaida([], pasta_logs=None)
+        m = MonitorAlertasSaida([], pasta_logs=None, estabilidade_s=0)
         self.assertIsNone(m.avaliar({}, {}, self.chave, self.t0, _contexto()))
         self.assertEqual(m.texto_painel(self.t0), "")
 
@@ -160,7 +160,7 @@ class RadarTest(unittest.TestCase):
         self.t0 = datetime(2026, 10, 8, 10, 20, 0)
         self.a = _AlertaComRadar("Alfa", 0.50)
         self.b = _AlertaComRadar("Beta", 0.40)
-        self.m = MonitorAlertasSaida([("a", self.a), ("b", self.b)], pasta_logs=None)
+        self.m = MonitorAlertasSaida([("a", self.a), ("b", self.b)], pasta_logs=None, estabilidade_s=0)
         self.chave = ("10:15", "2026-10-08T10:00:00")
 
     def av(self, seg, chave=None):
@@ -216,7 +216,7 @@ class RadarTest(unittest.TestCase):
         self.assertIn("Nível 4/4 há 120s", linha)
 
     def test_alerta_sem_radar_proprio_vira_condicao_unica(self):
-        m = MonitorAlertasSaida([("x", _Alerta("texto"))], pasta_logs=None)
+        m = MonitorAlertasSaida([("x", _Alerta("texto"))], pasta_logs=None, estabilidade_s=0)
         m.avaliar({}, {}, self.chave, self.t0, _contexto())
         campos = m.campos_painel(self.t0)
         self.assertEqual((campos["confirmadas"], campos["total"], campos["pct"]), (0, 1, 0.0))
@@ -338,6 +338,63 @@ class TrailingVisivelTest(unittest.TestCase):
         self.assertIsNone(self.pr._frase_trailing(pos, 209000.0))
         recuperada = self._pos("v6", stop=207900.0, maxima=209000.0)          # stop ja acima da entrada, nunca medido
         self.assertIsNone(self.pr._frase_trailing(recuperada, 209000.0))
+
+
+class DebounceVozTest(unittest.TestCase):
+    """V534: a voz so anuncia mudanca de nivel que ficou estavel; o log continua registrando tudo."""
+    def setUp(self):
+        self.t0 = datetime(2026, 10, 8, 10, 20, 0)
+        self.a = _Alerta("Primeira condição")
+        self.pasta = tempfile.TemporaryDirectory()
+        self.m = MonitorAlertasSaida([("a", self.a)], pasta_logs=self.pasta.name, intervalo_s=60, estabilidade_s=15)
+        self.chave = ("10:15", "2026-10-08T10:00:00")
+
+    def tearDown(self):
+        self.pasta.cleanup()
+
+    def av(self, seg, chave=None):
+        return self.m.avaliar({}, {}, chave or self.chave, self.t0 + timedelta(seconds=seg), _contexto())
+
+    def test_oscilacao_curta_fica_muda(self):
+        self.a.ligado = True
+        self.assertIsNone(self.av(0))
+        self.a.ligado = False
+        self.assertIsNone(self.av(4))              # sumiu em 4 s: nada foi dito, nada a desfazer
+        self.a.ligado = True
+        self.assertIsNone(self.av(8))
+        self.a.ligado = False
+        self.assertIsNone(self.av(12))
+        for seg in range(13, 40):
+            self.assertIsNone(self.av(seg), seg)
+
+    def test_nivel_estavel_e_anunciado_uma_vez_e_depois_desfaz(self):
+        self.a.ligado = True
+        self.assertIsNone(self.av(0))
+        self.assertIsNone(self.av(14))
+        self.assertIn("nível 1", self.av(15))      # estavel por 15 s: fala
+        self.assertIsNone(self.av(20))
+        self.a.ligado = False
+        self.assertIsNone(self.av(25))             # sumiu ha 0 s
+        self.assertEqual(self.av(40), "A exaustão se desfez.")
+        self.assertIsNone(self.av(41))
+
+    def test_sustentada_so_a_cada_60_segundos(self):
+        self.a.ligado = True
+        self.av(0)
+        self.assertIsNotNone(self.av(15))
+        for seg in range(16, 75):
+            self.assertIsNone(self.av(seg), seg)
+        self.assertIn("sustentada", self.av(75))
+
+    def test_log_registra_cada_mudanca_mesmo_sem_voz(self):
+        self.a.ligado = True
+        self.av(0)
+        self.a.ligado = False
+        self.av(4)
+        arquivo = Path(self.pasta.name) / "alertas_saida_2026-10-08.csv"
+        with arquivo.open(encoding="utf-8") as f:
+            eventos = [l["evento"] for l in csv.DictReader(f, delimiter=";")]
+        self.assertEqual(eventos, ["SUBIU", "DESFEZ"])
 
 
 class CalmaTest(unittest.TestCase):
