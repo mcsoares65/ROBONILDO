@@ -1,0 +1,173 @@
+ATA AK — PROPOSTAS DE LUCRATIVIDADE E PARIDADE DO TRAILING NA V541
+Autoria: Manus (IA), em sessão solicitada por Marcio Soares.
+Data: 09/10/2026. Revisão humana: pendente.
+Main consultada: d71dcea0e6a8030530604659ff1eb9192e0d0e7f (V541).
+Documento normativo: compliance.md da main atual, relido.
+Atas consultadas na revisão: AE (desmembramento), AH (escalação e saídas),
+AI (integridade dos candles), AJ (complemento WAD). Consultado também o PR #139,
+que promoveu saida_trailing_pico_v02. Esta ata não reescreve nenhuma decisão anterior.
+
+1. OBJETIVO E ESCOPO
+-------------------
+Priorizar dinheiro líquido preservando capital: Acumulado = resultado - abs(drawdown).
+O dono pediu sugestões de melhoria e, depois, seu registro no conselho.
+Esta entrega adiciona SOMENTE conselho/2026-10-09-AK.txt.
+Não modifica motor.py, classificacao.py, principal.py, estratégias, titulares,
+configuração, prioridade de entrada nem autoridade dos alertas.
+Não troca o capitão, não envia ordens e não altera a produção.
+Nenhum novo ranking, backtest financeiro ou teste em Validação/Holdout foi rodado.
+Não há promessa ou estimativa em reais de melhoria nesta ata.
+
+2. PRIORIDADE 1 — PARIDADE DO PREÇO EXECUTÁVEL DO TRAILING
+--------------------------------------------------------
+Capitão vigente: estrategia/saida/titular/capitao/saida_trailing_pico_v02.py.
+Regra: stop estrutural inicial; sem alvo fixo; depois de pico >= 1 R,
+trailing a 0,15 R do pico. Atualização somente no fechamento do candle.
+A V519 acertou ao fazer stop novo valer somente depois da verificação dos
+extremos do candle que o produziu. Não se propõe reverter essa causalidade.
+
+Achado confirmado em teste sintético com o capitão REAL e os métodos originais
+verificar_saida, verificar_saida_continua e _aplicar_reconfiguracao da V541:
+
+COMPRA
+- Entrada: 100; stop inicial: 90; R: 10.
+- Cinco candles que terminam no sinal têm mínimo 90 e máximo 110.
+- Primeiro candle após entrada: máxima 115, mínima 105, fechamento 110.
+- Stop antigo 90 não é atingido; novo stop = 115 - 0,15 * 10 = 113,5.
+- Nova leitura contínua a 110: verificar_saida_continua retorna (STOP, 110).
+- Próximo candle histórico: máxima 110, mínima 104, fechamento 105.
+  verificar_saida retorna (STOP, 113,5), embora a máxima do candle seja 110.
+
+VENDA (espelho)
+- Entrada: 100; stop inicial: 110; R: 10.
+- Primeiro candle após entrada: máxima 95, mínima 85, fechamento 90.
+- Novo stop = 85 + 0,15 * 10 = 86,5.
+- Nova leitura contínua a 90: retorno (STOP, 90).
+- Próximo candle histórico: máxima 96, mínima 90, fechamento 95.
+  verificar_saida retorna (STOP, 86,5), abaixo da mínima desse candle.
+
+Classificação da evidência: reprodução determinística de contrato, NÃO dados de
+mercado, NÃO resultado financeiro. Dois cenários simétricos, nenhuma otimização.
+Não sabemos a frequência, o impacto em reais nem se muda o vencedor no dataset.
+A conclusão é que o replay pode pagar um stop recém-ativado já atravessado a um
+preço indisponível, enquanto a checagem contínua devolve o preço observado.
+Gaps contra stops antigos também exigem convenção de execução explícita.
+
+Proposta de correção/medição (ainda não implementada):
+- Preservar a ativação causal, sem retroagir ao candle formador do pico.
+- Modelar primeiro preço disponível após a ativação quando o stop já estiver
+  atravessado; distinguir toque normal intrabar de gap/preço já além do nível.
+- Com OHLC 15 min, declarar convenção da próxima abertura e incerteza intrabar;
+  com trilhas 1 min/ticks, medir sequência temporal e preço após a ativação.
+- Não supor execução perfeita no stop. Fixar cenários de derrapagem e custos de
+  entrada/saída ANTES da comparação.
+- Recomparar baseline, trailing V1 e V2 com mesmo motor, período e custos,
+  exportando resultado, drawdown, capital mínimo, dias e Acumulado.
+- Correção pode reduzir lucro reportado: sua utilidade é selecionar pelo lucro
+  executável, não tornar o relatório mais bonito.
+
+Escopo exato proposto para FUTURA PR de correção:
+  motor.py
+  classificacao.py
+  estrategia/saida/_test_paridade_stop_v01.py (novo, teste interno)
+  changelog.md
+  nova ata datada do conselho com convenções/resultados (nome a reservar na ocasião).
+Não inclui arquivo dentro de titular/. O teste precisa cobrir os dois lados,
+stop novo válido, stop novo já atravessado, gap no stop antigo e toque intrabar
+normal, sem alterar fórmulas de entrada/saída.
+
+Observação operacional: auditor_execucao.py já declara que preço DDE observado
+não confirma fill de corretora. principal.py usa o preço devolvido pelo motor
+no resultado interno. Portanto P&L interno, preço DDE e resultado confirmado
+por extrato são três referências que não devem ser confundidas.
+
+3. PRIORIDADE 2 — MEDIR VALOR INCREMENTAL DOS ALERTAS DE EXAUSTÃO
+-------------------------------------------------------------
+O projeto já grava alertas_saida_AAAA-MM-DD.csv, caminho_pontos_*.csv,
+caminho_operacoes.csv e auditoria_execucao_*.csv. analisar_caminhos.py já
+simula giveback percentual. A proposta não é duplicar esse simulador nem
+acrescentar osciladores: é verificar os alertas e sua duração prospectivamente.
+
+Proposta:
+- Unir logs por id/horario_entrada e tempo da observação.
+- Depois de cada alerta, medir resultado adicional até saída efetiva,
+  devolução evitável, ganho abandonado por fechar cedo e custo.
+- Comparar operações no mesmo estágio (ganho em R, duração e horário), com
+  e sem alerta; alertas podem simplesmente marcar trades já deteriorados.
+- Usar apenas duração CONHECIDA naquele instante, nunca a sustentação máxima
+  ex post ou informações futuras para decidir retroativamente.
+- Contagem de alertas correlacionados não é probabilidade calibrada de reversão.
+- Pré-registrar regra candidata, medir em sombra e conferir fora da amostra.
+  Os alertas continuam sem autoridade para fechar, como estabelece a Regra 18.
+
+Escopo proposto para FUTURA entrega:
+  analisar_alertas_saida.py (novo, somente leitura).
+Se o inventário dos logs mostrar campos faltantes, eventual extensão em
+alerta_saida.py/caminho_operacao.py deverá ser declarada em PR separada.
+Nenhuma mudança no capitão ou empilhamento de regras é proposta aqui.
+
+4. PRIORIDADE 3 — CONTRIBUIÇÃO MARGINAL DAS ENTRADAS COM O CAPITÃO ATUAL
+--------------------------------------------------------------------
+O ranking C002 que o dono havia enviado usava baseline. A posição individual
+nele não deve ser transportada automaticamente para o trailing V2.
+Uma entrada pode lucrar sozinha mas prejudicar o time por ocupar a posição
+antes de outra oportunidade melhor. A Regra 17 pede prova fora da amostra.
+
+Proposta de comparação, não executada nesta revisão:
+- Time completo, cada entrada sozinha e time sem cada componente.
+- Mesmo motor, saída V2, dataset, custos, prioridade e regras de risco.
+- Medir delta de Acumulado por pregão, concentração e oportunidade perdida
+  por posição já ocupada, além de resultado financeiro de cada componente.
+- Não escolher prioridade por seu melhor resultado no mesmo histórico.
+- Congelar a decisão e conferir prospectivamente. Remover/promover titular
+  exige decisão explícita do dono e o fluxo do compliance.
+- Não aumentar contratos para compensar expectativa ainda incerta.
+
+Escopo proposto para FUTURA entrega diagnóstica:
+  classificacao.py (relatório comparativo; não muda escalacao.py).
+  testes internos na área de laboratório permitida, caminho a declarar antes da implementação.
+Não altera prioridade, escalacao.py ou qualquer pasta titular/ nesta etapa.
+
+5. PENDÊNCIA TÉCNICA SECUNDÁRIA — R APÓS RECUPERAÇÃO DE HISTÓRICO
+--------------------------------------------------------------
+O capitão reconstrói stop inicial/R pela posição relativa na janela de
+row[ohlc_recentes] e por candles_decorridos. Em sequência íntegra isso preserva
+a origem. Se candles ausentes forem inseridos depois de uma posição já aberta,
+vale verificar se a contagem ainda aponta o candle original.
+Este risco NÃO foi reproduzido nesta revisão e não deve ser anunciado como bug.
+Expor stop/risco inicial ao cartucho seria mudança de contrato: exige proposta
+própria e atualização da documentação, não alteração silenciosa.
+
+6. LIMITES, PROVENIÊNCIA E DECISÃO RECOMENDADA
+--------------------------------------------
+- Nenhum dataset financeiro foi utilizado nesta revisão. Período dos casos
+  sintéticos é irrelevante para retornos; são fixtures de contrato.
+- Evidência financeira do PR #139/docstring: 2020 a 02/10/2026, 15 minutos,
+  sem slippage. É evidência publicada por outro participante, NÃO replay novo
+  ou confirmação independente do Manus. Os anos já vistos não viram Holdout
+  por serem divididos novamente. Esta ata não refaz sua seleção de parâmetros.
+- Ausência de exportações novas de trilhas/fills no repositório consultado impede
+  quantificar lucro real e frequência da divergência.
+- Reprodução da revisão anterior salva fora do repositório:
+  /home/ubuntu/revisao_v541/reproduzir_paridade_trailing.py
+  /home/ubuntu/revisao_v541/fontes/motor.py
+  /home/ubuntu/revisao_v541/fontes/capitao.py
+  Esses caminhos são apoio local, não requisito para o robô nem asset versionado.
+  Os métodos e capitão são rastreáveis pelo commit desta ata; o cenário da seção
+  2 especifica entradas e saídas esperadas de forma independente desses arquivos.
+- Variações de estratégias testadas nesta revisão: ZERO. Reprodução contratual:
+  uma hipótese de paridade, dois lados espelhados, sem pesquisa de parâmetros.
+- Nenhum teste oficial em Validação/Holdout, nenhuma ordem real, nenhuma troca
+  de titular. Esta entrega só registra a proposta.
+
+POSICIONAMENTO DO MANUS: começar pela prioridade 1. Preservar a descoberta do
+trailing, mas confirmar seu ganho com preço executável e custo real antes de
+apertá-lo de novo. Em seguida, medir alertas e contribuição marginal das entradas.
+Não alegar nova estratégia vencedora, lucro extra ou necessidade de trocar o
+capitão sem a comparação causal e prospectiva.
+
+Referências fixadas:
+https://github.com/mcsoares65/ROBONILDO/blob/d71dcea0e6a8030530604659ff1eb9192e0d0e7f/motor.py
+https://github.com/mcsoares65/ROBONILDO/blob/d71dcea0e6a8030530604659ff1eb9192e0d0e7f/principal.py
+https://github.com/mcsoares65/ROBONILDO/blob/d71dcea0e6a8030530604659ff1eb9192e0d0e7f/estrategia/saida/titular/capitao/saida_trailing_pico_v02.py
+https://github.com/mcsoares65/ROBONILDO/pull/139
