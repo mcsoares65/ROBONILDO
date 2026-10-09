@@ -160,63 +160,6 @@ def _frase_trailing(posicao, preco_atual: float, proximo_fechamento=None):
     return None
 
 
-_CALMA = {}   # horario_entrada -> {"pico_preco": float, "ultima": datetime|None, "n": int}
-CALMA_INTERVALO_SEGUNDOS = 120     # no maximo uma frase de calma a cada 120 s de relogio real
-CALMA_RECUO_MIN_PCT = 15.0         # recuo (em pontos de saude) desde o pico para falar
-CALMA_PICO_MIN_PCT = 20.0          # o pico de saude precisa ter passado disso para valer falar de recuo
-
-
-def _frase_calma(posicao, preco_atual: float, agora_real, nivel_exaustao: int = 0):
-    """V532: frase de serenidade, so quando os FATOS sustentam o plano: a operacao recuou mas o stop esta
-    longe do preco e nao ha exaustao confirmada por 2 ou mais alertas. Nunca promete resultado; V533: frases curtas e basicas, sem numeros. Limitada a uma frase por CALMA_INTERVALO_SEGUNDOS (120 s).
-    Devolve a frase ou None. Fala so em posicao sem alvo (capitao trailing) e com 1 R medido."""
-    if posicao.alvo is not None or posicao.stop is None:
-        return None
-    risco = _risco_inicial_pts(posicao)
-    if risco is None:
-        return None
-    direcao = 1 if posicao.lado == "COMPRA" else -1
-    estado = _CALMA.setdefault(posicao.horario_entrada, {"pico_preco": preco_atual, "ultima": None, "n": 0})
-    if (preco_atual - estado["pico_preco"]) * direcao > 0:
-        estado["pico_preco"] = preco_atual
-    if nivel_exaustao >= 2:                       # exaustao confirmada: nao e hora de tranquilizar
-        return None
-    if estado["ultima"] is not None and (agora_real - estado["ultima"]).total_seconds() < CALMA_INTERVALO_SEGUNDOS:
-        return None
-    progresso = _progresso_posicao(posicao, preco_atual, risco)           # -1 .. +1
-    pico_pct = max(0.0, (estado["pico_preco"] - posicao.entrada) * direcao / risco * 100.0)
-    saude_pct = progresso * 100.0
-    recuo_pts = (estado["pico_preco"] - preco_atual) * direcao
-    dist_stop = (preco_atual - posicao.stop) * direcao
-    resultado = _resultado_liquido_reais(posicao, preco_atual)
-    frase = None
-    if resultado > 0 and pico_pct >= CALMA_PICO_MIN_PCT and pico_pct - saude_pct >= CALMA_RECUO_MIN_PCT \
-            and dist_stop > 0.25 * risco:
-        garantido = (posicao.stop - posicao.entrada) * direcao * cfg.VALOR_PONTO_REAIS \
-            - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
-        opcoes = [
-            "Fique tranquilo, mantenha a operação aberta.",
-            "Respire e siga o plano.",
-            "Mantenha a calma. O recuo é normal.",
-        ]
-        if garantido > 0:
-            opcoes.append("Fique tranquilo. O lucro já está protegido.")
-        frase = opcoes[estado["n"] % len(opcoes)]
-    elif resultado < 0 and saude_pct > -60.0:
-        perda_stop = (posicao.entrada - posicao.stop) * direcao * cfg.VALOR_PONTO_REAIS \
-            + cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
-        if perda_stop > 0 and estado["pico_preco"] != preco_atual:
-            opcoes = [
-                "Fique tranquilo. O risco já está definido.",
-                "Mantenha a calma e o plano.",
-            ]
-            frase = opcoes[estado["n"] % len(opcoes)]
-    if frase:
-        estado["ultima"] = agora_real
-        estado["n"] += 1
-    return frase
-
-
 def _progresso_posicao(posicao, preco_atual: float, risco_ref_pts=None) -> float:
     """
     Progresso da posicao aberta, de -1.0 (no stop) a +1.0 (no alvo), em
@@ -1595,10 +1538,6 @@ def rodar():
                     fala_trailing = _frase_trailing(pos, preco, proximo_fechamento)
                     if fala_trailing:
                         narrar(fala_trailing)
-                    else:
-                        fala_calma = _frase_calma(pos, preco, agora_real, monitor_alertas.nivel)
-                        if fala_calma:
-                            narrar(fala_calma, descartavel=True)
                     quadro_exaustao = _quadro_proximidade(
                         campos_exaustao["progresso"], segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
                     )
@@ -1662,6 +1601,8 @@ def rodar():
                         if bloqueio_horario_radar
                         else f"Falta {detalhe_radar:<29}"
                     )
+                    if oportunidade_prioritaria and not itens:   # V540: nada falta -> "Falta nenhuma" se contradizia
+                        campo_detalhe = f"{'Confirmada: aguarda o fechamento':<35}"
                     sustentacao = ""
                     if radar_100_desde is not None and progresso_radar >= 1.0:
                         segundos_100 = max(0, int((agora_real - radar_100_desde).total_seconds()))
@@ -1998,8 +1939,8 @@ def rodar():
                     distancia_fechamento = abs(candle_fechado.fechamento - ma21_fechamento)
                     print(f"[{agora}] [CANDLE FECHADO] Fechamento={candle_fechado.fechamento} "
                           f"MA21={ma21_fechamento:.2f} MA50={ma50_fechamento:.2f} "
-                          f"Tendência={tendencia_fechamento} Distância={distancia_fechamento:.1f}pts "
-                          f"(limite {cfg.TOLERANCIA_TOQUE_PONTOS})")
+                          f"Tendência={tendencia_fechamento} "
+                          f"Fechamento a {distancia_fechamento:.0f} pts da MA21")   # V541: sem o "(limite 40)" antigo
 
                 sinal = gestor.avaliar_candle(historico_candles)
                 sinal_auditoria = sinal

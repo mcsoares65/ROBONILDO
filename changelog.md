@@ -4,6 +4,18 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V541 — mensagens de distância mais claras
+
+Pedido do dono (09/10/2026): "Falta dist. MA21 91 (máx. 90)" confundia, porque "Falta" parecia quanto falta e 91 contra 90 parecia erro de 1 ponto. **Retomada MA21:** "Falta aproximar 1 pt da MA21"; na voz, "Ainda aguardamos o preço chegar mais perto da Média Móvel 21. Hoje está 1 ponto acima do limite." **MACD + Estocástico:** "Falta afastamento 128/200 pts" virou "Falta afastar 72 pts da MA21". **Candle fechado:** "Distância=336.0pts (limite 40)" virou "Fechamento a 336 pts da MA21", porque o "limite 40" era a tolerância antiga de toque, que nenhuma estratégia usa mais. Só texto; os sinais não mudam (conferido em 4.000 leituras reais de 2026).
+
+---
+
+## V540 — sem falas de calma e sem "Falta nenhuma"
+
+Pedido do dono (09/10/2026): as falas de calma ("Fique tranquilo, mantenha a operação aberta", "Mantenha a calma e o plano" etc., criadas na V532 e encurtadas na V533) irritavam mais do que ajudavam e foram removidas por completo. As falas do trailing (quando arma e quando assume o stop) e a narração periódica da posição continuam. No painel de pré-operação, quando todas as condições estão confirmadas, a coluna de detalhe passa a dizer "Confirmada: aguarda o fechamento" em vez de "Falta nenhuma". Só texto e voz; nenhuma decisão muda.
+
+---
+
 ## V539 — Saída de Extremo fala em "pavio"
 
 Pedido do dono (09/10/2026): "Falta corpo 90% (máx. 70%)" era confuso. A mesma condição (corpo de no máximo 70% da amplitude) agora é dita pelo lado do pavio. No painel: "Falta pavio: tem 10%, precisa 30%". Na voz: "Ainda aguardamos o candle mostrar mais pavio. Hoje tem 10 por cento e precisa de 30." O valor de "tem" arredonda para baixo, para nunca parecer que já chegou. Só texto; a condição e o sinal não mudam.

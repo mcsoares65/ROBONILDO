@@ -381,6 +381,46 @@ class ConsensoTimeTest(unittest.TestCase):
         self.assertEqual(item["detalhe"], "estoc. cruzar 80 para baixo")
 
 
+class DistanciaTextoTest(unittest.TestCase):
+    """V541: mensagens de distancia dizem quanto FALTA andar, nao dois numeros soltos."""
+    @staticmethod
+    def _mod(nome):
+        import importlib.util
+        caminho = RAIZ / "estrategia" / "entrada" / "titular" / f"{nome}.py"
+        spec = importlib.util.spec_from_file_location(nome + "_teste_dist", caminho)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    @staticmethod
+    def _row(distancia):
+        from datetime import datetime as _dt
+        return {"trend": 1, "dt": _dt(2026, 10, 9, 17, 45), "MA21": 208958.0, "MA50": 208268.0, "atr_relativo": 0.9,
+                "stoch": 50.0, "stoch_prev": 49.0, "stoch_subindo": True, "stoch_descendo": False,
+                "distancia_ma21": distancia, "Maximo": 209100.0, "Minimo": 208900.0, "Abertura": 208950.0,
+                "Fechamento": 209045.0, "macd": 1.0, "macd_signal": 2.0, "macd_cross_up": False,
+                "macd_cross_down": False}
+
+    def test_retomada_diz_quanto_aproximar(self):
+        mod = self._mod("entrada_retomada_ma21_v01")
+        item = mod.diagnosticar_oportunidades(self._row(91.0))[0]
+        self.assertEqual(item["detalhe"], "aproximar 1 pt da MA21")
+        self.assertEqual(item["faltantes"][0], "o preço chegar mais perto da MA21. Hoje está 1 ponto acima do limite")
+        item = mod.diagnosticar_oportunidades(self._row(546.0))[0]
+        self.assertEqual(item["detalhe"], "aproximar 456 pts da MA21")
+        self.assertLessEqual(len("Falta " + item["detalhe"]), 35)
+        item = mod.diagnosticar_oportunidades(self._row(86.7))[0]            # dentro do limite: a condicao nao falta
+        self.assertNotIn("aproximar", item["detalhe"])
+
+    def test_macd_diz_quanto_afastar(self):
+        mod = self._mod("entrada_macd_estocastico_v01")
+        item = mod.diagnosticar_oportunidades(self._row(128.0))[0]
+        self.assertEqual(item["detalhe"], "afastar 72 pts da MA21")
+        self.assertEqual(item["faltantes"][0], "o preço se afastar mais da MA21. Faltam 72 pontos")
+        item = mod.diagnosticar_oportunidades(self._row(199.5))[0]
+        self.assertEqual(item["detalhe"], "afastar 1 pt da MA21")
+
+
 class PavioTextoTest(unittest.TestCase):
     """V539: a condicao do corpo e dita pelo lado do pavio, no painel e na voz."""
     @staticmethod
@@ -505,87 +545,6 @@ class DebounceVozTest(unittest.TestCase):
         with arquivo.open(encoding="utf-8") as f:
             eventos = [l["evento"] for l in csv.DictReader(f, delimiter=";")]
         self.assertEqual(eventos, ["SUBIU", "DESFEZ"])
-
-
-class CalmaTest(unittest.TestCase):
-    """V532: frase de serenidade so quando os fatos sustentam o plano; limitada no tempo; calada na exaustao."""
-    @classmethod
-    def setUpClass(cls):
-        cls.pr = importlib.import_module("principal")
-
-    def _pos(self, hora, stop=205780.0):
-        return importlib.import_module("types").SimpleNamespace(
-            lado="COMPRA", entrada=207050.0, stop=stop, alvo=None, horario_entrada=hora,
-            maxima_desde_entrada=0.0, minima_desde_entrada=0.0)
-
-    def setUp(self):
-        self.t0 = datetime(2026, 10, 8, 14, 20, 0)
-
-    def test_recuo_no_lucro_com_stop_longe_fala_calma_sem_prometer(self):
-        pos = self._pos("c1")
-        self.pr._risco_inicial_pts(pos)
-        self.assertIsNone(self.pr._frase_calma(pos, 208250.0, self.t0))          # no pico: nada a dizer
-        fala = self.pr._frase_calma(pos, 207950.0, self.t0 + timedelta(seconds=5))   # recuou 300 pts, segue no lucro
-        self.assertIsNotNone(fala)
-        self.assertLessEqual(len(fala), 60)                                       # V533: frase curta e basica
-        self.assertFalse(any(ch.isdigit() for ch in fala))
-        for proibida in ("garant", "certeza", "vai subir", "jogo", "jogador", "porta", "em campo"):
-            self.assertNotIn(proibida, fala.lower())
-
-    def test_limita_a_uma_frase_por_intervalo_e_varia_o_texto(self):
-        pos = self._pos("c2")
-        self.pr._risco_inicial_pts(pos)
-        self.pr._frase_calma(pos, 208250.0, self.t0)
-        f1 = self.pr._frase_calma(pos, 207950.0, self.t0 + timedelta(seconds=5))
-        self.assertIsNone(self.pr._frase_calma(pos, 207940.0, self.t0 + timedelta(seconds=30)))   # < 120 s
-        f2 = self.pr._frase_calma(pos, 207940.0, self.t0 + timedelta(seconds=130))
-        self.assertIsNotNone(f2)
-        self.assertNotEqual(f1, f2)
-
-    def test_calada_com_exaustao_confirmada_por_dois_alertas(self):
-        pos = self._pos("c3")
-        self.pr._risco_inicial_pts(pos)
-        self.pr._frase_calma(pos, 208250.0, self.t0)
-        self.assertIsNone(self.pr._frase_calma(pos, 207950.0, self.t0 + timedelta(seconds=5), nivel_exaustao=2))
-        self.assertIsNotNone(self.pr._frase_calma(pos, 207950.0, self.t0 + timedelta(seconds=6), nivel_exaustao=1))
-
-    def test_calada_quando_ha_pouco_pico_ou_stop_colado(self):
-        pos = self._pos("c4")
-        self.pr._risco_inicial_pts(pos)
-        self.pr._frase_calma(pos, 207150.0, self.t0)                              # pico de so ~8%
-        self.assertIsNone(self.pr._frase_calma(pos, 207070.0, self.t0 + timedelta(seconds=5)))
-        colado = self._pos("c5", stop=207800.0)                                    # stop a 100 pts do preco (< 0,25 R)
-        colado.entrada = 207050.0
-        self.pr._RISCO_INICIAL_PTS["c5"] = 1270.0
-        self.pr._frase_calma(colado, 208300.0, self.t0)
-        self.assertIsNone(self.pr._frase_calma(colado, 207900.0, self.t0 + timedelta(seconds=5)))
-
-    def test_perda_pequena_dentro_do_stop_diz_o_risco_ja_definido(self):
-        pos = self._pos("c6")
-        self.pr._risco_inicial_pts(pos)
-        self.pr._frase_calma(pos, 207050.0, self.t0)
-        fala = self.pr._frase_calma(pos, 206800.0, self.t0 + timedelta(seconds=5))        # -250 pts, longe do stop
-        self.assertIsNotNone(fala)
-        self.assertTrue("risco" in fala.lower())
-        self.assertIsNone(self.pr._frase_calma(pos, 205900.0, self.t0 + timedelta(seconds=300)))  # perto do stop: cala
-
-    def test_com_stop_acima_da_entrada_cita_o_lucro_garantido(self):
-        pos = self._pos("c7")
-        self.pr._risco_inicial_pts(pos)
-        self.pr._frase_calma(pos, 209000.0, self.t0)
-        pos.stop = 208100.0                                                       # trailing ja assumiu
-        achadas = []
-        for i in range(4):
-            achadas.append(self.pr._frase_calma(pos, 208600.0, self.t0 + timedelta(seconds=130 * (i + 1))))
-        self.assertTrue(any(a and "protegido" in a for a in achadas))
-
-    def test_com_alvo_ou_sem_1r_medido_fica_calada(self):
-        pos = self._pos("c8")
-        pos.alvo = 210000.0
-        self.pr._risco_inicial_pts(pos)
-        self.assertIsNone(self.pr._frase_calma(pos, 208250.0, self.t0))
-        sem = self._pos("c9", stop=207900.0)
-        self.assertIsNone(self.pr._frase_calma(sem, 208250.0, self.t0))
 
 
 class EstruturaTest(unittest.TestCase):

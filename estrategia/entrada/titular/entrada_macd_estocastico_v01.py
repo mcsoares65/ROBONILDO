@@ -25,6 +25,7 @@ motor, não realiza I/O, não mantém estado e não importa módulos do projeto
 (Regra 3).
 """
 
+import math
 
 MIN_DISTANCIA_MA21 = 200.0
 VARIACAO_MINIMA_ESTOCASTICO = 4.5
@@ -84,8 +85,12 @@ def diagnosticar_oportunidades(row):
         (tendencia != 0, "definição de tendência"),
         (not (240.0 <= amplitude <= 340.0), "amplitude fora da faixa fraca"),
     ]
+    # V541: quanto o preco ainda precisa se afastar da MA21 (so texto de painel e voz; o sinal nao muda)
+    falta_afastar = max(1, int(math.ceil(MIN_DISTANCIA_MA21 - row["distancia_ma21"])))
+    rotulo_afastamento = (f"o preço se afastar mais da MA21. Faltam {falta_afastar} "
+                          f"{'ponto' if falta_afastar == 1 else 'pontos'}")
     condicoes = [
-        (row["distancia_ma21"] > MIN_DISTANCIA_MA21, "afastamento superior a 200 pontos"),
+        (row["distancia_ma21"] > MIN_DISTANCIA_MA21, rotulo_afastamento),
         (variacao_stoch >= VARIACAO_MINIMA_ESTOCASTICO, "variação mínima do estocástico"),
         (bool(direcao_stoch), "estocástico na direção da tendência"),
         (bool(cruzamento_macd), "cruzamento do MACD"),
@@ -112,8 +117,8 @@ def diagnosticar_oportunidades(row):
     faltante = faltantes[0] if faltantes else "nenhuma"
     detalhe = faltante
     bloqueio_horario = False   # V510: a estratégia não tem mais janela de horário bloqueada
-    if faltante == "afastamento superior a 200 pontos":
-        detalhe = f"afastamento {row['distancia_ma21']:.0f}/200 pts"
+    if faltante == rotulo_afastamento:
+        detalhe = f"afastar {falta_afastar} {'pt' if falta_afastar == 1 else 'pts'} da MA21"   # V541 (antes: "afastamento 128/200 pts")
     elif faltante == "estocástico na direção da tendência":
         detalhe = "estoc. a favor da tendência"   # V516: cabe na coluna do painel (29)
     elif faltante == "variação mínima do estocástico":
