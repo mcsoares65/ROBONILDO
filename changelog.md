@@ -4,6 +4,16 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V523 — painel da saída no padrão da Escala de entrada
+
+Pedido do dono (09/10/2026): com a operação aberta, ver a análise dos titulares de saída como a Escala mostra na entrada.
+- **Cada alerta de exaustão** ganhou `diagnosticar_exaustao(row, posicao)`: condições confirmadas (n/N), o que falta, progresso fino e sinal, no mesmo formato do radar de entrada. O lucro mínimo de 0,5 R é elegibilidade, como o horário na entrada.
+- **Linha única da posição** (sem alvo): `hora lado | preço | Res | Stop | Exaust. <alerta na frente> | n/N | Falta … | % ■`, 120 colunas. Com o alerta confirmado, no lugar do `Falta` aparece `Nível n/4 há Ns`. O alerta da frente muda só se outro passar por mais de 5 pontos (mesma histerese da Escala). Com alvo definido vale a linha antiga.
+- **Voz:** `O alerta de exaustão X assumiu a prioridade, com 1 de 2 condições. Ainda aguardamos …`, uma vez por candle e por alerta, a partir de 70%. A narração de nível (a cada 10 s) continua.
+- Nenhuma decisão de entrada ou saída muda.
+
+---
+
 ## V522 — painel: linhas que quebravam no console
 
 Visto pelo dono no replay de 08/10: as linhas da Escala com o aviso de dados aproximados passavam de 140 colunas e quebravam.

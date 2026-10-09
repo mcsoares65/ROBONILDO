@@ -31,6 +31,20 @@ CAMPOS_LOG = [
 ]
 
 
+def linha_posicao(hora, lado_colorido, preco, resultado_colorido, stop, campos, quadro):
+    """Linha do painel com a posicao aberta, no padrao da Escala de entrada (120 colunas visiveis):
+    `hora lado | preco | Res | Stop | Exaust. <alerta> | n/N | Falta ... | % quadro`.
+    Com o alerta confirmado, o lugar do 'Falta' mostra o nivel e o 'ha Ns'.
+    `resultado_colorido` ja vem formatado (+7.2f) e `stop` como texto de 11 colunas."""
+    if campos["ok"]:
+        meio = f"Nível {campos['nivel']}/{campos['total_alertas']} há {campos['segundos']}s".ljust(26)
+    else:
+        meio = f"Falta {str(campos['detalhe'])[:20]:<20}"
+    return (f"[{hora}] {lado_colorido} | {preco:6.0f} | Res {resultado_colorido} | {stop} | "
+            f"Exaust. {str(campos['nome'])[:11]:<11} | {campos['confirmadas']}/{campos['total']} | "
+            f"{meio} | {campos['pct']:3.0f}% {quadro}")
+
+
 class MonitorAlertasSaida:
     def __init__(self, alertas, pasta_logs=None, intervalo_s=INTERVALO_NARRACAO_S, habilitado=True):
         """alertas: lista de (nome, modulo) com avaliar_saida e (opcional) diagnosticar_saida."""
@@ -52,6 +66,10 @@ class MonitorAlertasSaida:
         self.nivel_max = 0
         self.sustentacao_max_s = 0
         self._ctx = None
+        self.itens = []              # radar de todos os alertas (mesmo formato do radar de entrada)
+        self.lider = None            # alerta na frente do painel
+        self.lider_chave = None      # histerese: quem estava na frente na leitura anterior
+        self._narrados = set()       # (candle, alerta) que ja assumiu a prioridade na voz
 
     def segundos(self, agora_real):
         if self.nivel <= 0 or self.desde is None:
@@ -88,8 +106,10 @@ class MonitorAlertasSaida:
             # candle novo (ou posicao nova): comeca do zero. A posicao so muda de verdade em encerrar().
             if self.chave[1] == chave[1]:
                 nivel_max, sust_max = self.nivel_max, self.sustentacao_max_s
+                lider_chave, narrados = self.lider_chave, {k for k in self._narrados if k[0] == chave[0]}
                 self._zerar()
                 self.nivel_max, self.sustentacao_max_s = nivel_max, sust_max
+                self.lider_chave, self._narrados = lider_chave, narrados
             else:
                 self.encerrar(agora_real)
         self.chave = chave
@@ -97,13 +117,34 @@ class MonitorAlertasSaida:
         self._ctx = contexto
 
         votos = []
+        itens = []
         for nome, modulo in self.alertas:
+            voto = False
             try:
                 resposta = modulo.avaliar_saida(row, posicao_especulativa)
+                voto = isinstance(resposta, dict) and bool(resposta.get("fechar", False))
             except Exception:
-                continue
-            if isinstance(resposta, dict) and bool(resposta.get("fechar", False)):
+                pass
+            if voto:
                 votos.append((nome, modulo))
+            lista = []
+            diag = getattr(modulo, "diagnosticar_exaustao", None)
+            if callable(diag):
+                try:
+                    lista = diag(row, posicao_especulativa) or []
+                except Exception:
+                    lista = []
+            if not lista:   # alerta sem radar proprio: uma condicao unica, 100% se sinaliza
+                lista = [{"estrategia": nome, "prioridade": 99, "sinal": 1 if voto else 0,
+                          "confirmadas": 1 if voto else 0, "total": 1,
+                          "progresso": 1.0 if voto else 0.0,
+                          "faltantes": [] if voto else ["condições do alerta"],
+                          "detalhe": "" if voto else "aguardando condições"}]
+            for item in lista:
+                item = dict(item)
+                item["alerta"] = nome
+                itens.append(item)
+        fala_lider = self._atualizar_radar(itens, chave)
         nivel = len(votos)
         nomes = [n for n, _ in votos]
 
@@ -132,7 +173,57 @@ class MonitorAlertasSaida:
                 self._gravar("SUSTENTA", agora_real)
                 fala = self._frase_sustenta(seg, contexto)
                 self.ultima_fala = agora_real
+        if fala_lider:
+            fala = f"{fala} {fala_lider}" if fala else fala_lider
         return fala
+
+    # ---------- radar (mesmo padrao da Escala de entrada) ----------
+    def _atualizar_radar(self, itens, chave):
+        """Escolhe o alerta da frente (com histerese de 5 pontos, como na entrada) e devolve a frase
+        de 'assumiu a prioridade' (uma vez por candle e por alerta, a partir de 70%)."""
+        itens.sort(key=lambda i: (-float(i.get("progresso", 0.0)), int(i.get("prioridade", 99))))
+        lider = itens[0] if itens else None
+        if lider is not None and self.lider_chave is not None and lider["progresso"] < 1.0:
+            for item in itens:
+                if (item.get("estrategia") == self.lider_chave
+                        and item["progresso"] >= lider["progresso"] - 0.05):
+                    lider = item
+                    break
+        self.itens, self.lider = itens, lider
+        self.lider_chave = lider.get("estrategia") if lider else None
+        if lider is None or not (0.70 <= lider["progresso"] < 1.0):
+            return None
+        self._narrados = {k for k in self._narrados if k[0] == chave[0]}
+        marca = (chave[0], lider.get("estrategia"))
+        if marca in self._narrados:
+            return None
+        self._narrados.add(marca)
+        faltantes = lider.get("faltantes") or []
+        proxima = faltantes[0] if faltantes else "confirmação no fechamento"
+        return (f"O alerta de exaustão {lider['estrategia']} assumiu a prioridade, com "
+                f"{lider.get('confirmadas', 0)} de {lider.get('total', 0)} condições. "
+                f"Ainda aguardamos {proxima}.")
+
+    def campos_painel(self, agora_real):
+        """Dados da linha de painel da posicao, no padrao da Escala. None se nao ha radar."""
+        if not self.habilitado or self.lider is None:
+            return None
+        lider = self.lider
+        progresso = max(0.0, min(1.0, float(lider.get("progresso", 0.0))))
+        ok = progresso >= 1.0
+        return {
+            "nome": lider.get("curto") or str(lider.get("estrategia", ""))[:11],
+            "estrategia": lider.get("estrategia", ""),
+            "confirmadas": lider.get("confirmadas", 0),
+            "total": lider.get("total", 0),
+            "detalhe": lider.get("detalhe", ""),
+            "progresso": progresso,
+            "pct": 100.0 if ok else float(min(99, int(progresso * 100))),
+            "ok": ok,
+            "nivel": self.nivel,
+            "total_alertas": self.total,
+            "segundos": self.segundos(agora_real),
+        }
 
     def encerrar(self, agora_real):
         """Fim da posicao (ou troca): grava o RESUMO se houve algum alerta e zera o estado."""
