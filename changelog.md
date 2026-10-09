@@ -4,6 +4,13 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V542 — ata: não apertar o stop do capitão
+
+Pedido do dono (09/10/2026): escrever a proposta e guardar em ata.
+- `conselho/2026-10-09-AK.txt`: o capitão fica em 0,15 R. A operação real de 09/10 não saiu no stop (o trailing nem ligou). A simulação em memória, nos dois CSV de 15 min anexados, com escorregamento fixo na saída, não justifica 0,10 R nem 0,05 R. Nenhum cartucho, motor ou regra mudou.
+
+---
+
 ## V541 — mensagens de distância mais claras
 
 Pedido do dono (09/10/2026): "Falta dist. MA21 91 (máx. 90)" confundia, porque "Falta" parecia quanto falta e 91 contra 90 parecia erro de 1 ponto. **Retomada MA21:** "Falta aproximar 1 pt da MA21"; na voz, "Ainda aguardamos o preço chegar mais perto da Média Móvel 21. Hoje está 1 ponto acima do limite." **MACD + Estocástico:** "Falta afastamento 128/200 pts" virou "Falta afastar 72 pts da MA21". **Candle fechado:** "Distância=336.0pts (limite 40)" virou "Fechamento a 336 pts da MA21", porque o "limite 40" era a tolerância antiga de toque, que nenhuma estratégia usa mais. Só texto; os sinais não mudam (conferido em 4.000 leituras reais de 2026).
