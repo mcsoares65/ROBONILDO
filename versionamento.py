@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V523"
+VERSAO = "V524"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,11 @@ VERSAO = "V523"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V524 - remove a impressao duplicada de [CENARIO EM FORMACAO] e [EXAUSTAO] (09/10/2026)
+# Pedido do dono: narrar() ja imprime a mesma frase como [NARRADOR]. O ajuste era da V522, mas o commit chegou a PR #129
+# depois do merge e ficou fora da main. So texto do terminal; nenhuma decisao muda. Arquivos: principal.py,
+# versionamento.py, changelog.md.
+
 # V523 - painel da saida no padrao da Escala de entrada (09/10/2026)
 # Pedido do dono: com a operacao aberta, ver a analise dos titulares de saida como a Escala mostra na entrada. Cada
 # alerta de exaustao ganha diagnosticar_exaustao(row, posicao) (mesmo formato do radar de entrada: estrategia, n/N,
