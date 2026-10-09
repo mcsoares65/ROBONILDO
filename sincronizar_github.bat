@@ -3,11 +3,23 @@ chcp 65001 >nul
 setlocal
 
 title ROBONILDO - Sincronizacao com GitHub
-cd /d D:\DAYTRADE\ROBONILDO_GITHUB
+rem V528: pasta fixa do clone. Se este .bat estiver copiado em outro lugar (backup, ROBONILDO_V518...),
+rem ele ainda assim trabalha SOMENTE nesta pasta, e confere que ela e o repositorio certo antes de qualquer comando.
+set "PASTA_REPO=D:\DAYTRADE\ROBONILDO"
+cd /d "%PASTA_REPO%" 2>nul
+if errorlevel 1 goto pasta_invalida
+git rev-parse --is-inside-work-tree >nul 2>&1
+if errorlevel 1 goto pasta_invalida
+set "REMOTO="
+for /f "delims=" %%i in ('git config --get remote.origin.url') do set "REMOTO=%%i"
+if not defined REMOTO goto pasta_invalida
+echo %REMOTO% | find /i "mcsoares65/ROBONILDO" >nul
+if errorlevel 1 goto pasta_invalida
 
 echo ============================================================
 echo        ROBONILDO - SINCRONIZACAO COM GITHUB
 echo ============================================================
+echo Pasta de trabalho: %PASTA_REPO%
 echo.
 echo [1] BAIXAR atualizacoes do GitHub
 echo [2] ENVIAR alteracoes para o GitHub
@@ -220,6 +232,14 @@ echo Leia as mensagens apresentadas acima.
 echo.
 pause
 goto :eof
+
+:pasta_invalida
+echo.
+echo ERRO: "%PASTA_REPO%" nao existe ou nao e o clone do repositorio mcsoares65/ROBONILDO.
+echo Nada foi alterado. Ajuste a linha set "PASTA_REPO=..." no inicio deste arquivo.
+echo.
+pause
+exit /b 1
 
 :sair
 exit /b
