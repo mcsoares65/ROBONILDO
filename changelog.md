@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V526 — planilha de análise com a hora no nome
+
+Pedido do dono (09/10/2026): ao gerar o arquivo do modo A (Análise), acrescentar a hora no nome para evitar conflitos. Com o `.xlsx` do mesmo nome aberto no Excel, o salvamento falhava com `PermissionError`. O nome passa a ser `analise_AAAAMMDD_AAAAMMDD[_fonte]_HHMMSS.xlsx`, então cada execução grava um arquivo próprio. Só o nome do arquivo muda.
+
+---
+
 ## V525 — saúde do trade de volta na linha da posição
 
 Pedido do dono (09/10/2026): o indicador de saúde do trade começa em branco; quanto melhor (100%), mais verde; quanto pior (0%), mais roxo; mesma regra de coloração da entrada. Desde a V523 o `% ■` da linha sem alvo mostrava a exaustão e a saúde tinha sumido. Agora a saúde aparece junto do `Res` (0% = no stop, 50% = zero a zero líquido, branco, 100% = melhor) e a exaustão continua no fim da linha. Sem alvo (capitão trailing), 100% é lucro líquido de 1 R, sendo R a distância da entrada ao stop inicial. Só o painel muda; nenhuma decisão de entrada ou saída.

@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V525"
+VERSAO = "V526"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,10 @@ VERSAO = "V525"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V526 - planilha de analise (modo A) com a hora no nome (09/10/2026)
+# Pedido do dono: gerar analise_AAAAMMDD_AAAAMMDD[_fonte]_HHMMSS.xlsx para evitar conflito. Motivo: com o arquivo do
+# mesmo nome aberto no Excel, o salvamento falhava com PermissionError. Apenas o nome do arquivo muda (classificacao.py).
+
 # V525 - saude do trade de volta na linha da posicao (09/10/2026)
 # Pedido do dono: o indicador comeca branco (zero a zero liquido); quanto melhor a saude (100%), mais verde; quanto pior
 # (0%), mais roxo; mesma regra de coloracao da entrada. Na V523 o "% ■" da linha sem alvo passou a mostrar a exaustao e a saude
