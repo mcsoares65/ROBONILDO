@@ -8,6 +8,7 @@ tudo. ENVIAR_ORDENS = False nesta fase - nunca envia ordem real.
 """
 
 import time
+import re
 import csv
 import random
 import threading
@@ -343,6 +344,15 @@ _narrador_local = threading.local()  # um objeto de voz POR THREAD - COM (usado 
                                       # diferentes (ex: a thread de noticias) e inseguro
 
 
+_RE_MA21 = re.compile(r"(?<![A-Za-z0-9])ma21(?![A-Za-z0-9])", re.IGNORECASE)
+
+
+def _texto_para_voz(texto: str) -> str:
+    """V537: pronuncia por extenso o que a voz leria mal. 'MA21' vira 'Média Móvel 21' (vale tambem para nomes de
+    estrategia como entrada_retomada_ma21_v01). So troca palavra inteira; o resto do texto fica como veio."""
+    return _RE_MA21.sub("Média Móvel 21", texto)
+
+
 def narrar(texto: str, descartavel: bool = False):
     """
     Fala em voz alta um fato JA CALCULADO pelo robo (ex: 'posicao aberta',
@@ -355,6 +365,7 @@ def narrar(texto: str, descartavel: bool = False):
     (vozes de agentes de IA), que foi deliberadamente descartado por falta de
     confiabilidade.
     """
+    texto = _texto_para_voz(texto)
     print(f"{COR_NARRADOR}[NARRADOR] \"{texto}\"{COR_RESET}")
     try:
         import pythoncom

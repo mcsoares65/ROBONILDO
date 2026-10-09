@@ -340,6 +340,25 @@ class TrailingVisivelTest(unittest.TestCase):
         self.assertIsNone(self.pr._frase_trailing(recuperada, 209000.0))
 
 
+class VozMediaMovelTest(unittest.TestCase):
+    """V537: a voz diz 'Média Móvel 21' em vez de 'MA21'."""
+    @classmethod
+    def setUpClass(cls):
+        cls.pr = importlib.import_module("principal")
+
+    def test_ma21_vira_media_movel_21(self):
+        f = self.pr._texto_para_voz
+        self.assertEqual(f("A estratégia Retomada MA21 está com 3 de 3 confirmações."),
+                         "A estratégia Retomada Média Móvel 21 está com 3 de 3 confirmações.")
+        self.assertEqual(f("entrada_retomada_ma21_v01"), "entrada_retomada_Média Móvel 21_v01")
+        self.assertEqual(f("preço acima da ma21."), "preço acima da Média Móvel 21.")
+
+    def test_nao_mexe_em_outras_palavras(self):
+        f = self.pr._texto_para_voz
+        for txt in ("MA210 e MA50", "LMA21X", "Sem nada a trocar."):
+            self.assertEqual(f(txt), txt)
+
+
 class FraseEscalaTest(unittest.TestCase):
     """V535: a frase da Escala so cita 'Próxima condição' quando falta mesmo alguma."""
     def test_sem_condicao_faltando_nao_fala_proxima(self):
