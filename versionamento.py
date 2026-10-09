@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V531"
+VERSAO = "V532"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,54 @@ VERSAO = "V531"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V532 - capitao saida_trailing_pico_v02 (distancia 0,15 R) + narracao de serenidade (09/10/2026)
+# Pedido do dono: reduzir a devolucao do lucro e narrar com tom de calma, porque com a operacao aberta o emocional pesa.
+# (1) estrategia/saida/titular/capitao/saida_trailing_pico_v02.py substitui o v01 (git mv): so muda a distancia do stop ao pico,
+#     0,4 R -> 0,15 R (gatilho segue 1,0 R). Varredura 2020-2026, mesmas 1.830 entradas: R$ 28.555 -> R$ 34.408, melhor nos 7 anos,
+#     2020-24 R$ 8.331 -> 12.821 e 2025-26 R$ 20.223 -> 21.587; tolera ~16 pts de deslizamento por operacao. 0,05/0,10 R rendem
+#     mais mas dependem de teste com 1 minuto. Alvo fixo em 1 R: R$ 16.325 (pior); alertas de exaustao como saida: sem ganho.
+#     O arquivo real foi passado pelo motor e bate com a varredura (2025: 4.891; 2026: 16.695).
+# (2) principal._frase_calma: a cada 120 s (relogio real), se a operacao recuou do pico mas o stop esta longe (> 0,25 R) e
+#     menos de 2 alertas de exaustao concordam, fala o recuo real, a distancia ate o stop e o risco ja definido ("Fique
+#     tranquilo, mantenha a operacao aberta..."); com perda pequena dentro do stop diz o risco maximo; com o trailing ja ativo
+#     cita o lucro que o stop garante. Calada com 2+ alertas, stop colado, alvo ou sem 1 R medido. Nao promete resultado.
+# Sem mexer no motor nem nos alertas. A decisao de saida muda so pela distancia do capitao.
+# Correcao: os blocos V527 a V531 abaixo (e as entradas do changelog) nao tinham entrado nas PRs originais (so o numero da
+# VERSAO entrou); foram reconstituidos aqui.
+
+# V531 - trailing visivel: avisa quando arma e quando assume (09/10/2026)
+# Pedido do dono (log do replay): "nao vejo o trailing assumindo". O capitao saida_trailing_pico so mexe no stop depois que
+# o ganho maximo chega a 1 R, e so atualiza no fechamento do candle; ate la a linha mostrava o stop inicial sem nenhum sinal.
+# principal.py (so painel/voz): _estado_trailing/_frase_trailing narram uma vez "A saude chegou a 100%: ... no fechamento do
+# candle das HH:MM o trailing passa a seguir o pico" (armado) e uma vez "O trailing assumiu. O stop passou a X, protegendo Y
+# reais" (assumiu); a coluna do stop troca de "Stop" para "Trail" quando o stop ja passou do inicial. Cartucho e motor intactos.
+# Posicao recuperada de outra sessao com o trailing ja ativo nao tem stop inicial para comparar: fica sem aviso.
+
+# V530 - saude do trade no fim da linha da posicao, abrindo em 0% (09/10/2026)
+# Pedido do dono (log do replay): o fim da linha ficava parado em 0% (era a maturacao do alerta de exaustao, que so anda apos
+# 0,5 R de lucro) e a saude nao oscilava como a Escala antes da operacao. Agora o FIM da linha e a saude: abre em 0% (branco) e
+# anda ate o destino, verde no ganho (100% = alvo ou, sem alvo, lucro liquido de 1 R) ou roxo na perda (100% = stop); o
+# percentual e a distancia percorrida e a cor diz o lado. A exaustao continua na linha: quadrado colorido logo apos o n/N.
+# Substitui o 50% neutro da V525. principal._saude_posicao devolve (percentual, quadrado); alerta_saida.linha_posicao (119 col).
+
+# V529 - uma pergunta so para ano ou periodo na analise (09/10/2026)
+# Pedido do dono: simplificar; basta informar o ano (2026), um intervalo de anos (2020-2026), uma data (08/10/2026) ou um
+# intervalo de datas (01/10/2026-08/10/2026). classificacao.py: _perguntar_escopo substitui as duas perguntas (anos + periodo);
+# data sozinha passa a valer so aquele dia (antes: dali ate o fim; esse formato virou "desde DD/MM/AAAA"); o traco separa as
+# datas de um intervalo. Para um periodo carrega so os anos citados + o anterior (aquecimento dos indicadores), mais rapido.
+# Linha de comando (--anos/--periodo/--modo) segue igual, exceto a data sozinha em --periodo.
+
+# V528 - sincronizar_github.bat com a pasta certa e conferencia (09/10/2026)
+# Pedido do dono: rodou o .bat dentro de ROBONILDO_V518 (backup) e a pasta foi atualizada pela main. O .bat apontava fixo
+# para D:\DAYTRADE\ROBONILDO_GITHUB (pasta antiga). Agora: PASTA_REPO = D:\DAYTRADE\ROBONILDO, e antes de qualquer comando ele
+# confere que a pasta existe, e repositorio git e o remote e mcsoares65/ROBONILDO; senao aborta sem alterar nada. Mostra
+# a pasta de trabalho no menu. So o .bat muda.
+
+# V527 - periodo da analise selecionavel (09/10/2026)
+# Pedido do dono: poder escolher o periodo ou so um dia. O recorte (interpretar_periodo / --periodo) ja existia, mas so por
+# linha de comando; no modo interativo nao perguntava. Agora classificacao.executar pergunta o periodo (Enter = tudo) e aceita
+# "dia DD/MM/AAAA" (so aquele pregao). Por linha de comando com --modo/--simular sem --periodo segue valendo tudo.
+
 # V526 - planilha de analise (modo A) com a hora no nome (09/10/2026)
 # Pedido do dono: gerar analise_AAAAMMDD_AAAAMMDD[_fonte]_HHMMSS.xlsx para evitar conflito. Motivo: com o arquivo do
 # mesmo nome aberto no Excel, o salvamento falhava com PermissionError. Apenas o nome do arquivo muda (classificacao.py).

@@ -4,6 +4,48 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V532 — capitão com stop mais curto (v02) e narração de serenidade
+
+Pedido do dono (09/10/2026): evitar que o lucro volte tanto e dar um tom de calma à narração, porque com a operação aberta o emocional pesa.
+
+**Capitão `saida_trailing_pico_v02`** (substitui o v01): depois de 1 R a favor, o stop passa a seguir o pico a **0,15 R** (antes 0,4 R). No histórico 2020–2026, com as mesmas 1.830 entradas, o resultado foi de R$ 28.555 para R$ 34.408, melhor nos 7 anos, nos dois períodos (seleção 2020–24 e confirmação 2025–26) e tolerando cerca de 16 pontos de deslizamento por operação. Distâncias de 0,05 e 0,10 R renderam mais no teste, mas dependem de validação com dados de 1 minuto. Sair em alvo fixo de 1 R rendeu R$ 16.325 e usar os alertas de exaustão como saída não melhorou.
+
+**Narração de serenidade:** a cada 120 s, se a operação recuou do pico mas o stop está longe e menos de 2 alertas de exaustão concordam, o robô diz o recuo real, a distância até o stop e o risco já definido, por exemplo "Fique tranquilo, mantenha a operação aberta…". Com perda pequena dentro do stop diz o risco máximo; com o trailing ativo cita o lucro que o stop garante. Fica calada com exaustão confirmada por 2 ou mais alertas, stop colado, alvo ou 1 R não medido. Nunca promete resultado. Só voz; o motor e os alertas não mudam.
+
+**Correção de registro:** as entradas V527 a V531 abaixo não tinham entrado no changelog nem no versionamento nas PRs originais (só o número da versão entrou); foram reconstituídas aqui.
+
+---
+
+## V531 — trailing visível: avisa quando arma e quando assume
+
+Pedido do dono (09/10/2026): "não vejo o trailing assumindo". O capitão `saida_trailing_pico` só passa a seguir o pico depois que o ganho máximo chega a 1 R (saúde em 100%) e só atualiza o stop no fechamento do candle; até lá o painel mostrava o stop inicial e nada indicava isso. Agora o robô fala uma vez quando o preço chega a 1 R ("o trailing passa a seguir o pico no fechamento do candle das HH:MM") e uma vez quando o stop de fato sobe ("O trailing assumiu. O stop passou a X, protegendo Y reais"), e o rótulo do stop vira `Trail` a partir daí. Só painel e voz. Posição recuperada de outra sessão com o trailing já ativo não tem como saber o stop inicial e fica sem esse aviso.
+
+---
+
+## V530 — saúde do trade no fim da linha, abrindo em 0%
+
+Pedido do dono (09/10/2026), vendo o replay: o fim da linha da posição ficava parado em 0% e a saúde não oscilava a cada leitura como a Escala antes da operação. O fim da linha agora é a saúde do trade: abre em 0% (branco) e anda em direção ao destino, verde no ganho ou roxo na perda. 100% é o alvo ou, sem alvo (capitão trailing), lucro líquido de 1 R; na perda, 100% é o stop. O percentual é a distância percorrida e a cor diz o lado. A exaustão continua na linha: um quadrado colorido logo depois do `n/N`, além do `Falta …` e do `Nível n/4 há Ns`. Troca o 50% neutro da V525. Só o painel muda.
+
+---
+
+## V529 — uma pergunta só para ano ou período na análise
+
+Pedido do dono (09/10/2026): simplificar. O `classificacao.py` faz uma única pergunta, `Ano ou período`, que aceita `2026`, `2020-2026`, `08/10/2026` (só aquele dia) ou `01/10/2026-08/10/2026`; Enter = todo o histórico. Para datas, carrega só os anos citados mais o anterior (aquecimento dos indicadores), então um dia sai mais rápido. Data sozinha em `--periodo` passa a valer só aquele dia (o antigo "dali até o fim" virou `desde 01/03/2026`). O restante da linha de comando segue igual.
+
+---
+
+## V528 — `sincronizar_github.bat` na pasta certa, com conferência
+
+Pedido do dono (09/10/2026): o `.bat` foi rodado dentro da pasta de backup `ROBONILDO_V518` e a atualizou. O arquivo apontava para a pasta antiga `ROBONILDO_GITHUB`. Agora trabalha só em `D:\DAYTRADE\ROBONILDO` (variável `PASTA_REPO`) e, antes de qualquer comando, confere que a pasta existe, é um repositório Git e tem origem `mcsoares65/ROBONILDO`; se não, aborta sem alterar nada. O menu mostra a pasta de trabalho. Só o `.bat` muda.
+
+---
+
+## V527 — escolher o período (ou só um dia) na análise
+
+Pedido do dono (09/10/2026): poder selecionar o período ou apenas o dia. O recorte já existia só por linha de comando (`--periodo`). O `classificacao.py` passou a perguntar o período no modo interativo (Enter = tudo) e a aceitar `dia 01/03/2026` para um único pregão. Por linha de comando, com `--modo`, sem `--periodo`, segue valendo o histórico todo, sem pergunta.
+
+---
+
 ## V526 — planilha de análise com a hora no nome
 
 Pedido do dono (09/10/2026): ao gerar o arquivo do modo A (Análise), acrescentar a hora no nome para evitar conflitos. Com o `.xlsx` do mesmo nome aberto no Excel, o salvamento falhava com `PermissionError`. O nome passa a ser `analise_AAAAMMDD_AAAAMMDD[_fonte]_HHMMSS.xlsx`, então cada execução grava um arquivo próprio. Só o nome do arquivo muda.
