@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V536 — voz sem "Nenhuma ordem será enviada"
+
+Pedido do dono (09/10/2026): a ordem só é disparada no fechamento do candle, então a frase "…perdeu confirmação durante a formação do candle. Nenhuma ordem será enviada neste momento." tinha o final redundante. Agora termina em "…durante a formação do candle." Só texto de voz.
+
+---
+
 ## V535 — Escala sem "Próxima condição: nenhuma"
 
 Pedido do dono (09/10/2026): a voz dizia "3 de 3 confirmações. Próxima condição: nenhuma. Se confirmado no fechamento…", o que se contradizia. Agora, com todas as condições confirmadas, a frase termina em "confirmações" e segue direto para o fechamento; "Próxima condição: X" só aparece quando falta alguma. Só texto de voz; painel e decisão não mudam.
