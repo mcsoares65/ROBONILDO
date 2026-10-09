@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V534"
+VERSAO = "V535"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,11 @@ VERSAO = "V534"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V535 - narracao da Escala sem "Proxima condicao: nenhuma" (09/10/2026)
+# Pedido do dono: "O candle fechou em alta..." seguido de "3 de 3 confirmacoes. Proxima condicao: nenhuma. Se confirmado no
+# fechamento, a ordem sera disparada" era contraditorio. escalacao.diagnosticar_sinal so cita "Proxima condicao: X" quando falta
+# mesmo alguma condicao; com 3 de 3 a frase termina em "confirmacoes". Painel e decisao nao mudam.
+
 # V534 - voz dos alertas de exaustao sem oscilar (09/10/2026)
 # Pedido do dono (log do replay): "Exaustao nivel 1..." seguida de "A exaustao se desfez." em segundos, e "sustentada ha N
 # segundos" a cada 10 s, atrapalham a calma que a voz deve passar.

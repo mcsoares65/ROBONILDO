@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V535 — Escala sem "Próxima condição: nenhuma"
+
+Pedido do dono (09/10/2026): a voz dizia "3 de 3 confirmações. Próxima condição: nenhuma. Se confirmado no fechamento…", o que se contradizia. Agora, com todas as condições confirmadas, a frase termina em "confirmações" e segue direto para o fechamento; "Próxima condição: X" só aparece quando falta alguma. Só texto de voz; painel e decisão não mudam.
+
+---
+
 ## V534 — voz dos alertas de exaustão sem oscilar
 
 Pedido do dono (09/10/2026): as frases "Exaustão nível 1…" e "A exaustão se desfez." apareciam com segundos de diferença, e "sustentada há N segundos" repetia a cada 10 s. Agora a voz só anuncia uma mudança de nível depois de 15 s estável, não repete o mesmo nível a cada candle novo e só reforça a sustentação a cada 60 s. "Se desfez" só é dito quando o nível tinha sido anunciado. O log e o painel continuam mostrando tudo na hora, e nenhuma decisão de saída muda.

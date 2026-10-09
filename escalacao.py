@@ -126,7 +126,8 @@ class Escalacao:
         confirmadas = [i for i in radar if i.get("sinal") in (-1, 1)]
         item = min(confirmadas, key=lambda i: i["prioridade"]) if confirmadas else radar[0]
         faltantes = item.get("faltantes") or []
-        proxima = faltantes[0] if faltantes else "nenhuma"
+        # V535: sem condicao faltando nao ha "proxima condicao"; a frase so cita o que de fato falta
+        proxima_frase = f" Próxima condição: {faltantes[0]}." if faltantes else ""
         return {
             "porta": self.membros.index(
                 next(m for m in self.membros if m.nome == item["titular"])) + 1,
@@ -139,8 +140,7 @@ class Escalacao:
             "faltantes": faltantes,
             "explicacao": (
                 f"A estratégia {item.get('estrategia', item['titular'])} está com "
-                f"{item.get('confirmadas', 0)} de {item.get('total', 0)} confirmações. "
-                f"Próxima condição: {proxima}."
+                f"{item.get('confirmadas', 0)} de {item.get('total', 0)} confirmações.{proxima_frase}"
             ),
         }
 
