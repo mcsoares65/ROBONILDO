@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V544 — BANCA_REAL_REAIS removida
+
+Pedido do dono (09/10/2026): a única banca passa a ser a da planilha (aba `GESTAO_RISCO`, célula `B3`). A constante fixa `BANCA_REAL_REAIS = 1490.00` saiu de `configuracao.py`. O limite de risco por operação (`RISCO_MAXIMO_PCT_BANCA`), que continua desligado (0), usaria a banca lida da planilha se fosse religado. Nenhuma decisão muda.
+
+---
+
 ## V543 — número de contratos perguntado na partida
 
 Pedido do dono (09/10/2026): ao executar `principal.py`, depois de escolher Replay ou Normal, o robô pergunta "Com quantos contratos vai operar?" (Enter = 1; aceita de 1 a 100). O valor do ponto e o custo da operação passam a ser multiplicados pelo número de contratos em todo o cálculo ao vivo: resultado da operação, banca gravada na planilha, painel (resultado, saúde do trade, trailing), pico e devolução, auditoria e e-mail. Os pontos não mudam. O custo de R$ 0,50 é tratado como por contrato. O robô não altera a quantidade na boleta do Profit; ele avisa para conferir. Laboratório e classificação continuam com 1 contrato, e com 1 contrato nada muda.

@@ -627,7 +627,7 @@ class MotorRobonildo:
 
     def validar_risco_inicial(self, sinal: Sinal, row: Optional[dict]):
         """V461/V462: recusa a entrada se o stop inicial proposto pelo cartucho de
-        saida custar mais que cfg.RISCO_MAXIMO_PCT_BANCA da banca real.
+        saida custar mais que cfg.RISCO_MAXIMO_PCT_BANCA da banca atual.
 
         Pergunta ao cartucho (candles_decorridos == 0, a mesma chamada que
         abrir_posicao faz) SEM abrir nada, entao pode ser chamada ANTES de
@@ -638,7 +638,7 @@ class MotorRobonildo:
         cfg.RISCO_FALHA_FECHADA for True (padrao), a entrada e BLOQUEADA. Sem
         cartucho de saida ou sem row nao ha o que verificar e nao bloqueia."""
         pct = getattr(cfg, "RISCO_MAXIMO_PCT_BANCA", 0) or 0
-        banca = getattr(cfg, "BANCA_REAL_REAIS", 0) or 0
+        banca = self.banca_atual or 0   # V544: banca lida da planilha (sem ela o limite nao se aplica)
         # V483: pct == 0 desliga SO o limite percentual; a verificacao fail-closed
         # do stop (V462) continua valendo, pois e outra protecao.
         if self.avaliar_saida is None or row is None:

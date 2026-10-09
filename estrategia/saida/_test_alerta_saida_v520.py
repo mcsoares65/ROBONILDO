@@ -600,8 +600,27 @@ class BancaPlanilhaTest(unittest.TestCase):
                                               "2026-10-09T10:00:00", "teste")
         return m
 
-    def test_configuracao_nao_tem_mais_banca_atual_fixa(self):
+    def test_configuracao_nao_tem_mais_banca_fixa(self):
         self.assertFalse(hasattr(self.cfg, "BANCA_ATUAL_REAIS"))
+        self.assertFalse(hasattr(self.cfg, "BANCA_REAL_REAIS"))
+
+    def test_limite_de_risco_usa_a_banca_da_planilha(self):
+        cfg, mot = self.cfg, self.motor
+        antes = cfg.RISCO_MAXIMO_PCT_BANCA
+        cfg.RISCO_MAXIMO_PCT_BANCA = 0.25
+        try:
+            sinal = mot.Sinal(horario=datetime(2026, 10, 9, 10, 0), lado="COMPRA", entrada=100000.0,
+                              stop=None, alvo=None, distancia_ma21=0.0, motivo="teste")
+            saida = lambda row, pos: {"fechar": False, "novo_stop": 99000.0, "novo_alvo": None}   # 1000 pts = R$ 200
+            m = mot.MotorRobonildo(gerar_sinal=lambda row: 0, arquivo_estado=None, avaliar_saida=saida,
+                                   horario_mercado_inicial=datetime(2026, 10, 9, 10, 0))
+            self.assertTrue(m.validar_risco_inicial(sinal, {})[0])      # sem banca lida: limite nao se aplica
+            m.definir_banca(700.0)
+            self.assertFalse(m.validar_risco_inicial(sinal, {})[0])     # R$ 200,5 > 25% de R$ 700
+            m.definir_banca(1490.0)
+            self.assertTrue(m.validar_risco_inicial(sinal, {})[0])      # R$ 200,5 < 25% de R$ 1.490
+        finally:
+            cfg.RISCO_MAXIMO_PCT_BANCA = antes
 
     def test_leitura_usa_a_celula_certa(self):
         leitor = self._leitor(_Celula(1490.5))

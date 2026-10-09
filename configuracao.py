@@ -111,11 +111,10 @@ HORARIO_LIMITE_ABSOLUTO = "18:20:58"   # UNICO horario de saida forcada do proje
 # ---------- Gestao de risco ----------
 # V542: a banca atual NAO fica mais aqui. O robo le da planilha (aba GESTAO_RISCO, celula B3,
 # ver leitor_dde.CELULA_BANCA_ATUAL) e, a cada operacao encerrada, grava la o valor atualizado.
-# V461: BANCA REAL na corretora, informada pelo dono em 01/10/2026. E a base do
-# limite de risco por operacao (abaixo) - NAO e o contador acima.
-BANCA_REAL_REAIS = 1490.00
+# V544: BANCA_REAL_REAIS (1490.00, fixa) foi removida: a unica banca e a da planilha. O limite
+# de risco por operacao (abaixo), quando ligado, usa a banca lida da planilha.
 # V461: se o stop inicial (distancia entrada-stop em reais, + custo) passar desta
-# fracao da banca real, a entrada NAO acontece e o robo avisa. Vale tambem no
+# fracao da banca (a da planilha), a entrada NAO acontece e o robo avisa. Vale tambem no
 # backtest (motor.validar_risco_inicial), para ao vivo e laboratorio decidirem
 # igual. 0 desliga. Incidente de 01/10: stop de 3.535 pts = R$ 707 (47% da banca
 # real, 354% da banca configurada de R$ 200).
