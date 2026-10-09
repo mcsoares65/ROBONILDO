@@ -776,8 +776,10 @@ class MotorRobonildo:
              antigos). SEM validacao: o motor nao impoe piso de seguranca
              nem impede afrouxamento - decisao explicita do dono do
              laboratorio.
-          2. Stop/alvo (ja com a reconfiguracao do passo 1 aplicada, se
-             houve) - testado com maximo/minimo do candle.
+          2. Stop/alvo - testado com maximo/minimo do candle usando os niveis
+             que ja valiam ANTES deste fechamento. V519: a reconfiguracao
+             proposta no passo 1 so e aplicada depois (vale a partir do
+             proximo candle), como ao vivo.
           3. Fechamento antecipado explicito do cartucho (fechar=True) - so
              se o passo 2 nao fechou.
           4. Corte de horario/janela bloqueada - tratado FORA deste metodo,
@@ -803,6 +805,7 @@ class MotorRobonildo:
         # (dict, Regra 1 v9) e/ou pedir fechamento (fechar=True ou bool puro,
         # contratos antigos).
         fechar_agora = False
+        proposta_pendente = None
         if self.avaliar_saida is not None and row is not None:
             direcao = 1 if pos.lado == "COMPRA" else -1
             resultado_flutuante_pts = (row["Fechamento"] - pos.entrada) * direcao
@@ -831,7 +834,10 @@ class MotorRobonildo:
 
             if isinstance(resposta, dict):
                 fechar_agora = bool(resposta.get("fechar", False))
-                self._aplicar_reconfiguracao(pos, resposta)
+                # V519: o stop/alvo proposto no FECHAMENTO deste candle so existe depois dele;
+                # nao pode valer para os extremos do proprio candle (isso nao acontece ao vivo).
+                # Fica pendente e e aplicado abaixo, depois de testar o candle com os niveis de antes.
+                proposta_pendente = resposta
             else:
                 fechar_agora = bool(resposta)
 
@@ -853,6 +859,10 @@ class MotorRobonildo:
         # PASSO 3: fechamento antecipado explicito do cartucho.
         if fechar_agora:
             return "SAIDA_CARTUCHO", row["Fechamento"]
+
+        # V519: so agora os novos niveis propostos passam a valer - para o PROXIMO candle.
+        if proposta_pendente is not None:
+            self._aplicar_reconfiguracao(pos, proposta_pendente)
 
         return None
 
