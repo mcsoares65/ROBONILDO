@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V538"
+VERSAO = "V539"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,11 @@ VERSAO = "V538"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V539 - Saida de Extremo diz "pavio" em vez de "corpo" (09/10/2026)
+# Pedido do dono: "corpo 90% (max. 70%)" era confuso. A condicao (corpo <= 70% da amplitude) passa a ser dita pelo lado do pavio:
+# painel "Falta pavio: tem 10%, precisa 30%"; voz "Ainda aguardamos o candle mostrar mais pavio. Hoje tem 10 por cento e precisa de 30."
+# "tem" arredonda para baixo. So texto em entrada_saida_extremo_v01.diagnosticar_oportunidades: condicao e sinal nao mudam.
+
 # V538 - consenso do time no painel de pre-operacao + texto claro da Saida de Extremo (09/10/2026)
 # Pedido do dono: (1) trocar "Falta estoc. saindo da zona extrema" por frase facil; (2) manter o "85% ■" (estrategia escalada) e criar
 # uma segunda coluna, a ultima da linha, com o CONSENSO do time: media da opiniao de todos os titulares de entrada, mesmo os que
