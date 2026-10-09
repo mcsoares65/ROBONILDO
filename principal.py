@@ -1216,7 +1216,6 @@ def rodar():
                                 f"{explicacao} Mas o fechamento previsto, {fechamento_previsto}, "
                                 f"não permite ordem: {motivo_no_fechamento}."
                             )
-                        print(f"[CENÁRIO EM FORMAÇÃO] {explicacao}")
                         narrar(explicacao)
                         ultima_expectativa_narrada = chave_expectativa
                         ultima_expectativa_perdida = None
@@ -1230,7 +1229,6 @@ def rodar():
                         "confirmação durante a formação do candle. Nenhuma ordem será "
                         "enviada neste momento."
                     )
-                    print(f"[CENÁRIO EM FORMAÇÃO] {frase_perdida}")
                     narrar(frase_perdida)
                     ultima_expectativa_perdida = ultima_expectativa_narrada
 
@@ -1316,7 +1314,6 @@ def rodar():
                         "O cartucho de saída identificou uma condição de fechamento antecipado "
                         "se formando neste candle."
                     )
-                    print(f"[CENÁRIO EM FORMAÇÃO] {frase_saida}")
                     narrar(frase_saida)
                     ultima_saida_especulativa_narrada = chave_saida_especulativa
 
@@ -1342,7 +1339,6 @@ def rodar():
                 except Exception:
                     fala_exaustao = None
                 if fala_exaustao:
-                    print(f"[EXAUSTÃO] {fala_exaustao}")
                     narrar(fala_exaustao)
 
         # ---------- Cenário visual antes do fechamento ----------
@@ -1389,13 +1385,11 @@ def rodar():
                             f"reais de prejuízo flutuante, {percentual:.0f} por cento do "
                             "caminho até o stop."
                         )
-                print(f"[CENÁRIO EM FORMAÇÃO] {frase}")
                 narrar(frase)
             elif tendencia is not None and not radar:
                 chave = (tendencia, "DENTRO" if dentro_da_faixa else "FORA")
                 frase = frases.FRASES_PERIODICAS_SEM_POSICAO.get(chave)
                 if frase:
-                    print(f"[CENÁRIO EM FORMAÇÃO] {frase}")
                     narrar(frase)
             ultimo_candle_narracao_periodica = candle_horario_atual
 

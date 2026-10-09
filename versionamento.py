@@ -1728,7 +1728,8 @@ VERSAO = "V522"
 # V522 - painel: linhas que quebravam no console (09/10/2026)
 # Linha da posicao: sem alvo (capitao trailing) a coluna "Alvo - (-)" some e entra "Exaustao n/N ha Ns" (113 colunas);
 # com alvo, forma curta "Ex n/N". Linha da Escala: avisos "ENTRADAS BLOQUEADAS (buraco, N candles)" e "dados
-# aproximados (N candles)" (145 colunas) viram "BLOQ Nc" e "aprox". So formato de texto; nenhuma decisao muda.
+# aproximados (N candles)" (145 colunas) viram "BLOQ Nc" e "aprox". Deixam de ser impressas as linhas
+# "[CENARIO EM FORMACAO]" e "[EXAUSTAO]" (narrar() ja imprime a mesma frase). So formato de texto; nenhuma decisao muda.
 # Arquivos: principal.py, alerta_saida.py, versionamento.py, changelog.md.
 
 # V521 - alerta de exaustao do MACD (09/10/2026)

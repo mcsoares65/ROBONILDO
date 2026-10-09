@@ -9,7 +9,8 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 Visto pelo dono no replay de 08/10: as linhas da Escala com o aviso de dados aproximados passavam de 140 colunas e quebravam.
 - **Escala:** `ENTRADAS BLOQUEADAS (buraco, N candles)` virou `BLOQ Nc` e `dados aproximados (N candles)` virou `aprox` (a explicação completa já é impressa e narrada quando o buraco surge). Linha de 145 para 121–123 colunas.
 - **Posição:** sem alvo (o capitão trailing nunca define um) a coluna `Alvo - (-)` some e entra `Exaustão n/N há Ns`; a linha fica com 113 colunas, igual à da Escala. Com alvo definido, a exaustão vai na forma curta `Ex n/N`. Sem isso, a linha com a exaustão da V520 chegava a 133 colunas.
-- Só texto do painel; nenhuma decisão muda.
+- **Terminal:** deixam de ser impressas as linhas `[CENÁRIO EM FORMAÇÃO]` e `[EXAUSTÃO]`; o `narrar()` já imprime a mesma frase como `[NARRADOR]`, então saía em duplicata.
+- Só texto do painel e do terminal; nenhuma decisão muda.
 
 ---
 
