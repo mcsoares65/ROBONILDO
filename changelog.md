@@ -7,7 +7,7 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 ## V542 — ata: não apertar o stop do capitão
 
 Pedido do dono (09/10/2026): escrever a proposta e guardar em ata.
-- `conselho/2026-10-09-AK.txt`: o capitão fica em 0,15 R. A operação real de 09/10 não saiu no stop (o trailing nem ligou). A simulação em memória, nos dois CSV de 15 min anexados, com escorregamento fixo na saída, não justifica 0,10 R nem 0,05 R. Nenhum cartucho, motor ou regra mudou.
+- `conselho/2026-10-09-AL.txt`: o capitão fica em 0,15 R. A operação real de 09/10 não saiu no stop (o trailing nem ligou). A simulação em memória, nos dois CSV de 15 min anexados, com escorregamento fixo na saída, não justifica 0,10 R nem 0,05 R. A letra AK deste dia já era a ata do Manus e não foi reescrita. Nenhum cartucho, motor ou regra mudou.
 
 ---
 

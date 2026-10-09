@@ -1,0 +1,138 @@
+# Ata ao conselho — não apertar o stop do capitão com o que se mediu hoje
+
+Autoria: Grok (xAI), em sessão operada por Marcio Soares, 09/10/2026.
+Revisão humana: pendente. Esta ata não muda regra, não muda cartucho e não
+promove ninguém. A letra AK deste dia já é a ata do Manus (paridade do
+trailing); esta é a AL. A AK não foi reescrita (Regra 15.4).
+
+Base consultada: main `d71dcea` (código V541), mais a ata AK já na main
+(`b8affae`). Capitão em produção:
+`estrategia/saida/titular/capitao/saida_trailing_pico_v02.py`
+(gatilho 1,0 R, distância 0,15 R, sem alvo). Time de entrada: Retomada MA21,
+MACD + Estocástico e Saída de Extremo. `compliance.md` relido.
+
+Atas consultadas (Regra 15): 2026-10-05-AA (2026 atípico; time x titular),
+2026-10-05-AD (indicadores já medidos e não promovidos),
+2026-10-05-AG (cortes de horário e alvo 1,55 R),
+2026-10-06-AH (trailing sem alvo x baseline; roteador de cenário falhou),
+2026-10-07-AI (OHLC de 15 min não vê a ordem dentro do candle),
+2026-10-08-AJ (WAD e varredura não são a mesma regra; WAD fica candidata),
+2026-10-09-AK (Manus: paridade do preço do trailing; não apertar de novo
+antes de preço executável; alertas e portas ficam para medir depois).
+Esta AL não contradiz a AK: as duas mantêm o capitão. A AL acrescenta a
+operação real de 09/10 e a simulação de escorregamento fixo, que a AK não tinha.
+
+1. A PROPOSTA, EM UMA FRASE
+--------------------------
+Não criar estratégia nova e não trocar o capitão. O stop a 0,15 R continua.
+O que ainda pode valer dinheiro (0,10 R ou 0,05 R) só se decide com saída real
+no stop, não com este ensaio.
+
+2. O QUE JÁ ESTAVA MEDIDO (NÃO É DESTA SESSÃO)
+----------------------------------------------
+Números publicados no próprio capitão e na V532, mesmas 1.830 entradas do
+time, 2020–2026, stop novo valendo só no candle seguinte:
+
+    distância   2020–24      2025–26      total
+    0,40 R      R$ 8.331     R$ 20.223    R$ 28.555   (v01)
+    0,15 R      R$ 12.821    R$ 21.587    R$ 34.408   (v02, o que opera)
+    0,10 R      R$ 14.303    R$ 22.002    R$ 36.305
+    0,05 R      R$ 16.142    R$ 23.243    R$ 39.385
+
+Saída antiga (stop dos 5 candles + alvo 1,55 R): R$ 19.821.
+Alvo fixo de 1 R: R$ 16.325. Alertas de exaustão usados como saída: não
+melhoraram o trailing. Atualizar o stop a cada leitura piorou.
+
+O 0,15 R foi escolhido porque, naquele teste, aguenta cerca de 16 pontos de
+deslizamento antes de perder para o 0,40 R. 0,05 R e 0,10 R rendem mais quando
+a saída é exatamente no preço do stop, o que o candle de 15 min finge e o
+pregão não garante.
+
+3. A OPERAÇÃO REAL DE 09/10/2026 NÃO MEDE DERRAPAGEM
+----------------------------------------------------
+Arquivo `caminho_operacoes.csv`, uma linha.
+SHA-256 704ee09dfe2f03f87516e70e447a36a5655dd726d53bcacdf729fc19b8e369eb.
+
+    Compra 17:30 a 209.045. Stop parado em 208.775 (270 pontos = 1 R). Sem alvo.
+    Pico +120 pontos às 17:45 (R$ 24). Vale −140. Saída 18:20:59 por
+    CORTE_SEGURANCA_LIMITE a 208.930: −115 pontos, −R$ 23,50.
+    derrapagem_pts = 0. entrada_dde 209.035 (10 pontos abaixo da entrada
+    registrada). 1.009 leituras; maior buraco 38 s.
+
+O trailing não ligou: só segue o pico depois de +1 R, e 1 R aqui era 270
+pontos. O pico foi 120. Apertar de 0,15 R para 0,10 R ou 0,05 R não muda esta
+operação. A derrapagem 0 também não serve: no corte de horário o preço teórico
+e o preço lido são a mesma leitura. Não houve saída no stop.
+
+4. SIMULAÇÃO EM MEMÓRIA (NÃO É O CLASSIFICACAO OFICIAL)
+-------------------------------------------------------
+Pedido do dono: simular o escorregamento em vez de esperar mais operações.
+Feito em memória, no motor V541 (`classificacao.executar_jogo` + o capitão
+v02). `DISTANCIA_R` foi trocado só na memória (0,40 / 0,15 / 0,10 / 0,05).
+Nenhum arquivo de estratégia foi editado. Nenhum resultado foi gravado em
+disco além desta ata.
+
+Modelo do escorregamento: se o motivo é STOP, o resultado perde N pontos
+(N = 0, 5, 10, 16, 25, 40) e o real é recalculado com R$ 0,20/ponto e custo
+R$ 0,50. Corte de fim de pregão não leva essa pena. O caminho da operação não
+muda: o stop dispara no mesmo candle; só o preço de saída fica pior. Isto não
+vê uma corrida que passe do stop, nem a ordem dos preços dentro do candle
+(limite já registrado na ata AI).
+
+Dataset A — contínuo 15 min, 24/09/2025 09:00 a 24/09/2026 18:15,
+9.470 candles, 250 pregões.
+SHA-256 9f8a965ab93023e223c55b020940520b920ceefe50086860ea9054868240c023.
+Cerca de 292 operações. Stops: 201 na distância 0,40 R; 210 nas outras três.
+
+    distância   sem escorregar    escorrega 16 pts
+    0,40 R      R$ 16.201         R$ 15.558
+    0,15 R      R$ 18.024         R$ 17.352
+    0,10 R      R$ 18.267         R$ 17.595
+    0,05 R      R$ 18.940         R$ 18.268
+
+Dataset B — 02/01/2026 09:00 a 07/10/2026 18:15, 7.266 candles, 192 pregões.
+SHA-256 a2097a9c49810be37cc52a51105f34d129b3c28c77735194a586773387f80b23.
+Cerca de 214 operações. Stops: 143 na 0,40 R; 148 nas outras três.
+Sem escorregar: 0,40 R R$ 15.525; 0,15 R R$ 16.627; 0,10 R R$ 16.742;
+0,05 R R$ 17.288.
+
+Pior queda dos dois arquivos, nas quatro distâncias, com escorregamento 0:
+R$ 353,50. Apertar o stop não reduziu a queda. Com 40 pontos de escorregamento
+a ordem entre as distâncias não virou.
+
+Por que o escorregamento fixo não derruba o stop curto: 0,15, 0,10 e 0,05
+batem o stop nas mesmas operações. A pena em reais é a mesma para os três; a
+diferença entre eles fica constante. A diferença em si é pequena neste
+período: no dataset A, 0,10 R fica cerca de R$ 243 à frente de 0,15 R, e
+0,05 R cerca de R$ 915. No dataset B, cerca de R$ 116 e R$ 661. Isso está na
+faixa de ruído de um ano. Não é o teste de sete anos da V532.
+
+5. POSICIONAMENTO
+-----------------
+Voto: manter `saida_trailing_pico_v02` a 0,15 R. Não promover 0,10 R nem
+0,05 R por esta simulação. Não criar cartucho novo. Não fechar a operação
+pelos alertas de exaustão. Não voltar a alvo fixo, break-even, giveback por
+ATR nem corte de 17:15/18:00. Não reabrir Aroon, ADX, WAD, varredura de
+liquidez nem SafeZone.
+
+O passo que ainda pode mudar o lucro, quando houver dado:
+
+1. Juntar várias saídas reais cujo motivo seja STOP em
+   `D:\DAYTRADE\LOGS\caminho_operacoes.csv` (ou um histórico de 1 minuto que
+   não tenha sido usado para escolher o 0,15 R). A pergunta é quantos pontos
+   a saída escorrega do stop. A linha de 09/10 não entra nessa conta.
+2. Só se esse escorregamento for bem menor que 16 pontos, testar 0,10 R como
+   candidata, uma vez, sem ajustar de novo (Regra 11.2).
+3. Separado disso: recontar as três portas contra este capitão (modo E).
+   Os cortes herdados (quinta-feira, faixas de hora e de amplitude) não foram
+   remedidos com o trailing. Se uma porta só piora o time, tirá-la é lucro.
+   Escolha em período já visto não é Holdout.
+
+Regra 9: os números da seção 4 são desta simulação, nestes dois CSV e neste
+modelo de escorregamento fixo. Não são o ranking do `classificacao.py` e não
+autorizam promoção (Regra 12). Regra 11.1: 24/09/2025–24/09/2026,
+02/01/2026–07/10/2026 e o pregão 09/10/2026 ficam consumidos para este
+assunto; não servem de Holdout cego. Regra 11.2: nenhuma variação nova de
+cartucho; só a leitura das distâncias que a V532 já tinha varrido, mais a
+pena fixa de pontos. Regra 11.3: a simulação não usa data nem preço absoluto
+como regra de entrada ou saída.

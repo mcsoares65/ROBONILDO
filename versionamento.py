@@ -1726,8 +1726,9 @@ VERSAO = "V542"
 
 # ---------------------------------------------------------------------------
 # V542 - ata: nao apertar o stop do capitao (09/10/2026)
-# Pedido do dono: escrever a proposta e salvar em ata. So conselho/2026-10-09-AK.txt,
-# changelog e este numero. Nenhum cartucho, motor ou regra mudou.
+# Pedido do dono: escrever a proposta e salvar em ata. So conselho/2026-10-09-AL.txt,
+# changelog e este numero. A AK deste dia ja e a ata do Manus (paridade do trailing)
+# e nao foi reescrita. Nenhum cartucho, motor ou regra mudou.
 # A operacao real de 09/10 saiu no corte das 18:20; o trailing nao ligou (pico 120 pts,
 # 1 R = 270). Simulacao em memoria no motor V541, time titular x capitao v02, distancias
 # 0,40/0,15/0,10/0,05 e escorregamento fixo so no STOP: a ordem nao vira, e o ganho de
