@@ -152,8 +152,7 @@ CALMA_PICO_MIN_PCT = 20.0          # o pico de saude precisa ter passado disso p
 
 def _frase_calma(posicao, preco_atual: float, agora_real, nivel_exaustao: int = 0):
     """V532: frase de serenidade, so quando os FATOS sustentam o plano: a operacao recuou mas o stop esta
-    longe do preco e nao ha exaustao confirmada por 2 ou mais alertas. Nunca promete resultado; diz o
-    recuo, a distancia ate o stop e o risco ja definido. Limitada a uma frase por CALMA_INTERVALO_SEGUNDOS (120 s).
+    longe do preco e nao ha exaustao confirmada por 2 ou mais alertas. Nunca promete resultado; V533: frases curtas e basicas, sem numeros. Limitada a uma frase por CALMA_INTERVALO_SEGUNDOS (120 s).
     Devolve a frase ou None. Fala so em posicao sem alvo (capitao trailing) e com 1 R medido."""
     if posicao.alvo is not None or posicao.stop is None:
         return None
@@ -180,25 +179,20 @@ def _frase_calma(posicao, preco_atual: float, agora_real, nivel_exaustao: int = 
         garantido = (posicao.stop - posicao.entrada) * direcao * cfg.VALOR_PONTO_REAIS \
             - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
         opcoes = [
-            f"Fique tranquilo, mantenha a operação aberta. O preço recuou {recuo_pts:.0f} pontos do pico, "
-            f"mas o stop está a {dist_stop:.0f} pontos e o plano é esperar.",
-            f"Respire e siga o plano. Um recuo de {recuo_pts:.0f} pontos é normal; "
-            f"o resultado segue positivo, em {resultado:.0f} reais.",
-            f"Mantenha a calma. O stop está em {posicao.stop:.0f} e ainda não foi tocado; "
-            "enquanto isso não acontecer, a decisão é manter.",
+            "Fique tranquilo, mantenha a operação aberta.",
+            "Respire e siga o plano.",
+            "Mantenha a calma. O recuo é normal.",
         ]
         if garantido > 0:
-            opcoes.append(f"Fique tranquilo. O stop já garante pelo menos {garantido:.0f} reais; "
-                          "mantenha a operação aberta.")
+            opcoes.append("Fique tranquilo. O lucro já está protegido.")
         frase = opcoes[estado["n"] % len(opcoes)]
     elif resultado < 0 and saude_pct > -60.0:
         perda_stop = (posicao.entrada - posicao.stop) * direcao * cfg.VALOR_PONTO_REAIS \
             + cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
         if perda_stop > 0 and estado["pico_preco"] != preco_atual:
             opcoes = [
-                f"Fique tranquilo. A oscilação está dentro do previsto: o risco máximo desta operação é de "
-                f"{perda_stop:.0f} reais, no stop em {posicao.stop:.0f}.",
-                f"Mantenha a calma e o plano. O preço está a {dist_stop:.0f} pontos do stop, e o risco já foi definido.",
+                "Fique tranquilo. O risco já está definido.",
+                "Mantenha a calma e o plano.",
             ]
             frase = opcoes[estado["n"] % len(opcoes)]
     if frase:

@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V533 — narração de serenidade curta
+
+Pedido do dono (09/10/2026): evitar narrações longas e detalhadas. A voz de serenidade agora diz só o básico, sem números: "Fique tranquilo, mantenha a operação aberta.", "Respire e siga o plano.", "Mantenha a calma. O recuo é normal." Com o stop já no lucro: "Fique tranquilo. O lucro já está protegido." Com perda pequena: "Fique tranquilo. O risco já está definido." As condições de V532 não mudam (a cada 120 s, calada com 2 ou mais alertas, stop colado, alvo ou sem 1 R medido). Só texto de voz.
+
+---
+
 ## V532 — capitão com stop mais curto (v02) e narração de serenidade
 
 Pedido do dono (09/10/2026): evitar que o lucro volte tanto e dar um tom de calma à narração, porque com a operação aberta o emocional pesa.

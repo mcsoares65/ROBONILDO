@@ -360,7 +360,8 @@ class CalmaTest(unittest.TestCase):
         self.assertIsNone(self.pr._frase_calma(pos, 208250.0, self.t0))          # no pico: nada a dizer
         fala = self.pr._frase_calma(pos, 207950.0, self.t0 + timedelta(seconds=5))   # recuou 300 pts, segue no lucro
         self.assertIsNotNone(fala)
-        self.assertIn("300", fala)                                                # fala o numero real do recuo
+        self.assertLessEqual(len(fala), 60)                                       # V533: frase curta e basica
+        self.assertFalse(any(ch.isdigit() for ch in fala))
         for proibida in ("garant", "certeza", "vai subir", "jogo", "jogador", "porta", "em campo"):
             self.assertNotIn(proibida, fala.lower())
 
@@ -409,7 +410,7 @@ class CalmaTest(unittest.TestCase):
         achadas = []
         for i in range(4):
             achadas.append(self.pr._frase_calma(pos, 208600.0, self.t0 + timedelta(seconds=130 * (i + 1))))
-        self.assertTrue(any(a and "garante pelo menos" in a for a in achadas))
+        self.assertTrue(any(a and "protegido" in a for a in achadas))
 
     def test_com_alvo_ou_sem_1r_medido_fica_calada(self):
         pos = self._pos("c8")
