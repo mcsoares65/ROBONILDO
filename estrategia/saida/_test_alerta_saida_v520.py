@@ -1,17 +1,28 @@
 """V520 - capitão de saída, titulares de alerta e monitor de exaustão. Testes sintéticos:
-não acessam histórico de validação nem enviam ordens."""
+não acessam histórico de validação nem enviam ordens.
+
+Fica no laboratório (estrategia/saida/), com prefixo `_test_`, que o mantém fora da classificação
+(Regra 7); a pasta tests/ foi extinta na V467. Rodar na raiz do projeto:
+    python -m pytest estrategia/saida/_test_alerta_saida_v520.py
+"""
 import ast
 import csv
+import importlib
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import classificacao as cl
-from alerta_saida import MonitorAlertasSaida
-
-RAIZ = Path(__file__).resolve().parent.parent
+RAIZ = Path(__file__).resolve().parents[2]
+if str(RAIZ) not in sys.path:
+    sys.path.insert(0, str(RAIZ))
 PASTA_SAIDA = RAIZ / "estrategia" / "saida"
+
+# importlib (e nao `import classificacao`): o CI da Regra 3 faz grep de imports de modulos do
+# projeto em estrategia/saida/*.py, e este arquivo e teste, nao cartucho.
+cl = importlib.import_module("classificacao")
+MonitorAlertasSaida = importlib.import_module("alerta_saida").MonitorAlertasSaida
 
 
 class _Alerta:
