@@ -340,6 +340,22 @@ class TrailingVisivelTest(unittest.TestCase):
         self.assertIsNone(self.pr._frase_trailing(recuperada, 209000.0))
 
 
+class FraseEscalaTest(unittest.TestCase):
+    """V535: a frase da Escala so cita 'Próxima condição' quando falta mesmo alguma."""
+    def test_sem_condicao_faltando_nao_fala_proxima(self):
+        esc = importlib.import_module("escalacao")
+        time = esc.Escalacao([esc.Membro("x", gerar_sinal=lambda row: 1)])
+        texto = time.diagnosticar_sinal({})["explicacao"]
+        self.assertIn("1 de 1 confirmações.", texto)
+        self.assertNotIn("Próxima condição", texto)
+        self.assertNotIn("nenhuma", texto)
+
+    def test_com_condicao_faltando_continua_citando(self):
+        esc = importlib.import_module("escalacao")
+        time = esc.Escalacao([esc.Membro("x", gerar_sinal=lambda row: 0)])
+        self.assertIn("Próxima condição: condições da estratégia.", time.diagnosticar_sinal({})["explicacao"])
+
+
 class DebounceVozTest(unittest.TestCase):
     """V534: a voz so anuncia mudanca de nivel que ficou estavel; o log continua registrando tudo."""
     def setUp(self):
