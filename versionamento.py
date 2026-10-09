@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V521"
+VERSAO = "V522"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,12 @@ VERSAO = "V521"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V522 - painel: linhas que quebravam no console (09/10/2026)
+# Linha da posicao: sem alvo (capitao trailing) a coluna "Alvo - (-)" some e entra "Exaustao n/N ha Ns" (113 colunas);
+# com alvo, forma curta "Ex n/N". Linha da Escala: avisos "ENTRADAS BLOQUEADAS (buraco, N candles)" e "dados
+# aproximados (N candles)" (145 colunas) viram "BLOQ Nc" e "aprox". So formato de texto; nenhuma decisao muda.
+# Arquivos: principal.py, alerta_saida.py, versionamento.py, changelog.md.
+
 # V521 - alerta de exaustao do MACD (09/10/2026)
 # Pedido do dono: o MACD perdendo forca e importante. O row ganha macd_prev e macd_signal_prev (valores do candle
 # anterior, que construir_row ja calculava para os cruzamentos; nenhuma conta nova, nenhuma decisao muda) e entra o

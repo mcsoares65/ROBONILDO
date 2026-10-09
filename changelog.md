@@ -4,6 +4,15 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V522 — painel: linhas que quebravam no console
+
+Visto pelo dono no replay de 08/10: as linhas da Escala com o aviso de dados aproximados passavam de 140 colunas e quebravam.
+- **Escala:** `ENTRADAS BLOQUEADAS (buraco, N candles)` virou `BLOQ Nc` e `dados aproximados (N candles)` virou `aprox` (a explicação completa já é impressa e narrada quando o buraco surge). Linha de 145 para 121–123 colunas.
+- **Posição:** sem alvo (o capitão trailing nunca define um) a coluna `Alvo - (-)` some e entra `Exaustão n/N há Ns`; a linha fica com 113 colunas, igual à da Escala. Com alvo definido, a exaustão vai na forma curta `Ex n/N`. Sem isso, a linha com a exaustão da V520 chegava a 133 colunas.
+- Só texto do painel; nenhuma decisão muda.
+
+---
+
 ## V521 — alerta de exaustão do MACD
 
 Pedido do dono (09/10/2026): o MACD perdendo força é um marcador importante.

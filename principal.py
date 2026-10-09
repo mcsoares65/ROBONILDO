@@ -1425,15 +1425,18 @@ def rodar():
                     lado_colorido = f"{COR_BAIXA}{'VENDA':<6}{COR_RESET}"
                 quadro_posicao = _quadro_resultado(pos, preco)
                 progresso_pct = abs(_progresso_posicao(pos, preco)) * 100
-                alvo_txt = (f"Alvo {pos.alvo:6.0f} ({abs(pos.alvo - preco):4.0f})"
-                            if pos.alvo is not None else "Alvo      - (   -)")
+                # V522: sem alvo (o capitao trailing nunca define um) a coluna "Alvo - (-)" so ocupava
+                # 20 colunas; some, e no lugar entra a exaustao com o "ha Ns". Com alvo definido a
+                # exaustao vai na forma curta. Assim a linha cabe na largura do console (sem quebra).
+                alvo_campo = (f"Alvo {pos.alvo:6.0f} ({abs(pos.alvo - preco):4.0f}) | "
+                              if pos.alvo is not None else "")
                 stop_txt = (f"Stop {pos.stop:6.0f} ({abs(preco - pos.stop):4.0f})"
                             if pos.stop is not None else "Stop      - (   -)")
                 print(f"[{agora.strftime('%H:%M:%S')}] {lado_colorido} | "
                       f"Ent {pos.entrada:6.0f} | Atual {preco:6.0f} | "
-                      f"Res {resultado_colorido} | {alvo_txt} | {stop_txt} | "
+                      f"Res {resultado_colorido} | {alvo_campo}{stop_txt} | "
                       f"{progresso_pct:3.0f}% {quadro_posicao}"
-                      f"{monitor_alertas.texto_painel(agora_real)}")
+                      f"{monitor_alertas.texto_painel(agora_real, compacto=pos.alvo is not None)}")
             else:
                 if ma21 is not None and ma50 is not None and candle_atual is not None:
                     cor_tendencia = COR_ALTA if tendencia == "ALTA" else COR_BAIXA
@@ -1484,11 +1487,12 @@ def rodar():
                     if radar_100_desde is not None and progresso_radar >= 1.0:
                         segundos_100 = max(0, int((agora_real - radar_100_desde).total_seconds()))
                         sustentacao = f" | há {segundos_100}s"
+                    # V522: avisos curtos (a explicacao completa ja foi narrada/impressa quando o buraco
+                    # surgiu); antes passavam de 140 colunas e quebravam a linha do painel.
                     aviso_bloqueio = (
-                        f" | {COR_BAIXA}ENTRADAS BLOQUEADAS (buraco, {candles_aquecimento_restantes} candles)"
+                        f" | {COR_BAIXA}BLOQ {candles_aquecimento_restantes}c"
                         f"{COR_RESET}" if candles_aquecimento_restantes > 0
-                        else (f" | dados aproximados ({len(_horarios_sinteticos)} candles)"
-                              if _horarios_sinteticos else "")
+                        else (" | aprox" if _horarios_sinteticos else "")
                     )
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço {preco:6.0f} | "
                           f"{tendencia_colorida} | Escala {status_sinal} | "
