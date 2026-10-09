@@ -69,10 +69,14 @@ def diagnosticar_oportunidades(row):
         (not ("12:30" <= hora <= "13:15"), "horário permitido"),
         (not (279.0 <= amplitude <= 360.0), "amplitude fora da faixa fraca"),
     ]
+    # V538: texto direto (so painel e voz; nao muda o sinal): o que falta e o CRUZAMENTO do estocastico, nao estar "na zona"
+    rotulo_cruzamento = ("estocástico cruzar os 20 para cima" if tendencia == 1
+                         else "estocástico cruzar os 80 para baixo" if tendencia == -1
+                         else "cruzamento do estocástico")
     condicoes = [
         (amplitude > 0, "amplitude válida"),
         (amplitude > 0 and corpo <= CORPO_MAXIMO_PROPORCAO * amplitude, "corpo sem exaustão"),
-        (bool(cruzamento_extremo), "saída da zona extrema do estocástico"),
+        (bool(cruzamento_extremo), rotulo_cruzamento),
     ]
     elegivel = all(ok for ok, _ in elegibilidade)
     # V515: proximidade fina de cada condicao (so painel; gerar_sinal nao usa)
@@ -94,8 +98,9 @@ def diagnosticar_oportunidades(row):
     bloqueio_horario = faltante == "horário permitido"
     if bloqueio_horario:
         detalhe = "BLOQUEADA ATÉ 13:30"
-    elif faltante == "saída da zona extrema do estocástico":
-        detalhe = "estoc. saindo da zona extrema"   # V516: cabe na coluna do painel (29), sem reticências
+    elif faltante == rotulo_cruzamento:
+        detalhe = ("estoc. cruzar 20 para cima" if tendencia == 1          # V538 (antes V516: "estoc. saindo da zona extrema")
+                   else "estoc. cruzar 80 para baixo" if tendencia == -1 else "cruzamento do estoc.")
     elif faltante == "corpo sem exaustão":
         proporcao_corpo = (corpo / amplitude * 100.0) if amplitude > 0 else 0.0
         detalhe = f"corpo {proporcao_corpo:.0f}% (máx. 70%)"

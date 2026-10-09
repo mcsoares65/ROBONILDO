@@ -72,6 +72,21 @@ def _quadro_proximidade(progresso: float, segundos_restantes: float,
     return f"\x1b[38;5;{codigo_cor}m{quadrado}{COR_RESET}"
 
 
+def _consenso_time(radar, lider):
+    """V538: opiniao media do TIME de entrada sobre o cenario, de 0 a 1. Cada titular conta uma vez, com o
+    seu melhor item do radar (mesmo que nao seja o escalado); quem aponta para o lado contrario ao da
+    estrategia na frente conta 0. So painel: nao entra em nenhuma decisao."""
+    if not radar:
+        return 0.0
+    direcao = lider.get("direcao") if lider else None
+    melhores = {}
+    for item in radar:
+        chave = item.get("titular") or item.get("estrategia")
+        valor = float(item.get("progresso", 0.0)) if item.get("direcao") == direcao else 0.0
+        melhores[chave] = max(melhores.get(chave, 0.0), valor)
+    return sum(melhores.values()) / len(melhores)
+
+
 def _resultado_liquido_reais(posicao, preco_atual: float) -> float:
     """
     Resultado em reais se a posicao fosse fechada AGORA, ja descontando o
@@ -1544,6 +1559,10 @@ def rodar():
             # V517: 100% só quando o sinal está confirmado; antes disso o painel trunca (99,6 vira 99, não 100)
             _p = max(0.0, min(1.0, float(progresso_radar)))
             progresso_radar_pct = 100.0 if _p >= 1.0 else float(min(99, int(_p * 100)))
+            # V538: segunda coluna = consenso do time (media dos titulares), com a mesma cor/regra da primeira
+            _c = max(0.0, min(1.0, _consenso_time(radar, oportunidade_prioritaria)))
+            consenso_pct = 100.0 if _c >= 1.0 else float(min(99, int(_c * 100)))
+            quadro_consenso = _quadro_proximidade(_c, segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60)
             if gestor.posicao_aberta:
                 pos = gestor.posicao_aberta
                 resultado_reais = _resultado_liquido_reais(pos, preco)
@@ -1658,6 +1677,7 @@ def rodar():
                           f"{tendencia_colorida} | Escala {status_sinal} | "
                           f"{confirmacoes_radar:^3} | {campo_detalhe}"
                           f" | {progresso_radar_pct:3.0f}% {quadro}"
+                          f" | {consenso_pct:3.0f}% {quadro_consenso}"
                           f"{sustentacao}{aviso_bloqueio}")   # V518: % e quadrado fixos; "há Ns" vai depois
                 else:
                     print(f"[{agora.strftime('%H:%M:%S')}] Preço:{preco:.0f} | "

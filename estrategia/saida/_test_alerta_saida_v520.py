@@ -340,6 +340,47 @@ class TrailingVisivelTest(unittest.TestCase):
         self.assertIsNone(self.pr._frase_trailing(recuperada, 209000.0))
 
 
+class ConsensoTimeTest(unittest.TestCase):
+    """V538: segunda coluna do painel de pre-operacao = media de opiniao do time."""
+    @classmethod
+    def setUpClass(cls):
+        cls.pr = importlib.import_module("principal")
+
+    @staticmethod
+    def _item(titular, prog, direcao="COMPRA"):
+        return {"titular": titular, "estrategia": titular, "progresso": prog, "direcao": direcao}
+
+    def test_media_dos_titulares_mesmo_os_nao_escalados(self):
+        radar = [self._item("a", 0.9), self._item("b", 0.3), self._item("c", 0.0)]
+        self.assertAlmostEqual(self.pr._consenso_time(radar, radar[0]), 0.4)
+
+    def test_cada_titular_conta_uma_vez_com_o_melhor_item(self):
+        radar = [self._item("a", 0.9), self._item("a", 0.1), self._item("b", 0.3)]
+        self.assertAlmostEqual(self.pr._consenso_time(radar, radar[0]), 0.6)
+
+    def test_lado_contrario_conta_zero_e_radar_vazio_e_zero(self):
+        radar = [self._item("a", 1.0), self._item("b", 1.0, direcao="VENDA")]
+        self.assertAlmostEqual(self.pr._consenso_time(radar, radar[0]), 0.5)
+        self.assertEqual(self.pr._consenso_time([], None), 0.0)
+
+    def test_texto_da_saida_de_extremo_fala_do_cruzamento(self):
+        import importlib.util
+        caminho = RAIZ / "estrategia" / "entrada" / "titular" / "entrada_saida_extremo_v01.py"
+        spec = importlib.util.spec_from_file_location("ent_extremo_teste", caminho)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        from datetime import datetime as _dt
+        row = {"trend": 1, "dt": _dt(2026, 10, 9, 15, 0), "Maximo": 100.0, "Minimo": 0.0, "Abertura": 10.0,
+               "Fechamento": 40.0, "stoch_cross_up_20": False, "stoch_cross_down_80": False, "stoch": 50.0}
+        item = mod.diagnosticar_oportunidades(row)[0]
+        self.assertEqual(item["faltantes"], ["estocástico cruzar os 20 para cima"])
+        self.assertEqual(item["detalhe"], "estoc. cruzar 20 para cima")
+        self.assertLessEqual(len(item["detalhe"]), 29)
+        row.update(trend=-1)
+        item = mod.diagnosticar_oportunidades(row)[0]
+        self.assertEqual(item["detalhe"], "estoc. cruzar 80 para baixo")
+
+
 class VozMediaMovelTest(unittest.TestCase):
     """V537: a voz diz 'Média Móvel 21' em vez de 'MA21'."""
     @classmethod

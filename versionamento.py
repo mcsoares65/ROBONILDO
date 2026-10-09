@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V537"
+VERSAO = "V538"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,16 @@ VERSAO = "V537"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V538 - consenso do time no painel de pre-operacao + texto claro da Saida de Extremo (09/10/2026)
+# Pedido do dono: (1) trocar "Falta estoc. saindo da zona extrema" por frase facil; (2) manter o "85% ■" (estrategia escalada) e criar
+# uma segunda coluna, a ultima da linha, com o CONSENSO do time: media da opiniao de todos os titulares de entrada, mesmo os que
+# nao estao escalados, com a mesma cor e a mesma regra do 100% so com sinal confirmado.
+# (1) entrada_saida_extremo_v01.diagnosticar_oportunidades (so texto; gerar_sinal nao mudou): "Falta estoc. cruzar 20 para cima"
+#     (compra) / "...80 para baixo" (venda); a voz diz "Ainda aguardamos estocastico cruzar os 20 para cima".
+# (2) principal._consenso_time: cada titular conta uma vez com o seu melhor item do radar; titular que aponta para o lado contrario ao
+#     da estrategia na frente conta 0; radar vazio = 0. A coluna fica antes do "ha Ns" e do aviso de bloqueio (sufixos variaveis).
+#     So painel: nao entra em nenhuma decisao.
+
 # V537 - voz diz "Media Movel 21" em vez de "MA21" (09/10/2026)
 # Pedido do dono. principal._texto_para_voz troca a palavra inteira MA21 (qualquer caixa; tambem em nomes como
 # entrada_retomada_ma21_v01) por "Média Móvel 21" dentro de narrar(), entao vale para todas as frases, na tela e na voz.

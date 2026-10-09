@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V538 — consenso do time no painel e texto claro da Saída de Extremo
+
+Pedido do dono (09/10/2026). **Texto:** "Falta estoc. saindo da zona extrema" virou "Falta estoc. cruzar 20 para cima" (compra) ou "…80 para baixo" (venda). O que a estratégia espera é o cruzamento do estocástico, e não ele estar em alguma zona. A voz também passou a dizer "Ainda aguardamos estocástico cruzar os 20 para cima". O sinal da estratégia não mudou. **Painel de pré-operação:** a primeira coluna ("85% ■") continua mostrando a estratégia escalada. Foi criada uma segunda coluna, logo depois dela, com o consenso do time: a média de opinião de todos os titulares de entrada, mesmo os não escalados, com a mesma cor e com a regra de só chegar a 100% quando todos confirmam. Cada titular conta uma vez; quem aponta para o lado contrário conta zero. Só painel; nenhuma decisão muda.
+
+---
+
 ## V537 — voz diz "Média Móvel 21"
 
 Pedido do dono (09/10/2026): sempre que a narração citar MA21 (inclusive no nome da estratégia, como "Retomada MA21"), passa a dizer "Média Móvel 21". A troca é feita na própria função de narração, então vale para todas as frases. Painel, logs e decisão não mudam.
