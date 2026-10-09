@@ -144,6 +144,69 @@ def _frase_trailing(posicao, preco_atual: float, proximo_fechamento=None):
     return None
 
 
+_CALMA = {}   # horario_entrada -> {"pico_preco": float, "ultima": datetime|None, "n": int}
+CALMA_INTERVALO_SEGUNDOS = 120     # no maximo uma frase de calma a cada 120 s de relogio real
+CALMA_RECUO_MIN_PCT = 15.0         # recuo (em pontos de saude) desde o pico para falar
+CALMA_PICO_MIN_PCT = 20.0          # o pico de saude precisa ter passado disso para valer falar de recuo
+
+
+def _frase_calma(posicao, preco_atual: float, agora_real, nivel_exaustao: int = 0):
+    """V532: frase de serenidade, so quando os FATOS sustentam o plano: a operacao recuou mas o stop esta
+    longe do preco e nao ha exaustao confirmada por 2 ou mais alertas. Nunca promete resultado; diz o
+    recuo, a distancia ate o stop e o risco ja definido. Limitada a uma frase por CALMA_INTERVALO_SEGUNDOS (120 s).
+    Devolve a frase ou None. Fala so em posicao sem alvo (capitao trailing) e com 1 R medido."""
+    if posicao.alvo is not None or posicao.stop is None:
+        return None
+    risco = _risco_inicial_pts(posicao)
+    if risco is None:
+        return None
+    direcao = 1 if posicao.lado == "COMPRA" else -1
+    estado = _CALMA.setdefault(posicao.horario_entrada, {"pico_preco": preco_atual, "ultima": None, "n": 0})
+    if (preco_atual - estado["pico_preco"]) * direcao > 0:
+        estado["pico_preco"] = preco_atual
+    if nivel_exaustao >= 2:                       # exaustao confirmada: nao e hora de tranquilizar
+        return None
+    if estado["ultima"] is not None and (agora_real - estado["ultima"]).total_seconds() < CALMA_INTERVALO_SEGUNDOS:
+        return None
+    progresso = _progresso_posicao(posicao, preco_atual, risco)           # -1 .. +1
+    pico_pct = max(0.0, (estado["pico_preco"] - posicao.entrada) * direcao / risco * 100.0)
+    saude_pct = progresso * 100.0
+    recuo_pts = (estado["pico_preco"] - preco_atual) * direcao
+    dist_stop = (preco_atual - posicao.stop) * direcao
+    resultado = _resultado_liquido_reais(posicao, preco_atual)
+    frase = None
+    if resultado > 0 and pico_pct >= CALMA_PICO_MIN_PCT and pico_pct - saude_pct >= CALMA_RECUO_MIN_PCT \
+            and dist_stop > 0.25 * risco:
+        garantido = (posicao.stop - posicao.entrada) * direcao * cfg.VALOR_PONTO_REAIS \
+            - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        opcoes = [
+            f"Fique tranquilo, mantenha a operação aberta. O preço recuou {recuo_pts:.0f} pontos do pico, "
+            f"mas o stop está a {dist_stop:.0f} pontos e o plano é esperar.",
+            f"Respire e siga o plano. Um recuo de {recuo_pts:.0f} pontos é normal; "
+            f"o resultado segue positivo, em {resultado:.0f} reais.",
+            f"Mantenha a calma. O stop está em {posicao.stop:.0f} e ainda não foi tocado; "
+            "enquanto isso não acontecer, a decisão é manter.",
+        ]
+        if garantido > 0:
+            opcoes.append(f"Fique tranquilo. O stop já garante pelo menos {garantido:.0f} reais; "
+                          "mantenha a operação aberta.")
+        frase = opcoes[estado["n"] % len(opcoes)]
+    elif resultado < 0 and saude_pct > -60.0:
+        perda_stop = (posicao.entrada - posicao.stop) * direcao * cfg.VALOR_PONTO_REAIS \
+            + cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        if perda_stop > 0 and estado["pico_preco"] != preco_atual:
+            opcoes = [
+                f"Fique tranquilo. A oscilação está dentro do previsto: o risco máximo desta operação é de "
+                f"{perda_stop:.0f} reais, no stop em {posicao.stop:.0f}.",
+                f"Mantenha a calma e o plano. O preço está a {dist_stop:.0f} pontos do stop, e o risco já foi definido.",
+            ]
+            frase = opcoes[estado["n"] % len(opcoes)]
+    if frase:
+        estado["ultima"] = agora_real
+        estado["n"] += 1
+    return frase
+
+
 def _progresso_posicao(posicao, preco_atual: float, risco_ref_pts=None) -> float:
     """
     Progresso da posicao aberta, de -1.0 (no stop) a +1.0 (no alvo), em
@@ -1508,6 +1571,10 @@ def rodar():
                     fala_trailing = _frase_trailing(pos, preco, proximo_fechamento)
                     if fala_trailing:
                         narrar(fala_trailing)
+                    else:
+                        fala_calma = _frase_calma(pos, preco, agora_real, monitor_alertas.nivel)
+                        if fala_calma:
+                            narrar(fala_calma, descartavel=True)
                     quadro_exaustao = _quadro_proximidade(
                         campos_exaustao["progresso"], segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
                     )
