@@ -279,12 +279,12 @@ print(f"[DIAGNOSTICO] motor calcula RSI/ATR? "
 # rodada 3 - evita acoplamento oculto entre os dois).
 
 
-def _importar_titular(nome_pasta: str, arquivo, funcao_obrigatoria: str):
+def _importar_titular(nome_pasta: str, arquivo, funcao_obrigatoria: str, papel: str = "titular"):
     nome = arquivo.stem
     # Import por caminho de arquivo — evita depender de estrategia/ ser pacote
     # com __init__ em todas as subpastas (titular/ pode ser so uma pasta de arquivos).
     spec = importlib.util.spec_from_file_location(
-        f"robonildo_{nome_pasta}_titular_{nome}",
+        f"robonildo_{nome_pasta}_{papel}_{nome}",
         arquivo,
     )
     if spec is None or spec.loader is None:
@@ -293,7 +293,7 @@ def _importar_titular(nome_pasta: str, arquivo, funcao_obrigatoria: str):
     spec.loader.exec_module(modulo)
     if not callable(getattr(modulo, funcao_obrigatoria, None)):
         raise RuntimeError(
-            f"'{nome}.py' (em estrategia/{nome_pasta}/titular/) nao fornece "
+            f"'{nome}.py' (em estrategia/{nome_pasta}/, papel {papel}) nao fornece "
             f"{funcao_obrigatoria}(...); cartucho invalido."
         )
     return nome, modulo
@@ -308,12 +308,12 @@ def _descobrir_cartucho(nome_pasta: str, funcao_obrigatoria: str):
     """
     Acha exatamente 1 arquivo .py em estrategia/<nome_pasta>/titular/
     (ignora arquivos que comecam com "_"). Confirma a funcao obrigatoria.
-    Usado pela SAIDA: so existe um titular de saida (a escalacao de saidas
-    ainda nao existe).
+    Mantida para compatibilidade; a SAIDA usa _descobrir_capitao_saida() desde a V520.
 
-    Estrutura V431:
-      estrategia/entrada/titular/  → cartuchos de entrada de producao (V497: 1 ou mais)
-      estrategia/saida/titular/    → cartucho de saida de producao
+    Estrutura V520:
+      estrategia/entrada/titular/          → cartuchos de entrada de producao (V497: 1 ou mais)
+      estrategia/saida/titular/capitao/    → exatamente 1 cartucho: o capitao, UNICO que decide a saida
+      estrategia/saida/titular/            → 0 ou mais cartuchos de exaustao: rodam ao vivo, so ALERTAM
     Candidatas de ranking ficam na raiz do slot (fora de titular/) e nao
     sao carregadas aqui — so no classificacao.py.
     """
@@ -325,6 +325,34 @@ def _descobrir_cartucho(nome_pasta: str, funcao_obrigatoria: str):
             f"{[a.name for a in candidatos]}"
         )
     return _importar_titular(nome_pasta, candidatos[0], funcao_obrigatoria)
+
+
+def _descobrir_capitao_saida():
+    """V520: o capitao de saida e o UNICO arquivo .py em estrategia/saida/titular/capitao/.
+    So ele decide fechar, stop e alvo da posicao (Regra 1). Trocar de capitao = mover
+    arquivo, por merge de PR do dono."""
+    pasta = _Path(__file__).parent / "estrategia" / "saida" / "titular" / "capitao"
+    arquivos = [a for a in sorted(pasta.glob("*.py")) if not a.stem.startswith("_")]
+    if len(arquivos) != 1:
+        raise RuntimeError(
+            "A pasta 'estrategia/saida/titular/capitao/' deve conter exatamente 1 "
+            f"arquivo de cartucho; foram encontrados {len(arquivos)}: {[a.name for a in arquivos]}"
+        )
+    return _importar_titular("saida", arquivos[0], "avaliar_saida", papel="capitao")
+
+
+def _descobrir_alertas_saida():
+    """V520: titulares de saida que so ALERTAM. Ficam em estrategia/saida/titular/
+    (fora de capitao/), 0 ou mais. Rodam em sombra no candle em formacao: se dizem
+    "fechar", o robo narra e grava o alerta, mas NUNCA fecha a posicao por eles.
+    Um alerta defeituoso e ignorado (nao derruba o robo)."""
+    alertas = []
+    for arquivo in _arquivos_titulares("saida"):
+        try:
+            alertas.append(_importar_titular("saida", arquivo, "avaliar_saida", papel="alerta"))
+        except Exception as erro:
+            print(f"[ALERTA DE SAÍDA] {arquivo.name} ignorado: {type(erro).__name__}: {erro}")
+    return alertas
 
 
 def _descobrir_titulares_entrada():
@@ -357,9 +385,12 @@ else:
     for _n, _ in _titulares_entrada:
         print(f"  - {_n}.py")
 
-_nome_saida, _modulo_saida = _descobrir_cartucho("saida", "avaliar_saida")
+_nome_saida, _modulo_saida = _descobrir_capitao_saida()
 diagnosticar_saida = getattr(_modulo_saida, "diagnosticar_saida", None)
-print(f"Cartucho de saída: {_nome_saida}.py  [estrategia/saida/titular/]")
+print(f"Capitão de saída: {_nome_saida}.py  [estrategia/saida/titular/capitao/]")
+_alertas_saida = _descobrir_alertas_saida()
+for _n, _ in _alertas_saida:
+    print(f"  Alerta de saída (só avisa, não fecha): {_n}.py  [estrategia/saida/titular/]")
 
 from construtor_candle import ConstrutorCandle, candles_faltando
 import integridade_historico as _integridade
@@ -368,6 +399,7 @@ from historico_csv import resolver_csv_historico
 from registrador import Registrador
 from auditor_execucao import AuditorExecucao
 from caminho_operacao import CaminhoOperacao
+from alerta_saida import MonitorAlertasSaida
 from leitor_dde import LeitorDDE
 import leitor_dde as _leitor_dde_mod  # so para acessar PREFIXO_REPLAY (constante de config)
 
@@ -647,6 +679,12 @@ def rodar():
     caminho = CaminhoOperacao(
         pasta_logs=cfg.PASTA_LOGS_AUDITORIA,
         habilitado=cfg.AUDITORIA_EXECUCAO_ATIVA and not _MODO_REPLAY,
+    )
+    # V520: titulares de alerta da saida (so avisam, nunca fecham). Replay nao grava log.
+    monitor_alertas = MonitorAlertasSaida(
+        _alertas_saida,
+        pasta_logs=None if _MODO_REPLAY else cfg.PASTA_LOGS_AUDITORIA,
+        intervalo_s=cfg.ALERTA_SAIDA_INTERVALO_SEGUNDOS,
     )
     executor = ExecutorOrdem()
     fila_noticias = queue.Queue()
@@ -1121,6 +1159,7 @@ def rodar():
             tendencia = "ALTA" if ma21 > ma50 else "BAIXA"
 
             if not gestor.posicao_aberta:
+                monitor_alertas.encerrar(agora_real)   # V520: fim da posicao -> resumo do log e zera
                 # ---------- "Prestes a disparar": chama a estrategia REAL, de forma
                 # especulativa, no candle ainda em formacao - GENERICO para qualquer
                 # estrategia (nativa ou vinda do laboratorio via ponte), nao mais uma
@@ -1281,6 +1320,31 @@ def rodar():
                     narrar(frase_saida)
                     ultima_saida_especulativa_narrada = chave_saida_especulativa
 
+                # ---------- V520: nivel de exaustao (titulares de alerta) ----------
+                # So avisa e grava; quem decide a saida e o capitao. Mesmo contador de
+                # relogio real da entrada ("ha Ns"): fala quando o nivel sobe e a cada
+                # ALERTA_SAIDA_INTERVALO_SEGUNDOS enquanto ele se mantem.
+                try:
+                    pico_pts = ((posicao_especulativa["maxima_desde_entrada"] - posicao_atual.entrada)
+                                if direcao == 1 else
+                                (posicao_atual.entrada - posicao_especulativa["minima_desde_entrada"]))
+                    fala_exaustao = monitor_alertas.avaliar(
+                        row_indicadores, posicao_especulativa,
+                        (candle_atual.horario, posicao_atual.horario_entrada), agora_real,
+                        {
+                            "horario_entrada": posicao_atual.horario_entrada,
+                            "lado": posicao_atual.lado, "entrada": posicao_atual.entrada,
+                            "preco": preco, "candle": candle_atual.horario.strftime("%H:%M"),
+                            "lucro_pts": round(resultado_especulativo, 1), "pico_pts": round(pico_pts, 1),
+                            "lucro_reais": _resultado_liquido_reais(posicao_atual, preco),
+                        },
+                    )
+                except Exception:
+                    fala_exaustao = None
+                if fala_exaustao:
+                    print(f"[EXAUSTÃO] {fala_exaustao}")
+                    narrar(fala_exaustao)
+
         # ---------- Cenário visual antes do fechamento ----------
         # O candle ainda está em formação - o dado narrado aqui é uma leitura
         # do momento, não uma decisão (a decisão real só acontece no
@@ -1368,7 +1432,8 @@ def rodar():
                 print(f"[{agora.strftime('%H:%M:%S')}] {lado_colorido} | "
                       f"Ent {pos.entrada:6.0f} | Atual {preco:6.0f} | "
                       f"Res {resultado_colorido} | {alvo_txt} | {stop_txt} | "
-                      f"{progresso_pct:3.0f}% {quadro_posicao}")
+                      f"{progresso_pct:3.0f}% {quadro_posicao}"
+                      f"{monitor_alertas.texto_painel(agora_real)}")
             else:
                 if ma21 is not None and ma50 is not None and candle_atual is not None:
                     cor_tendencia = COR_ALTA if tendencia == "ALTA" else COR_BAIXA

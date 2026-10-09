@@ -269,7 +269,8 @@ def listar_cartuchos_disco() -> dict:
       estrategia/entrada/titular/   → 1 ou mais .py (titulares de entrada; 2+ formam a escalação, Regra 17)
       estrategia/entrada/*.py      → candidatas de ranking de ENTRADA
 
-      estrategia/saida/titular/     → exatamente 1 .py  (saída de produção)
+      estrategia/saida/titular/capitao/ → exatamente 1 .py  (capitão: único que decide a saída)
+      estrategia/saida/titular/*.py → 0 ou mais .py (titulares de alerta: avisam, não fecham; V520)
       estrategia/saida/*.py        → candidatas de ranking de SAÍDA
 
     Rankings:
@@ -282,6 +283,7 @@ def listar_cartuchos_disco() -> dict:
     pasta_saida = raiz / "estrategia" / "saida"
     pasta_entrada_titular = pasta_entrada / "titular"
     pasta_saida_titular = pasta_saida / "titular"
+    pasta_saida_capitao = pasta_saida_titular / "capitao"
 
     return {
         "raiz": raiz,
@@ -289,9 +291,11 @@ def listar_cartuchos_disco() -> dict:
         "pasta_saida": pasta_saida,
         "pasta_entrada_titular": pasta_entrada_titular,
         "pasta_saida_titular": pasta_saida_titular,
+        "pasta_saida_capitao": pasta_saida_capitao,
         "entrada_titular": _listar_py(pasta_entrada_titular),
         "entrada_candidatas": _listar_py(pasta_entrada),
-        "saida_titular": _listar_py(pasta_saida_titular),
+        "saida_titular": _listar_py(pasta_saida_capitao),      # o capitão
+        "saida_alertas": _listar_py(pasta_saida_titular),       # titulares de alerta (V520)
         "saida_candidatas": _listar_py(pasta_saida),
     }
 
@@ -362,19 +366,22 @@ def montar_time(entradas: list[CartuchoEntrada]) -> Optional[CartuchoEntrada]:
 
 
 def descobrir_saidas() -> tuple[list[CartuchoSaida], list[tuple[str, str]]]:
-    """Todas as saídas: titular + candidatas na raiz de saida/."""
+    """Todas as saídas: capitão + titulares de alerta + candidatas na raiz de saida/.
+    Só o capitão é `titular=True` (é quem decide a saída ao vivo); os de alerta são
+    rankeados como candidatas, para o dono comparar com o capitão."""
     inv = listar_cartuchos_disco()
     titulares = inv["saida_titular"]
     if len(titulares) != 1:
         raise RuntimeError(
-            "A pasta estrategia/saida/titular/ deve conter exatamente um arquivo. "
-            f"Encontrados: {[p.name for p in titulares]}"
+            "A pasta estrategia/saida/titular/capitao/ deve conter exatamente um arquivo (o capitão da saída; "
+            "V520). Os titulares de alerta ficam em estrategia/saida/titular/, FORA de capitao/. "
+            f"Encontrados em capitao/: {[p.name for p in titulares]}"
         )
     caminho_titular = titulares[0]
 
     caminhos = [caminho_titular]
     vistos = {caminho_titular.stem.casefold()}
-    for caminho in inv["saida_candidatas"]:
+    for caminho in list(inv["saida_alertas"]) + list(inv["saida_candidatas"]):
         if caminho.stem.casefold() in vistos:
             continue
         vistos.add(caminho.stem.casefold())
@@ -415,7 +422,7 @@ def descobrir_cartucho_saida():
     saidas, _ = descobrir_saidas()
     titular = next((s for s in saidas if s.titular), None)
     if titular is None:
-        raise RuntimeError("Nenhuma saída titular encontrada em estrategia/saida/titular/.")
+        raise RuntimeError("Nenhum capitão de saída encontrado em estrategia/saida/titular/capitao/.")
     return titular.nome, titular.avaliar_saida
 
 

@@ -23,6 +23,13 @@ janela de 6/12/24 intervalos, distancia minima de 0,15/0,25/0,35R e maxima de
 janelas; escolheu-se 12 por ser o centro do patamar, e nao o maior resultado.
 O periodo 2020-2024 fica reservado para validacao fora da amostra. Sem
 dependencia de data, evento ou preco absoluto. Contrato S001.
+
+DESCLASSIFICADA na V520 (09/10/2026) por ser maquiagem do trailing de pico (Regra 19).
+Mesmo stop inicial, mesmo gatilho de 1,0 R e mesma catraca de `saida_trailing_pico_v01`; a unica
+diferenca e a distancia ao pico (0,15 a 0,55 R pela razao de Kaufman, em vez de 0,4 R fixo). No motor,
+2020-2026, mesmas entradas: R$ 32.030 com a eficiencia contra R$ 34.408 com o trailing fixo em 0,15 R
+(R$ 32.240 em 0,20 R). A parte adaptativa nao acrescenta nada; o ganho sobre o trailing de 0,4 R vem so de
+a distancia media ser menor. O arquivo fica preservado como esta, sem alteracao de codigo.
 """
 
 from math import isfinite
