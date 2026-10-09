@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V539"
+VERSAO = "V540"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,12 @@ VERSAO = "V539"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V540 - sem falas de calma; painel nao diz mais "Falta nenhuma" (09/10/2026)
+# Pedido do dono: as falas de calma (V532/V533: "Fique tranquilo...", "Mantenha a calma e o plano") irritavam mais do que ajudavam.
+# principal: removidos _frase_calma, _CALMA, CALMA_* e a chamada no heartbeat; as falas do trailing (arma/assume) e a narracao
+# periodica da posicao continuam. Tambem: com todas as condicoes confirmadas a coluna de detalhe do painel de pre-operacao diz
+# "Confirmada: aguarda o fechamento" em vez de "Falta nenhuma". So texto; nenhuma decisao muda.
+
 # V539 - Saida de Extremo diz "pavio" em vez de "corpo" (09/10/2026)
 # Pedido do dono: "corpo 90% (max. 70%)" era confuso. A condicao (corpo <= 70% da amplitude) passa a ser dita pelo lado do pavio:
 # painel "Falta pavio: tem 10%, precisa 30%"; voz "Ainda aguardamos o candle mostrar mais pavio. Hoje tem 10 por cento e precisa de 30."
