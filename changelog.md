@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V524 — sem impressão duplicada de `[CENÁRIO EM FORMAÇÃO]` e `[EXAUSTÃO]`
+
+Pedido do dono (09/10/2026): a narração já mostra a frase. `narrar()` imprime o mesmo texto como `[NARRADOR]`, então as 6 linhas `print(...)` imediatamente antes dela saíam em duplicata. O ajuste era da V522, mas o commit chegou à PR #129 depois do merge e ficou fora da `main`. Só texto do terminal; nenhuma decisão muda.
+
+---
+
 ## V523 — painel da saída no padrão da Escala de entrada
 
 Pedido do dono (09/10/2026): com a operação aberta, ver a análise dos titulares de saída como a Escala mostra na entrada.
