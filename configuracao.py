@@ -76,7 +76,8 @@ NARRACAO_ANTES_FECHAMENTO_SEGUNDOS = 10  # narra o acompanhamento (tendencia/pos
                                           # nos ultimos N segundos antes de CADA fechamento
                                           # de candle, uma vez por candle - nao mais por tempo fixo
                                     # em voz (alem dos eventos de abertura/fechamento)
-ALERTA_SAIDA_INTERVALO_SEGUNDOS = 10   # V520: com exaustao sustentada, repete o aviso a cada N segundos
+ALERTA_SAIDA_INTERVALO_SEGUNDOS = 60   # V520/V534: com exaustao sustentada, repete o aviso a cada N segundos (era 10)
+ALERTA_SAIDA_ESTABILIDADE_SEGUNDOS = 15   # V534: a voz so anuncia mudanca de nivel que ficou estavel por N segundos
 SWING_LOOKBACK_CANDLES = 4      # candles de 15min (1h) usados para o stop estrutural
 RELACAO_RISCO_RETORNO = 1.55    # mesmo MIN_RR usado na homologacao da V19 titular
 

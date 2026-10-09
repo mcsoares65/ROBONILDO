@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V533"
+VERSAO = "V534"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,14 @@ VERSAO = "V533"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V534 - voz dos alertas de exaustao sem oscilar (09/10/2026)
+# Pedido do dono (log do replay): "Exaustao nivel 1..." seguida de "A exaustao se desfez." em segundos, e "sustentada ha N
+# segundos" a cada 10 s, atrapalham a calma que a voz deve passar.
+# alerta_saida.MonitorAlertasSaida: (1) a VOZ so anuncia mudanca de nivel depois de ficar estavel por ALERTA_SAIDA_ESTABILIDADE_SEGUNDOS
+# (15 s); oscilacao mais curta fica muda, e "se desfez" so e dito se o nivel tinha sido anunciado; (2) candle novo nao repete o
+# anuncio do mesmo nivel (antes cada candle recomecava em 0 e voltava a falar); (3) "sustentada ha N segundos" passa de 10 s para
+# ALERTA_SAIDA_INTERVALO_SEGUNDOS = 60. O log CSV e o painel continuam registrando cada mudanca na hora. Nenhuma decisao de saida muda.
+
 # V533 - narracao de serenidade curta e basica (09/10/2026)
 # Pedido do dono: evitar narracoes longas e detalhadas ("...recuou 215 pontos do pico, mas o stop esta a 1625 pontos...").
 # principal._frase_calma passa a dizer so frases curtas, sem numeros: "Fique tranquilo, mantenha a operacao aberta.",
