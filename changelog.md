@@ -4,6 +4,16 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V520 — capitão de saída e titulares de alerta (nível de exaustão)
+
+Pedido do dono (08/10/2026): em vez de só "subir o stop", uma saída que perceba a exaustão do movimento no meio da operação; os melhores como alertas, a principal blindada.
+- **Estrutura nova:** `saida/titular/capitao/` (1 cartucho, o único que decide) e `saida/titular/` (alertas, só avisam). O capitão passa a ser `saida_trailing_pico_v01`; a `saida_baseline` vira candidata na raiz de `saida/`. **Essa troca é a única mudança de decisão de saída da versão**: R$ 28.555 contra R$ 19.821 no histórico 2020–2026, mas nos 12 meses mais recentes empata e nunca rodou ao vivo. Para voltar ao comportamento anterior basta mover os dois arquivos de volta.
+- **3 alertas** (ideia única cada): `saida_exaustao_estocastico_v01` (estocástico sai da zona 80/20 com lucro ≥ 0,5 R; no motor R$ 25.321), `saida_exaustao_reversao_v01` (candle contrário de corpo ≥ 0,5 ATR; R$ 22.840) e `saida_exaustao_esticado_v01` (2 ATR além da MA21 + pavio contrário ≥ 40%; R$ 21.910). Sozinhos perdem para o trailing (R$ 27.8–28.6 mil); somados a ele ganhariam cerca de 2%, por isso são alertas.
+- **Nível de confiança** = quantos alertas concordam. Contador "há Ns" em relógio real, narração ao subir e a cada 10 s enquanto se mantém, aviso ao desfazer, campo "Exaustão n/3 há Ns" no painel da posição e log `alertas_saida_AAAA-MM-DD.csv`.
+- `classificacao.py` rankeia capitão, alertas e candidatos; só o capitão é titular. Regra 18 no `compliance.md`.
+
+---
+
 ## V519 — saída candidata "Trailing de Pico"; stop novo só vale do candle seguinte
 
 Pedido do dono (08/10/2026): não devolver todo o lucro.

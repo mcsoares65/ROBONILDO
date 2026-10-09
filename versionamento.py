@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V519"
+VERSAO = "V520"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,21 @@ VERSAO = "V519"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V520 - capitao de saida + titulares de alerta (nivel de exaustao) (09/10/2026)
+# Pedido do dono: o trailing nao basta; uma estrategia que perceba a exaustao do movimento no meio da
+# operacao, com os suplentes como alertas e a principal blindada. Estrutura:
+#   estrategia/saida/titular/capitao/  -> saida_trailing_pico_v01 (unico que decide; era candidato)
+#   estrategia/saida/titular/          -> saida_exaustao_{estocastico,reversao,esticado}_v01 (so avisam)
+#   estrategia/saida/saida_baseline.py -> virou candidato (era a saida titular)
+# - alerta_saida.py (novo): nivel = quantos alertas concordam; contador "ha Ns" em relogio real; narra ao subir e a
+#   cada 10 s; log alertas_saida_AAAA-MM-DD.csv. Nao decide nada.
+# - principal.py: _descobrir_capitao_saida / _descobrir_alertas_saida; linha da posicao mostra "Exaustao n/total ha Ns".
+# - classificacao.py: so o capitao e titular; alertas entram no ranking como candidatas.
+# - compliance.md: Regra 18.
+# Arquivos alterados: principal.py, classificacao.py, configuracao.py (ALERTA_SAIDA_INTERVALO_SEGUNDOS),
+# alerta_saida.py, tests/test_alerta_saida_v520.py, compliance.md, versionamento.py, changelog.md.
+# A decisao de saida muda SO pela troca de titular (baseline -> trailing); o resto e aviso.
+
 # V519 - saida candidata "Trailing de Pico" + stop/alvo proposto no fechamento so vale do candle seguinte
 #   Pedido do dono (08/10/2026): "precisamos encontrar uma solucao para nao devolver todo o lucro".
 #   (1) estrategia/saida/saida_trailing_pico_v01.py (candidata, nao titular): sem alvo fixo; apos 1,0 R a favor o stop passa
