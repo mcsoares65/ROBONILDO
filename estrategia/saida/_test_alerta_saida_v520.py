@@ -202,15 +202,16 @@ class RadarTest(unittest.TestCase):
         self.assertIsNone(self.av(2))                      # nao repete no mesmo candle
         self.assertIn("assumiu a prioridade", self.av(3, chave=("10:30", self.chave[1])))  # candle novo
 
-    def test_linha_do_painel_cabe_em_120_colunas(self):
+    def test_linha_do_painel_cabe_em_123_colunas(self):
         campos = {"nome": "Estocástico", "confirmadas": 1, "total": 2, "detalhe": "estoc. saindo zona",
                   "pct": 60.0, "ok": False, "nivel": 0, "total_alertas": 4, "segundos": 0}
-        linha = linha_posicao("12:15:06", "VENDA ", 206225, f"{6.5:+7.2f}", "Stop 208130", campos, "■")
-        self.assertLessEqual(len(linha), 120)
+        linha = linha_posicao("12:15:06", "VENDA ", 206225, f"{6.5:+7.2f}", "Stop 208130", campos, "■", 62.0, "■")
+        self.assertLessEqual(len(linha), 123)
         self.assertIn("Falta estoc. saindo zona", linha)
+        self.assertIn(" 62%", linha)
         campos.update(ok=True, pct=100.0, nivel=4, segundos=120, confirmadas=2)
-        linha = linha_posicao("12:15:06", "COMPRA", 206225, f"{-234.5:+7.2f}", "Stop 208130", campos, "■")
-        self.assertLessEqual(len(linha), 120)
+        linha = linha_posicao("12:15:06", "COMPRA", 206225, f"{-234.5:+7.2f}", "Stop 208130", campos, "■", 100.0, "■")
+        self.assertLessEqual(len(linha), 123)
         self.assertIn("Nível 4/4 há 120s", linha)
 
     def test_alerta_sem_radar_proprio_vira_condicao_unica(self):
@@ -218,6 +219,67 @@ class RadarTest(unittest.TestCase):
         m.avaliar({}, {}, self.chave, self.t0, _contexto())
         campos = m.campos_painel(self.t0)
         self.assertEqual((campos["confirmadas"], campos["total"], campos["pct"]), (0, 1, 0.0))
+
+
+class SaudeTradeTest(unittest.TestCase):
+    """V525: saude do trade 0% (roxo, no stop) .. 50% (branco, zero a zero) .. 100% (verde)."""
+    @classmethod
+    def setUpClass(cls):
+        cls.pr = importlib.import_module("principal")
+        cls.cfg = importlib.import_module("configuracao")
+
+    def _pos(self, lado="COMPRA", entrada=100000.0, stop=99800.0, alvo=None, hora="2026-10-09T10:00:00"):
+        return importlib.import_module("types").SimpleNamespace(
+            lado=lado, entrada=entrada, stop=stop, alvo=alvo, horario_entrada=hora)
+
+    def _preco_liquido(self, pos, reais):
+        """Preco em que o resultado liquido (ja com custo) vale `reais`."""
+        pts = (reais + self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS) / self.cfg.VALOR_PONTO_REAIS
+        return pos.entrada + (pts if pos.lado == "COMPRA" else -pts)
+
+    def test_sem_alvo_1r_de_lucro_e_100_e_stop_e_0(self):
+        pos = self._pos(hora="t1")
+        self.pr._risco_inicial_pts(pos)                        # memoriza 1R = 200 pts
+        um_r = 200 * self.cfg.VALOR_PONTO_REAIS - self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r))[0], 100.0, places=3)
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r * 5))[0], 100.0, places=3)
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, 0))[0], 50.0, places=3)
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, pos.stop)[0], 0.0, places=0)
+        meio = self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r / 2))[0]
+        self.assertAlmostEqual(meio, 75.0, places=3)
+
+    def test_venda_e_simetrica(self):
+        pos = self._pos(lado="VENDA", stop=100200.0, hora="t2")
+        self.pr._risco_inicial_pts(pos)
+        um_r = 200 * self.cfg.VALOR_PONTO_REAIS - self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r))[0], 100.0, places=3)
+        self.assertAlmostEqual(self.pr._saude_posicao(pos, 100200.0)[0], 0.0, places=0)
+
+    def test_1r_vem_do_stop_inicial_e_nao_do_stop_que_sobe(self):
+        pos = self._pos(hora="t3")
+        self.assertEqual(self.pr._risco_inicial_pts(pos), 200.0)
+        pos.stop = 100300.0                                    # trailing ja acima da entrada
+        self.assertEqual(self.pr._risco_inicial_pts(pos), 200.0)
+
+    def test_sem_1r_medido_mantem_comportamento_antigo(self):
+        pos = self._pos(stop=100300.0, hora="t4")              # stop ja do lado do lucro, nunca medido
+        self.assertIsNone(self.pr._risco_inicial_pts(pos))
+        self.assertEqual(self.pr._progresso_posicao(pos, 100500.0), 0.0)
+
+    def test_com_alvo_nada_muda(self):
+        pos = self._pos(alvo=100400.0, hora="t5")
+        self.assertEqual(self.pr._progresso_posicao(pos, 100200.0),
+                         self.pr._progresso_posicao(pos, 100200.0, 200.0))
+
+    def test_cor_branco_no_zero_roxo_e_verde_nas_pontas(self):
+        pos = self._pos(hora="t6")
+        self.pr._risco_inicial_pts(pos)
+        if not self.pr.COR_RESET:
+            self.skipTest("sem cor")
+        um_r = 200 * self.cfg.VALOR_PONTO_REAIS - self.cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        self.assertIn("255;255;255", self.pr._saude_posicao(pos, self._preco_liquido(pos, 0))[1])
+        self.assertIn("163;255;30", self.pr._saude_posicao(pos, self._preco_liquido(pos, um_r))[1])
+        self.assertIn("147;51;234", self.pr._saude_posicao(pos, 99800.0)[1])
 
 
 class EstruturaTest(unittest.TestCase):

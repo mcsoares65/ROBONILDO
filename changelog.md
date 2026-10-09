@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V525 — saúde do trade de volta na linha da posição
+
+Pedido do dono (09/10/2026): o indicador de saúde do trade começa em branco; quanto melhor (100%), mais verde; quanto pior (0%), mais roxo; mesma regra de coloração da entrada. Desde a V523 o `% ■` da linha sem alvo mostrava a exaustão e a saúde tinha sumido. Agora a saúde aparece junto do `Res` (0% = no stop, 50% = zero a zero líquido, branco, 100% = melhor) e a exaustão continua no fim da linha. Sem alvo (capitão trailing), 100% é lucro líquido de 1 R, sendo R a distância da entrada ao stop inicial. Só o painel muda; nenhuma decisão de entrada ou saída.
+
+---
+
 ## V524 — sem impressão duplicada de `[CENÁRIO EM FORMAÇÃO]` e `[EXAUSTÃO]`
 
 Pedido do dono (09/10/2026): a narração já mostra a frase. `narrar()` imprime o mesmo texto como `[NARRADOR]`, então as 6 linhas `print(...)` imediatamente antes dela saíam em duplicata. O ajuste era da V522, mas o commit chegou à PR #129 depois do merge e ficou fora da `main`. Só texto do terminal; nenhuma decisão muda.
