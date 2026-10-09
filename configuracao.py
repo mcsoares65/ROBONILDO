@@ -154,7 +154,32 @@ MAX_PERDAS_DIA = 2         # ATUALIZADO de 1 para 2: a CLAUDE_HIBRIDA_3_PORTAS_v
                             # PF=1.89) - rodar com 1 testaria uma regra diferente da
                             # validada. Se trocar de estrategia titular no futuro,
                             # reconferir qual limite foi usado na validacao dela.
-VALOR_PONTO_REAIS = 0.20  # fixo, WIN
+VALOR_PONTO_REAIS = 0.20  # fixo, WIN - POR CONTRATO
+# V543: numero de contratos da sessao. O principal.py pergunta ao iniciar e grava aqui; laboratorio
+# e classificacao nao perguntam e ficam com 1 (resultado de 1 contrato, como sempre foi validado).
+CONTRATOS = 1
+CONTRATOS_MAXIMO = 100   # trava contra digitacao errada na pergunta da partida (ex.: "50" em vez de "5")
+
+
+def interpretar_contratos(texto: str):
+    """Resposta da pergunta de contratos: vazio = 1; inteiro de 1 a CONTRATOS_MAXIMO; senao None."""
+    t = (texto or "").strip()
+    if not t:
+        return 1
+    if t.isdigit() and 1 <= int(t) <= CONTRATOS_MAXIMO:
+        return int(t)
+    return None
+
+
+def valor_ponto_total() -> float:
+    """R$ por ponto da posicao inteira (valor do ponto x contratos)."""
+    return VALOR_PONTO_REAIS * CONTRATOS
+
+
+def custo_total_operacao() -> float:
+    """Custo estimado de uma operacao (ida e volta) com todos os contratos."""
+    return CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS * CONTRATOS
+
 
 # V461 - BLOQUEIO DE ENTRADA APOS BURACO NO HISTORICO. Se ao fechar um candle
 # faltarem candles do pregao entre o ultimo conhecido e ele, e o arquivo de
@@ -180,7 +205,7 @@ FERIADOS_B3 = {"2026-11-20", "2026-12-25"}
 # ---------- Custos reais (Santander Corretora, confirmado na documentacao oficial) ----------
 CORRETAGEM_ENCERRAMENTO_AUTOMATICO_APP = 0.00   # gratis, desde que NAO seja via Mesa de Operacoes
 EMOLUMENTOS_B3_IDA_VOLTA_REAIS = 0.50
-CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS = 0.50
+CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS = 0.50   # por contrato (emolumentos ida e volta)
 
 # ---------- Laboratório e classificação V420 ----------
 # A pasta principal fica dentro do Robonildo. Durante a migração, a pasta

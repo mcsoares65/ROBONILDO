@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V543 — número de contratos perguntado na partida
+
+Pedido do dono (09/10/2026): ao executar `principal.py`, depois de escolher Replay ou Normal, o robô pergunta "Com quantos contratos vai operar?" (Enter = 1; aceita de 1 a 100). O valor do ponto e o custo da operação passam a ser multiplicados pelo número de contratos em todo o cálculo ao vivo: resultado da operação, banca gravada na planilha, painel (resultado, saúde do trade, trailing), pico e devolução, auditoria e e-mail. Os pontos não mudam. O custo de R$ 0,50 é tratado como por contrato. O robô não altera a quantidade na boleta do Profit; ele avisa para conferir. Laboratório e classificação continuam com 1 contrato, e com 1 contrato nada muda.
+
+---
+
 ## V542 — banca atual lida da planilha
 
 Pedido do dono (09/10/2026): `BANCA_ATUAL_REAIS` saiu de `configuracao.py`. A banca agora vive na planilha, na aba `GESTAO_RISCO`, célula `B3`. O robô lê o valor ao iniciar e, ao fim de cada operação, lê de novo, soma o resultado em R$ e grava a célula. Por isso uma correção feita à mão em B3 vale já na próxima saída. O robô precisa da planilha aberta no Excel, a mesma do DDE. Se a leitura falhar (célula vazia, texto ilegível, Excel ocupado), mantém o último valor conhecido; se a gravação falhar, usa o valor em memória e tenta de novo na saída seguinte. Sem banca lida, o robô avisa e não soma. A banca saiu do `estado_risco.json` (o valor antigo no arquivo é ignorado). No replay a célula não é lida nem gravada. Nenhuma decisão de entrada ou saída muda.

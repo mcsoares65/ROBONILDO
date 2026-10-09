@@ -675,7 +675,7 @@ class MotorRobonildo:
         if not pct or not banca:
             return True, ""
         pontos = abs(entrada - stop)
-        risco = pontos * cfg.VALOR_PONTO_REAIS + cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+        risco = pontos * cfg.valor_ponto_total() + cfg.custo_total_operacao()
         limite = pct * banca
         if risco > limite:
             return False, (
@@ -897,8 +897,8 @@ class MotorRobonildo:
         direcao = 1 if pos.lado == "COMPRA" else -1
         resultado_pontos = (preco_saida - pos.entrada) * direcao
         resultado_reais = (
-            resultado_pontos * cfg.VALOR_PONTO_REAIS
-            - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+            resultado_pontos * cfg.valor_ponto_total()
+            - cfg.custo_total_operacao()
         )
         if resultado_pontos < 0:
             self.perdas_hoje += 1
@@ -953,7 +953,7 @@ class MotorRobonildo:
                 motivo, preco_saida = saida
                 direcao = 1 if posicao.lado == "COMPRA" else -1
                 pontos = (preco_saida - posicao.entrada) * direcao
-                reais = pontos * cfg.VALOR_PONTO_REAIS - cfg.CUSTO_TOTAL_ESTIMADO_POR_OPERACAO_REAIS
+                reais = pontos * cfg.valor_ponto_total() - cfg.custo_total_operacao()
                 resultado_pontos, _ = self.fechar_posicao(preco_saida, motivo)
                 trade = {
                     "lado": posicao.lado,

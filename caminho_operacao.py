@@ -88,7 +88,7 @@ class CaminhoOperacao:
             if novo:
                 w.writerow(CAMPOS_PONTOS)
             w.writerow([self.estado["id"], horario.isoformat(), f"{preco:.2f}",
-                        f"{pts:.2f}", f"{pts * cfg.VALOR_PONTO_REAIS:.2f}"])
+                        f"{pts:.2f}", f"{pts * cfg.valor_ponto_total():.2f}"])
 
     # ---------- chamado a cada leitura do DDE com posicao aberta ----------
     def atualizar(self, posicao, preco, horario):
@@ -183,9 +183,9 @@ class CaminhoOperacao:
             derrapagem = (float(saida_teorica) - float(saida_dde)) * d
         t_ent = datetime.fromisoformat(posicao.horario_entrada)
         t_pico = datetime.fromisoformat(e["horario_pico"])
-        pico_reais = e["pico_pts"] * cfg.VALOR_PONTO_REAIS
+        pico_reais = e["pico_pts"] * cfg.valor_ponto_total()
         devolucao = e["pico_pts"] - resultado_pts
-        v = cfg.VALOR_PONTO_REAIS
+        v = cfg.valor_ponto_total()
         linha = {
             "data": horario.strftime("%Y-%m-%d"), "id_operacao": posicao.horario_entrada,
             "lado": posicao.lado, "entrada": posicao.entrada, "entrada_dde": entrada_dde,
