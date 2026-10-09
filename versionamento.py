@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V520"
+VERSAO = "V521"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,12 @@ VERSAO = "V520"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V521 - alerta de exaustao do MACD (09/10/2026)
+# Pedido do dono: o MACD perdendo forca e importante. O row ganha macd_prev e macd_signal_prev (valores do candle
+# anterior, que construir_row ja calculava para os cruzamentos; nenhuma conta nova, nenhuma decisao muda) e entra o
+# alerta estrategia/saida/titular/saida_exaustao_macd_v01.py (histograma a favor da posicao e menor que o anterior).
+# No motor, 2020-2026: R$ 22.593. Arquivos: motor.py, saida_exaustao_macd_v01.py, versionamento.py, changelog.md.
+
 # V520 - capitao de saida + titulares de alerta (nivel de exaustao) (09/10/2026)
 # Pedido do dono: o trailing nao basta; uma estrategia que perceba a exaustao do movimento no meio da
 # operacao, com os suplentes como alertas e a principal blindada. Estrutura:
