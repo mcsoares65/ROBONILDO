@@ -112,8 +112,87 @@ def avaliar_saida(row: dict, posicao: dict) -> dict:
     return {"fechar": bool(_exaustao(row, direcao)), "novo_stop": None, "novo_alvo": None}
 
 
+def _virgula(valor, casas=1):
+    return f"{valor:.{casas}f}".replace(".", ",")
+
+
+def _estado(row, posicao):
+    """(direcao, lucro em R) ou None se não for possível calcular."""
+    entrada = _numero(posicao.get("entrada"))
+    fechamento = _numero(row.get("Fechamento"))
+    if entrada is None or fechamento is None:
+        return None
+    comprado = str(posicao.get("lado", "")).upper() == "COMPRA"
+    stop0 = _stop_inicial(row, posicao)
+    risco = (entrada - stop0) if comprado else (stop0 - entrada)
+    if risco <= 0:
+        return None
+    direcao = 1 if comprado else -1
+    return direcao, (fechamento - entrada) * direcao / risco
+
+
+def _fino(ok, proximidade):
+    """1.0 só quando a condição está confirmada; senão a proximidade, limitada a 0.99."""
+    return 1.0 if ok else min(0.99, max(0.0, float(proximidade)))
+
+
+def _radar(nome, lucro_r, condicoes):
+    """Mesmo formato do radar de entrada. `condicoes`: lista de (ok, score, texto, detalhe).
+    O lucro mínimo é elegibilidade: sem ele, 0 confirmadas e a falta é o lucro."""
+    elegivel = lucro_r >= LUCRO_MIN_R
+    ok_todas = elegivel and all(c[0] for c in condicoes)
+    if elegivel:
+        faltantes = [c[2] for c in condicoes if not c[0]]
+        detalhe = next((c[3] for c in condicoes if not c[0]), "nenhuma")
+        progresso = sum(c[1] for c in condicoes) / len(condicoes)
+        confirmadas = sum(1 for c in condicoes if c[0])
+    else:
+        faltantes = ["lucro mínimo da posição"]
+        detalhe = f"lucro {_virgula(max(lucro_r, 0.0))}/{_virgula(LUCRO_MIN_R)} R"
+        progresso = 0.0
+        confirmadas = 0
+    return [{
+        "estrategia": nome,
+        "curto": "Esticado",           # nome curto da coluna do painel
+        "prioridade": 50,
+        "sinal": 1 if ok_todas else 0,
+        "confirmadas": confirmadas,
+        "total": len(condicoes),
+        "progresso": min(progresso, 1.0) if ok_todas else min(progresso, 0.99),
+        "faltantes": faltantes,
+        "detalhe": detalhe,
+    }]
+
+
+def diagnosticar_exaustao(row, posicao):
+    """Radar do alerta (só painel e narração; avaliar_saida não usa)."""
+    estado = _estado(row, posicao)
+    fechamento = _numero(row.get("Fechamento"))
+    abertura = _numero(row.get("Abertura"))
+    maxima = _numero(row.get("Maximo"))
+    minima = _numero(row.get("Minimo"))
+    ma21 = _numero(row.get("MA21"))
+    atr = _numero(row.get("atr"))
+    if estado is None or None in (fechamento, abertura, maxima, minima, ma21, atr) or atr <= 0:
+        return []
+    direcao, lucro_r = estado
+    amplitude = max(maxima - minima, 1e-9)
+    pavio = (maxima - max(abertura, fechamento)) if direcao == 1 else (min(abertura, fechamento) - minima)
+    fracao = max(0.0, pavio / amplitude)
+    distancia = max(0.0, (fechamento - ma21) * direcao / atr)
+    esticado = distancia >= ESTICADO_ATR
+    rejeitado = fracao >= PAVIO_MIN
+    condicoes = [
+        (esticado, _fino(esticado, distancia / ESTICADO_ATR), "preço esticado em relação à média",
+         f"esticado {_virgula(distancia)}/{_virgula(ESTICADO_ATR)} ATR"),
+        (rejeitado, _fino(rejeitado, fracao / PAVIO_MIN), "pavio contrário grande",
+         f"pavio {fracao * 100:.0f}%/{PAVIO_MIN * 100:.0f}%"),
+    ]
+    return _radar("Esticado com pavio", lucro_r, condicoes)
+
+
 def diagnosticar_saida(row, posicao):
     return "O preço está esticado em relação à média e foi rejeitado por um pavio grande, com a posição no lucro: sinal de exaustão."
 
 
-__all__ = ["CONTRATO_SAIDA", "NOME", "avaliar_saida", "diagnosticar_saida"]
+__all__ = ["CONTRATO_SAIDA", "NOME", "avaliar_saida", "diagnosticar_saida", "diagnosticar_exaustao"]

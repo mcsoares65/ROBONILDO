@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V522"
+VERSAO = "V523"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1725,6 +1725,14 @@ VERSAO = "V522"
 #   Antes: ... | detalhe | ha 36s | 100% ■   Agora: ... | detalhe | 100% ■ | ha 36s. So formato de texto.
 
 # ---------------------------------------------------------------------------
+# V523 - painel da saida no padrao da Escala de entrada (09/10/2026)
+# Pedido do dono: com a operacao aberta, ver a analise dos titulares de saida como a Escala mostra na entrada. Cada
+# alerta de exaustao ganha diagnosticar_exaustao(row, posicao) (mesmo formato do radar de entrada: estrategia, n/N,
+# faltantes, detalhe, progresso fino, sinal). alerta_saida.py escolhe o alerta da frente com histerese de 5 pontos e
+# narra "assumiu a prioridade" uma vez por candle a partir de 70%. principal.py: com posicao aberta e sem alvo, a linha
+# vira "hora lado | preco | Res | Stop | Exaust. <alerta> | n/N | Falta ... | % quadro" (120 colunas); com o alerta
+# confirmado, o lugar do "Falta" mostra "Nivel n/N ha Ns". Com alvo definido vale a linha antiga. Nenhuma decisao muda.
+
 # V522 - painel: linhas que quebravam no console (09/10/2026)
 # Linha da posicao: sem alvo (capitao trailing) a coluna "Alvo - (-)" some e entra "Exaustao n/N ha Ns" (113 colunas);
 # com alvo, forma curta "Ex n/N". Linha da Escala: avisos "ENTRADAS BLOQUEADAS (buraco, N candles)" e "dados

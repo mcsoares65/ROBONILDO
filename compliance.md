@@ -639,7 +639,7 @@ estrategia/saida/*.py               candidatos: só ranking no classificacao.py
    fechada por eles, e `novo_stop`/`novo_alvo` deles são ignorados. Alerta defeituoso é ignorado
    (aviso no terminal), nunca derruba o robô. Os alertas não são "OU" do capitão: a Regra 16
    continua proibindo combinar saídas dentro de um arquivo ou no motor.
-3. **Nível de confiança** = quantos alertas concordam ao mesmo tempo (1..total). O contador
+3. **Nível de confiança** = quantos alertas concordam ao mesmo tempo (1..total). Cada alerta expõe `diagnosticar_exaustao(row, posicao)` (mesmo formato do radar de entrada), e o painel da posição mostra o alerta da frente no padrão da Escala (V523). O contador
    "há Ns" mede, em relógio real, há quanto tempo o nível atual se mantém (como o "há Ns" da
    Escala na entrada); recomeça se o nível muda ou o candle fecha. Narra ao subir e a cada
    `ALERTA_SAIDA_INTERVALO_SEGUNDOS` (10 s) enquanto se mantém; avisa uma vez ao desfazer.

@@ -399,7 +399,7 @@ from historico_csv import resolver_csv_historico
 from registrador import Registrador
 from auditor_execucao import AuditorExecucao
 from caminho_operacao import CaminhoOperacao
-from alerta_saida import MonitorAlertasSaida
+from alerta_saida import MonitorAlertasSaida, linha_posicao
 from leitor_dde import LeitorDDE
 import leitor_dde as _leitor_dde_mod  # so para acessar PREFIXO_REPLAY (constante de config)
 
@@ -1425,18 +1425,30 @@ def rodar():
                     lado_colorido = f"{COR_BAIXA}{'VENDA':<6}{COR_RESET}"
                 quadro_posicao = _quadro_resultado(pos, preco)
                 progresso_pct = abs(_progresso_posicao(pos, preco)) * 100
-                # V522: sem alvo (o capitao trailing nunca define um) a coluna "Alvo - (-)" so ocupava
-                # 20 colunas; some, e no lugar entra a exaustao com o "ha Ns". Com alvo definido a
-                # exaustao vai na forma curta. Assim a linha cabe na largura do console (sem quebra).
-                alvo_campo = (f"Alvo {pos.alvo:6.0f} ({abs(pos.alvo - preco):4.0f}) | "
-                              if pos.alvo is not None else "")
-                stop_txt = (f"Stop {pos.stop:6.0f} ({abs(preco - pos.stop):4.0f})"
-                            if pos.stop is not None else "Stop      - (   -)")
-                print(f"[{agora.strftime('%H:%M:%S')}] {lado_colorido} | "
-                      f"Ent {pos.entrada:6.0f} | Atual {preco:6.0f} | "
-                      f"Res {resultado_colorido} | {alvo_campo}{stop_txt} | "
-                      f"{progresso_pct:3.0f}% {quadro_posicao}"
-                      f"{monitor_alertas.texto_painel(agora_real, compacto=pos.alvo is not None)}")
+                # V523: com posicao aberta e SEM alvo (o capitao trailing nunca define um) a linha segue o
+                # padrao da Escala de entrada: alerta de exaustao na frente | n/N | Falta ... | % ■, e com
+                # o alerta confirmado o lugar do "Falta" mostra o nivel e o "ha Ns". Resultado e stop
+                # ficam no inicio, em colunas fixas. Largura: 120 colunas. Com alvo definido (ou sem
+                # radar) vale a linha antiga, com a exaustao em forma curta.
+                campos_exaustao = monitor_alertas.campos_painel(agora_real) if pos.alvo is None else None
+                if campos_exaustao is not None:
+                    resultado_curto = f"{cor_resultado}{resultado_reais:+7.2f}{COR_RESET}"
+                    stop_curto = f"Stop {pos.stop:6.0f}" if pos.stop is not None else "Stop      -"
+                    quadro_exaustao = _quadro_proximidade(
+                        campos_exaustao["progresso"], segundos_restantes, cfg.TIMEFRAME_MINUTOS * 60
+                    )
+                    print(linha_posicao(agora.strftime('%H:%M:%S'), lado_colorido, preco, resultado_curto,
+                                        stop_curto, campos_exaustao, quadro_exaustao))
+                else:
+                    alvo_campo = (f"Alvo {pos.alvo:6.0f} ({abs(pos.alvo - preco):4.0f}) | "
+                                  if pos.alvo is not None else "")
+                    stop_txt = (f"Stop {pos.stop:6.0f} ({abs(preco - pos.stop):4.0f})"
+                                if pos.stop is not None else "Stop      - (   -)")
+                    print(f"[{agora.strftime('%H:%M:%S')}] {lado_colorido} | "
+                          f"Ent {pos.entrada:6.0f} | Atual {preco:6.0f} | "
+                          f"Res {resultado_colorido} | {alvo_campo}{stop_txt} | "
+                          f"{progresso_pct:3.0f}% {quadro_posicao}"
+                          f"{monitor_alertas.texto_painel(agora_real, compacto=True)}")
             else:
                 if ma21 is not None and ma50 is not None and candle_atual is not None:
                     cor_tendencia = COR_ALTA if tendencia == "ALTA" else COR_BAIXA

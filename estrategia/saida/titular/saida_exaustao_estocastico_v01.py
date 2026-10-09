@@ -103,8 +103,91 @@ def avaliar_saida(row: dict, posicao: dict) -> dict:
     return {"fechar": bool(_exaustao(row, direcao)), "novo_stop": None, "novo_alvo": None}
 
 
+def _virgula(valor, casas=1):
+    return f"{valor:.{casas}f}".replace(".", ",")
+
+
+def _estado(row, posicao):
+    """(direcao, lucro em R) ou None se não for possível calcular."""
+    entrada = _numero(posicao.get("entrada"))
+    fechamento = _numero(row.get("Fechamento"))
+    if entrada is None or fechamento is None:
+        return None
+    comprado = str(posicao.get("lado", "")).upper() == "COMPRA"
+    stop0 = _stop_inicial(row, posicao)
+    risco = (entrada - stop0) if comprado else (stop0 - entrada)
+    if risco <= 0:
+        return None
+    direcao = 1 if comprado else -1
+    return direcao, (fechamento - entrada) * direcao / risco
+
+
+def _fino(ok, proximidade):
+    """1.0 só quando a condição está confirmada; senão a proximidade, limitada a 0.99."""
+    return 1.0 if ok else min(0.99, max(0.0, float(proximidade)))
+
+
+def _radar(nome, lucro_r, condicoes):
+    """Mesmo formato do radar de entrada. `condicoes`: lista de (ok, score, texto, detalhe).
+    O lucro mínimo é elegibilidade: sem ele, 0 confirmadas e a falta é o lucro."""
+    elegivel = lucro_r >= LUCRO_MIN_R
+    ok_todas = elegivel and all(c[0] for c in condicoes)
+    if elegivel:
+        faltantes = [c[2] for c in condicoes if not c[0]]
+        detalhe = next((c[3] for c in condicoes if not c[0]), "nenhuma")
+        progresso = sum(c[1] for c in condicoes) / len(condicoes)
+        confirmadas = sum(1 for c in condicoes if c[0])
+    else:
+        faltantes = ["lucro mínimo da posição"]
+        detalhe = f"lucro {_virgula(max(lucro_r, 0.0))}/{_virgula(LUCRO_MIN_R)} R"
+        progresso = 0.0
+        confirmadas = 0
+    return [{
+        "estrategia": nome,
+        "curto": "Estocástico",           # nome curto da coluna do painel
+        "prioridade": 50,
+        "sinal": 1 if ok_todas else 0,
+        "confirmadas": confirmadas,
+        "total": len(condicoes),
+        "progresso": min(progresso, 1.0) if ok_todas else min(progresso, 0.99),
+        "faltantes": faltantes,
+        "detalhe": detalhe,
+    }]
+
+
+def diagnosticar_exaustao(row, posicao):
+    """Radar do alerta (só painel e narração; avaliar_saida não usa)."""
+    estado = _estado(row, posicao)
+    atual = _numero(row.get("stoch"))
+    anterior = _numero(row.get("stoch_prev"))
+    if estado is None or atual is None or anterior is None:
+        return []
+    direcao, lucro_r = estado
+    # compra: zona alta (>= ZONA); venda: zona baixa (<= 100 - ZONA). `fora` = quanto falta para sair dela.
+    if direcao == 1:
+        esteve = max(anterior, atual) >= ZONA
+        saiu = anterior >= ZONA and atual < ZONA
+        dentro = atual >= ZONA
+        prox_zona = max(anterior, atual) / ZONA
+        prox_saida = 1.0 - (atual - ZONA) / (100.0 - ZONA) if dentro else 0.0
+    else:
+        limite = 100.0 - ZONA
+        esteve = min(anterior, atual) <= limite
+        saiu = anterior <= limite and atual > limite
+        dentro = atual <= limite
+        prox_zona = 1.0 - min(anterior, atual) / (100.0 - limite) if min(anterior, atual) > limite else 1.0
+        prox_saida = 1.0 - (limite - atual) / limite if dentro else 0.0
+    condicoes = [
+        (esteve, _fino(esteve, prox_zona), "estocástico na zona extrema",
+         "estoc. fora da zona"),
+        (saiu, _fino(saiu, prox_saida if esteve else 0.0), "saída da zona extrema do estocástico",
+         "estoc. saindo zona"),
+    ]
+    return _radar("Estocástico", lucro_r, condicoes)
+
+
 def diagnosticar_saida(row, posicao):
     return "O estocástico está saindo da zona de extremo com a posição no lucro: o impulso que trouxe o ganho está se esgotando."
 
 
-__all__ = ["CONTRATO_SAIDA", "NOME", "avaliar_saida", "diagnosticar_saida"]
+__all__ = ["CONTRATO_SAIDA", "NOME", "avaliar_saida", "diagnosticar_saida", "diagnosticar_exaustao"]
