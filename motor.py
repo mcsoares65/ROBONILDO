@@ -355,6 +355,7 @@ def construir_row(candles: List[Candle]) -> Optional[dict]:
         "stoch_subindo": stoch_subindo, "stoch_descendo": stoch_descendo,
         "stoch_cross_up_20": stoch_cross_up_20, "stoch_cross_down_80": stoch_cross_down_80,
         "macd": macd, "macd_signal": macd_signal,
+        "macd_prev": macd_ant, "macd_signal_prev": macd_signal_ant,   # V521: MACD do candle anterior (cartucho de exaustao)
         "macd_cross_up": macd_cross_up, "macd_cross_down": macd_cross_down,
         "atr": atr, "atr_media50": atr_media50, "atr_relativo": atr_relativo,
         "rsi": rsi, "rsi_prev": rsi_prev,

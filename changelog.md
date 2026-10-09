@@ -4,6 +4,15 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V521 — alerta de exaustão do MACD
+
+Pedido do dono (09/10/2026): o MACD perdendo força é um marcador importante.
+- **Novo alerta** `saida_exaustao_macd_v01` em `saida/titular/`: o histograma do MACD (MACD menos sinal) segue a favor da posição, mas menor que o do candle anterior, com lucro de pelo menos 0,5 R. No motor, 2020–2026, sozinho: R$ 22.593. Só avisa, não fecha.
+- **`motor.py`:** o `row` passa a trazer `macd_prev` e `macd_signal_prev` (valores do candle anterior, que `construir_row` já calculava para os cruzamentos). Nada é recalculado, nenhuma decisão de entrada ou saída muda.
+- Com ele são 4 alertas; o nível de confiança vai de 0 a 4.
+
+---
+
 ## V520 — capitão de saída e titulares de alerta (nível de exaustão)
 
 Pedido do dono (08/10/2026): em vez de só "subir o stop", uma saída que perceba a exaustão do movimento no meio da operação; os melhores como alertas, a principal blindada.
