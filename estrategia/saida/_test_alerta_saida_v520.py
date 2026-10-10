@@ -823,9 +823,15 @@ class RadarEstadoTest(unittest.TestCase):
                        "ALVO NA MIRA", "CONTATO DETECTADO", "candle de ", 'id="t-ativo"', 'id="t-data"',
                        'id="t-hora"', 'id="t-preco"', "overflow: hidden", 'class="icone"', "--n: 14"):
             self.assertIn(trecho, html)
-        # som e voz ficam no cabecalho (canto superior direito), nao mais na linha de baixo
-        self.assertLess(html.index('id="b-som"'), html.index('id="status"'))
-        self.assertLess(html.index('id="b-voz"'), html.index('id="status"'))
+        # som e voz ficam logo abaixo da linha do preco, ja ligados na abertura
+        self.assertGreater(html.index('id="b-som"'), html.index('id="t-preco"'))
+        self.assertLess(html.index('id="b-voz"'), html.index('id="area"') if 'id="area"' in html else html.index('class="area"'))
+        self.assertIn('id="b-som" aria-pressed="true"', html)
+        self.assertIn('id="b-voz" aria-pressed="true"', html)
+        # uma etiqueta so (AO VIVO ou REPLAY) e o relogio do Windows nunca entra no cabecalho
+        self.assertNotIn("AO VIVO · REPLAY", html)
+        self.assertIn(".tag.replay", html)
+        self.assertNotIn("new Date()", html)
 
 
 class SimpleNS:
