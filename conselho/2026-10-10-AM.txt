@@ -1,0 +1,153 @@
+ATA AM — PONTE LOCAL PARA O RADAR ONLINE, SEM MIGRAR O ROBÔ
+Autoria: Manus (IA), em sessão solicitada por Marcio Soares.
+Data: 10/10/2026. Revisão humana: pendente.
+Main consultada: cc9e84fd366aece1b1d069bb4b1270436ad1f7e0.
+Versão declarada em versionamento.py: V552.
+Documento normativo: compliance.md da main atual, relido.
+Atas consultadas: AI (integridade e interrupção da leitura), AK (paridade,
+execução e prioridades). Consultada também a proposta AL no PR #149,
+ainda aberto, sem tratá-la como decisão incorporada à main.
+A letra AL está reservada por esse PR; esta contribuição usa AM.
+
+1. PEDIDO E POSICIONAMENTO
+-------------------------
+O dono descartou, nesta fase experimental, o custo de transferir Profit,
+Excel e Robonildo para uma máquina Windows na nuvem. Pediu uma ponte entre
+o robô local e o servidor, e o registro desta proposta no conselho.
+
+Recomendação: conservar Profit, Excel e Robonildo no computador atual e
+executar um transmissor independente para alimentar um radar online.
+A ponte é observacional, não um executor nem uma estratégia. Não altera
+entradas, saídas, risco, prioridades ou autoridade do capitão.
+
+Esta entrega adiciona SOMENTE conselho/2026-10-10-AM.txt. Não implementa
+nem publica o serviço. Não modifica arquivos operacionais ou titulares.
+
+2. O QUE JÁ EXISTE NA MAIN
+-------------------------
+radar_estado.py publica radar/radar_estado.js por substituição atômica,
+com frequência local configurada de aproximadamente uma atualização por
+segundo. O conteúdo é um objeto JSON precedido de window.RADAR_ESTADO =.
+Inclui contador n, versão da base, modo, ids/direções/progressos das
+estratégias, consenso, posição, contador de captura e cabeçalho de mercado.
+Não contém as regras dos cartuchos nem seus preços de entrada e stop.
+Ainda assim, posição e atividade operacional merecem acesso protegido.
+
+O radar atual lê esse arquivo local. Hospedar somente radar.html não faz
+um servidor receber automaticamente o arquivo do computador do dono.
+
+3. ARQUITETURA PROPOSTA
+----------------------
+Profit -> Excel -> Robonildo -> radar/radar_estado.js
+                                  |
+                          ponte_radar.py (separado)
+                                  |
+                         HTTPS autenticado, envio
+                                  |
+                         servidor guarda último estado
+                                  |
+                         radar online com acesso protegido
+
+A ponte lê somente o arquivo de estado. Remove estritamente o invólucro
+esperado e usa parser JSON; nunca eval, exec ou execução de JavaScript.
+Valida tamanho, campos, tipos e números finitos antes de transmitir.
+Não lê Excel, DDE, credenciais de corretora, logs completos ou estratégias.
+
+Proposta inicial: verificar atualizações e transmitir no máximo uma vez
+a cada dois segundos, somente quando o estado da origem mudar. Intervalo
+é escolha inicial de engenharia, não latência comprovada. Não há garantia
+de entrega em tempo real: conexão e hospedagem ainda precisam ser medidas.
+
+O servidor recebe POST autenticado e mantém o último snapshot por origem.
+O painel consulta um endpoint protegido. Para este protótipo não se propõe
+histórico permanente de cada leitura nem WebSocket obrigatório.
+Uma hospedagem com múltiplas instâncias ou reinícios não pode depender só
+de variável em memória: usar armazenamento compartilhado apropriado à
+plataforma. Provedor e projeto de hospedagem ainda não foram escolhidos.
+
+4. ISOLAMENTO, FALHAS E AUTENTICAÇÃO
+----------------------------------
+A conexão parte do computador para o servidor: não exige porta de entrada
+aberta, IP fixo doméstico ou acesso remoto à máquina do Profit.
+
+A chave de envio fica em variável de ambiente ou configuração privada,
+fora do Git e do HTML. O navegador nunca recebe a chave do publicador.
+A autorização de leitura é separada, com login/sessão do painel.
+O servidor limita tamanho e frequência dos pedidos e valida o payload.
+Não há endpoint para comprar, vender, zerar, alterar configuração ou
+controlar o computador local. HTTPS não substitui autenticação.
+
+Falha de rede, arquivo ausente ou JSON inválido afeta somente a ponte.
+Usar timeout finito, tentativas com espera progressiva e log moderado.
+Não formar fila ilimitada: ao reconectar, enviar apenas o snapshot mais
+recente. Eventos de captura intermediários podem não ser reconstruídos;
+este canal é um painel de estado, não um histórico auditável de operações.
+
+Não confundir ponte conectada com robô atualizando. Um arquivo inalterado
+não pode ser reenviado como se contivesse nova leitura. O servidor mede a
+idade da última atualização genuína recebida usando seu próprio relógio.
+A hora do mercado continua sendo a do robô, inclusive em replay, e não
+serve de relógio de disponibilidade do transporte.
+
+O contador n reinicia ao reiniciar a base. Usar identificador de sessão da
+ponte e geração da origem para lidar com reinícios/regressão do contador,
+sem rejeitar permanentemente uma nova execução. Evitar envios concorrentes
+que permitam a um pedido antigo sobrescrever estado novo.
+
+O radar online deve mostrar SEM CONTATO ao exceder o prazo definido para
+atualização da origem (proposta inicial: 10 segundos, a testar). Não deve
+mudar silenciosamente para dados simulados quando a conexão real cair.
+A demonstração simulada deve ser explícita e separada.
+
+5. ESCOPO EXATO DE UMA IMPLEMENTAÇÃO FUTURA
+------------------------------------------
+No repositório ROBONILDO:
+- Novo ponte_radar.py: processo independente de leitura e envio.
+- radar/radar.html: opção de fonte online, mantendo uso local atual.
+- radar/README.md: instalação, configuração privada e diagnóstico.
+- Novo tests/test_ponte_radar.py: testes unitários com servidor simulado.
+
+Nenhuma alteração necessária em principal.py, motor.py, classificacao.py,
+configuracao.py, radar_estado.py ou qualquer pasta titular/ para esse
+primeiro desenho. A ponte é iniciada separadamente durante o experimento.
+
+No projeto do servidor, separado do robô: recepção autenticada, consulta
+protegida, armazenamento de último estado e hospedagem da tela. Os caminhos
+desses arquivos dependem da plataforma escolhida e deverão ser informados
+antes da implementação. Não se presume acesso ao sistema Jade nem se
+propõe compartilhar suas credenciais ou modificar seu projeto.
+
+6. CRITÉRIOS DE ACEITAÇÃO DO PROTÓTIPO
+------------------------------------
+Testar, antes de uso de acompanhamento:
+(a) parser aceita o formato oficial e rejeita conteúdo executável/inválido;
+(b) falha ou lentidão do servidor não interfere no processo do robô;
+(c) atualização alcança o painel em replay com atraso medido;
+(d) arquivo congelado ou robô desligado gera SEM CONTATO;
+(e) queda de internet e reconexão recuperam só o estado mais recente;
+(f) reinício da base e da ponte não mantém falso estado online;
+(g) chave inválida e acesso de leitura não autorizado são recusados;
+(h) chave de envio não aparece no HTML, repositório ou logs;
+(i) modo local do radar permanece funcional sem servidor;
+(j) nenhum comando de operação é recebido ou enviado pela ponte/painel.
+
+As verificações são de comunicação e isolamento. Não exigem ordens reais
+nem execução de ranking financeiro. Implantação deve começar em replay
+ou simulação e ser apresentada em branch/PR, sem envio direto à main.
+
+7. RELAÇÃO COM LUCRATIVIDADE E DECISÃO SOLICITADA
+-----------------------------------------------
+Benefício pretendido: observar remotamente o robô e perceber falhas de
+contato sem contratar uma máquina Windows remota nesta fase. É hipótese
+de utilidade operacional, não prova de melhora do Acumulado ou do lucro.
+Não há novo backtest, benchmark, teste em Validação/Holdout ou estimativa
+de ganho financeiro. Nenhuma estratégia foi criada, otimizada ou promovida.
+
+O custo da hospedagem do servidor não foi fechado; esta ata não promete
+serviço gratuito nem operação contínua garantida. O computador local e a
+internet dele continuam necessários para o robô funcionar.
+
+Posicionamento para o dono: aprovar o desenho observacional e escolher o
+ambiente de hospedagem antes da implementação. Manter transmissão em mão
+única nesta primeira versão. Qualquer comando remoto seria proposta nova,
+com outro escopo e outra autorização, não extensão implícita desta ponte.
