@@ -3,8 +3,9 @@
 A pagina le radar/radar_estado.js (window.RADAR_ESTADO = {...}) a cada segundo. O arquivo traz
 SO o que a tela precisa para desenhar: por estrategia do time um rumo estavel (id), o lado
 (+1 compra, -1 venda) e a confianca (0 a 1); o consenso do time; se ha posicao; e o evento de
-captura (contador que sobe a cada entrada aceita). Nunca grava nome de estrategia, condicao,
-limite ou preco: quem receber o arquivo nao consegue deduzir as regras.
+captura (contador que sobe a cada entrada aceita). V547: tambem o cabecalho de mercado (ativo,
+horario do mercado, preco atual e tamanho do candle), que e dado publico. Nunca grava nome de
+estrategia, condicao, limite nem preco de entrada/stop: quem receber o arquivo nao deduz as regras.
 
 NAO decide nada. Qualquer falha (disco, permissao, pagina lendo o arquivo) e engolida; nunca
 derruba o robo.
@@ -41,7 +42,20 @@ class PublicadorRadar:
         self._captura_lado = _lado(lado)
         self._forcar = True
 
-    def montar(self, radar, consenso: float, posicao_aberta) -> dict:
+    @staticmethod
+    def _mercado(mercado) -> Optional[dict]:
+        if not mercado:
+            return None
+        horario = mercado.get("horario")
+        preco = mercado.get("preco")
+        return {
+            "ativo": str(mercado.get("ativo") or ""),
+            "horario": horario.isoformat(timespec="seconds") if hasattr(horario, "isoformat") else None,
+            "preco": float(preco) if isinstance(preco, (int, float)) else None,
+            "timeframe_min": int(mercado.get("timeframe_min") or 15),
+        }
+
+    def montar(self, radar, consenso: float, posicao_aberta, mercado=None) -> dict:
         melhores: dict = {}
         for item in radar or []:
             chave = item.get("titular") or item.get("estrategia")
@@ -65,9 +79,10 @@ class PublicadorRadar:
             "consenso": round(max(0.0, min(1.0, float(consenso or 0.0))), 4),
             "posicao": _lado(getattr(posicao_aberta, "lado", None)) if posicao_aberta is not None else None,
             "captura": {"seq": self._captura_seq, "dir": self._captura_lado},
+            "mercado": self._mercado(mercado),
         }
 
-    def publicar(self, radar, consenso: float, posicao_aberta, agora: Optional[float] = None) -> bool:
+    def publicar(self, radar, consenso: float, posicao_aberta, agora: Optional[float] = None, mercado=None) -> bool:
         """Grava o estado se ja passou o intervalo (ou se houve captura). Devolve True se gravou."""
         try:
             agora = time.monotonic() if agora is None else agora
@@ -75,7 +90,7 @@ class PublicadorRadar:
                     and agora - self._ultimo < self.intervalo_s):
                 return False
             self._n += 1
-            estado = self.montar(radar, consenso, posicao_aberta)
+            estado = self.montar(radar, consenso, posicao_aberta, mercado)
             texto = "window.RADAR_ESTADO = " + json.dumps(estado, ensure_ascii=False) + ";\n"
             self.caminho.parent.mkdir(parents=True, exist_ok=True)
             temp = self.caminho.with_suffix(".tmp")

@@ -1539,7 +1539,9 @@ def rodar():
 
         if publicador_radar is not None:
             publicador_radar.publicar(
-                radar, _consenso_time(radar, oportunidade_prioritaria), gestor.posicao_aberta)
+                radar, _consenso_time(radar, oportunidade_prioritaria), gestor.posicao_aberta,
+                mercado={"ativo": cfg.ATIVO, "horario": agora, "preco": preco,
+                         "timeframe_min": cfg.TIMEFRAME_MINUTOS})
 
         if (agora_real - ultimo_heartbeat).total_seconds() >= HEARTBEAT_SEGUNDOS:
             indicadores_texto = _texto_indicadores(row_indicadores)

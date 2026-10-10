@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V546"
+VERSAO = "V547"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1937,3 +1937,12 @@ VERSAO = "V546"
 #   e chama capturar() na entrada aceita; so gravacao, nenhuma decisao muda. radar/radar.html: le o estado a cada segundo (AO VIVO /
 #   SEM SINAL / simulado), N estrategias dinamicas, captura por evento, botoes Som (ping de sonar, toque de contato, bipes de captura)
 #   e Voz (speechSynthesis). .gitignore: radar/radar_estado.js.
+
+# V547 - radar: cabecalho de mercado, textos novos e tela sem rolagem (10/10/2026)
+#   Pedido do dono: "Alvo travando" soava como erro de sistema; completar a frase com "candle de 15 minutos"; mostrar ativo, data, hora e
+#   preco no topo; corrigir o dimensionamento (cabecalho/rodape cortados e barra de rolagem).
+#   radar/radar.html: "CONTATO DETECTADO" (45-70%) e "ALVO NA MIRA" (70%+; "Aguardando confirmacao no fechamento do candle de N minutos",
+#   N vem do estado); voz diz "Alvo na mira"; faixa com ATIVO/DATA/HORA/PRECO (ao vivo vem do estado; simulado usa o relogio local);
+#   layout em coluna com altura da janela (100dvh), radar dimensionado pelo espaco que sobra (container query), sem rolagem; rotulos
+#   COMPRA/VENDA proporcionais ao tamanho. radar_estado.py: campo "mercado" (ativo, horario do mercado, preco, timeframe_min).
+#   principal.py: so passa ativo/horario/preco a gravacao do estado; nenhuma decisao muda.
