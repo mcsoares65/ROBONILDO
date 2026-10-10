@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V550 — radar: aviso quando o robô não envia os dados de mercado
+
+Pedido do dono (10/10/2026): a linha de ativo/data/hora/preço apareceu só com traços. Isso acontece quando o robô em execução é anterior à V547 e não publica o campo `mercado`. Agora a tela diz isso abaixo do preço ("robô sem dados de mercado (atualize o robô e reinicie)") em vez de só mostrar traços. Só mudou `radar/radar.html` (mais README e teste da página); nenhuma decisão do robô muda.
+
+---
+
 ## V549 — radar: som e voz ligados, etiqueta única e hora só do DDE
 
 Pedido do dono (10/10/2026). **Som e voz** agora abrem ligados e ficam logo abaixo da linha do preço; como o navegador só libera áudio e fala depois de um toque na página, aparece o aviso "toque na tela para liberar o áudio" até o primeiro toque (antes disso nada é tocado, para não sair uma rajada de sons atrasados). **Etiqueta:** acabou o "AO VIVO · REPLAY"; mostra só **AO VIVO** (verde) ou **REPLAY** (quadro e letra amarelos), **SEM SINAL DO ROBÔ** passou a vermelho. **Data e hora:** o radar nunca mais usa o relógio do Windows; ativo, data, hora e preço vêm só do que o robô leu no DDE. Sem o robô, ou com um robô antigo que não publica o campo `mercado` (a tela caía no relógio do Windows nesse caso), aparecem traços. Só mudou `radar/radar.html` (mais README e teste da página); nenhuma decisão do robô muda.

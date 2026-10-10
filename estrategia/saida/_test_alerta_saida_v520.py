@@ -832,6 +832,7 @@ class RadarEstadoTest(unittest.TestCase):
         self.assertNotIn("AO VIVO · REPLAY", html)
         self.assertIn(".tag.replay", html)
         self.assertNotIn("new Date()", html)
+        self.assertIn("robô sem dados de mercado", html)
 
 
 class SimpleNS:

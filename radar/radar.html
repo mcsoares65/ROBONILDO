@@ -177,7 +177,7 @@
 </div>
 
 <div class="audio-linha">
-  <span class="aviso-audio" id="aviso-audio" hidden>toque na tela para liberar o áudio</span>
+  <span class="aviso-audio" id="aviso-audio" hidden></span>
   <button class="icone" id="b-som" aria-pressed="true" title="Som ligado" aria-label="Som ligado">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="ondas" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="cortar" d="M17 9l5 6M22 9l-5 6"/></svg>
   </button>
@@ -555,7 +555,12 @@
       }
       preco = mk.preco;
     }
-    elAvisoAudio.hidden = audioPronto() || !(somOn || vozOn);
+    // Aviso (uma linha, abaixo do preco): diagnostico dos dados primeiro, depois a liberacao do audio.
+    var aviso = '';
+    if ((aoVivo() || semSinal()) && !(mk && mk.horario)) aviso = 'robô sem dados de mercado (atualize o robô e reinicie)';
+    else if (!audioPronto() && (somOn || vozOn)) aviso = 'toque na tela para liberar o áudio';
+    if (elAvisoAudio.textContent !== aviso) elAvisoAudio.textContent = aviso;
+    elAvisoAudio.hidden = aviso === '';
     if (tkAtivo.textContent !== ativo) tkAtivo.textContent = ativo;
     tkData.textContent = data; tkHora.textContent = hora; tkPreco.textContent = fmtPreco(preco);
   }
