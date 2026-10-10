@@ -767,7 +767,8 @@ class RadarEstadoTest(unittest.TestCase):
         for proibido in ("A1", "segredo", "faltantes", "confirmadas", "detalhe", "titular"):
             self.assertNotIn(proibido, texto)
         self.assertEqual(set(estado["estrategias"][0]), {"id", "dir", "conf"})
-        self.assertEqual(set(estado), {"n", "modo", "radar_envia_ordens", "estrategias", "consenso", "posicao", "captura"})
+        self.assertEqual(set(estado), {"n", "modo", "radar_envia_ordens", "estrategias", "consenso", "posicao",
+                                       "captura", "mercado"})
 
     def test_consenso_posicao_e_captura(self):
         pub = self.mod.PublicadorRadar("x.js", "replay")
@@ -779,6 +780,17 @@ class RadarEstadoTest(unittest.TestCase):
         self.assertEqual(pub.montar(self.radar, 0.5, None)["captura"], {"seq": 1, "dir": 1})
         pub.capturar("VENDA")
         self.assertEqual(pub.montar(self.radar, 0.5, None)["captura"], {"seq": 2, "dir": -1})
+
+    def test_cabecalho_de_mercado(self):
+        pub = self.mod.PublicadorRadar("x.js", "replay")
+        self.assertIsNone(pub.montar(self.radar, 0.5, None)["mercado"])
+        mk = {"ativo": "WINV26", "horario": datetime(2026, 10, 9, 15, 59, 42), "preco": 209045.0, "timeframe_min": 15}
+        self.assertEqual(pub.montar(self.radar, 0.5, None, mk)["mercado"],
+                         {"ativo": "WINV26", "horario": "2026-10-09T15:59:42", "preco": 209045.0, "timeframe_min": 15})
+        ruim = pub.montar(self.radar, 0.5, None, {"ativo": "WINV26", "horario": "texto", "preco": None})["mercado"]
+        self.assertIsNone(ruim["horario"])
+        self.assertIsNone(ruim["preco"])
+        self.assertEqual(ruim["timeframe_min"], 15)
 
     def test_arquivo_gravado_e_intervalo(self):
         with tempfile.TemporaryDirectory() as pasta:
@@ -807,7 +819,9 @@ class RadarEstadoTest(unittest.TestCase):
 
     def test_pagina_do_radar_tem_som_voz_e_leitura_do_estado(self):
         html = (RAIZ / "radar" / "radar.html").read_text(encoding="utf-8")
-        for trecho in ('id="b-som"', 'id="b-voz"', "radar_estado.js", "RADAR NÃO ENVIA ORDEM", "ALVO CAPTURADO!"):
+        for trecho in ('id="b-som"', 'id="b-voz"', "radar_estado.js", "RADAR NÃO ENVIA ORDEM", "ALVO CAPTURADO!",
+                       "ALVO NA MIRA", "CONTATO DETECTADO", "candle de ", 'id="t-ativo"', 'id="t-data"',
+                       'id="t-hora"', 'id="t-preco"', "overflow: hidden"):
             self.assertIn(trecho, html)
 
 

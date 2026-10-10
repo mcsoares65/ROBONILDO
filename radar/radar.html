@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Share+Tech+Mono&display=swap">
 <style>
-  /* Conceito: tela de radar de caça (PPI), um unico olhar, sem numeros. Compra acima, venda abaixo, alvo chega ao anel central. */
+  /* Conceito: tela de radar de caça (PPI). Compra acima, venda abaixo, alvo chega ao anel central.
+     A tela cabe sempre na janela: cabecalho e rodape fixos, o radar usa o espaco que sobra. */
   :root {
     color-scheme: dark;
     --bg: #020806;
@@ -22,21 +23,25 @@
     --font-display: "Chakra Petch", "Eurostile", "Bahnschrift", sans-serif;
     --font-mono: "Share Tech Mono", ui-monospace, "Consolas", monospace;
   }
-  html, body { height: 100%; }
+  html { height: 100%; }
   body {
+    box-sizing: border-box;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-mono);
     padding-inline: 16px;
-    padding-block: 14px;
+    padding-block: 10px 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    overflow-x: hidden;
+    gap: 8px;
+    overflow: hidden;
   }
+  header, .ticker, .status, .controles { width: min(100%, 760px); flex: 0 0 auto; }
   header {
-    width: min(100%, 720px);
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -45,7 +50,7 @@
   }
   h1 {
     margin: 0;
-    font: 700 18px/1.2 var(--font-display);
+    font: 700 clamp(15px, 2.4vh, 18px)/1.2 var(--font-display);
     letter-spacing: .28em;
     color: var(--phos);
   }
@@ -57,45 +62,71 @@
     border: 1px solid var(--grid);
     padding: 3px 8px;
   }
+  .tag.vivo { color: var(--phos); border-color: var(--phos-dim); }
+  .tag.sem-sinal { color: var(--amber); border-color: var(--amber); }
+  .ticker {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 16px;
+    border-block: 1px solid var(--grid);
+    padding-block: 6px;
+  }
+  .campo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .campo .rot { font-size: 11px; letter-spacing: .2em; color: var(--text-dim); }
+  .campo .val {
+    font: 700 clamp(15px, 2.6vh, 20px)/1.1 var(--font-display);
+    letter-spacing: .08em;
+    color: var(--phos);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .campo.preco .val { color: var(--text); }
+  .area {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    container-type: size;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
   .scope-wrap {
     position: relative;
-    width: min(100%, 78vh, 700px);
-    aspect-ratio: 1;
-    flex: 0 1 auto;
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
   }
-  canvas { width: 100%; height: 100%; display: block; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .status {
-    width: min(100%, 720px);
-    min-height: 74px;
+    min-height: 58px;
     text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
   }
   .status .main {
-    font: 700 clamp(22px, 5vw, 34px)/1.1 var(--font-display);
-    letter-spacing: .22em;
+    font: 700 clamp(20px, 4.2vh, 32px)/1.1 var(--font-display);
+    letter-spacing: .2em;
     color: var(--phos);
     text-wrap: balance;
   }
   .status .sub {
-    font-size: 14px;
-    letter-spacing: .16em;
+    font-size: clamp(12px, 1.9vh, 14px);
+    letter-spacing: .12em;
     color: var(--text-dim);
     min-height: 1.3em;
+    text-wrap: balance;
   }
   .status.aprox .main { color: var(--text); }
   .status.lock .main { color: var(--amber); animation: piscar .55s steps(2, jump-none) infinite; }
   .status.lock .sub { color: var(--amber); }
   @keyframes piscar { 50% { opacity: .25; } }
   .controles {
-    width: min(100%, 720px);
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
-    padding-bottom: 4px;
   }
   button {
     font: 500 13px/1 var(--font-mono);
@@ -103,14 +134,12 @@
     color: var(--text);
     background: transparent;
     border: 1px solid var(--grid);
-    padding: 10px 12px;
+    padding: 9px 12px;
     cursor: pointer;
   }
   button:hover { border-color: var(--phos-dim); }
   button[aria-pressed="true"] { color: var(--bg); background: var(--phos); border-color: var(--phos); }
   button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-  .tag.vivo { color: var(--phos); border-color: var(--phos-dim); }
-  .tag.sem-sinal { color: var(--amber); border-color: var(--amber); }
   [hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) {
     .status.lock .main { animation: none; }
@@ -124,8 +153,17 @@
   <span class="tag" id="tag">DADOS SIMULADOS</span>
 </header>
 
-<div class="scope-wrap">
-  <canvas id="tela" role="img" aria-label="Radar com alvos de compra acima e de venda abaixo. O alvo se aproxima do centro conforme a confiança sobe."></canvas>
+<div class="ticker" aria-label="Ativo, data, hora e preço">
+  <div class="campo"><span class="rot">ATIVO</span><span class="val" id="t-ativo">WINV26</span></div>
+  <div class="campo"><span class="rot">DATA</span><span class="val" id="t-data">--/--/----</span></div>
+  <div class="campo"><span class="rot">HORA</span><span class="val" id="t-hora">--:--:--</span></div>
+  <div class="campo preco"><span class="rot">PREÇO</span><span class="val" id="t-preco">-</span></div>
+</div>
+
+<div class="area">
+  <div class="scope-wrap">
+    <canvas id="tela" role="img" aria-label="Radar com alvos de compra acima e de venda abaixo. O alvo se aproxima do centro conforme a confiança sobe."></canvas>
+  </div>
 </div>
 
 <div class="status" id="status" aria-live="polite">
@@ -153,6 +191,8 @@
   var elSub = document.getElementById('secundario');
   var elTag = document.getElementById('tag');
   var elSim = document.getElementById('sim');
+  var tkAtivo = document.getElementById('t-ativo'), tkData = document.getElementById('t-data'),
+      tkHora = document.getElementById('t-hora'), tkPreco = document.getElementById('t-preco');
   var reduz = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var COR = { phos: '98,255,159', dim: '29,122,71', grid: '14,69,40', amber: '255,182,39' };
@@ -329,7 +369,7 @@
   function rgba(c, a) { return 'rgba(' + c + ',' + a + ')'; }
 
   function desenhar(varredura) {
-    var cx = W / 2, cy = H / 2, R = W * 0.41;
+    var cx = W / 2, cy = H / 2, R = W * 0.39, anel = R + W * 0.022;
     ctx.clearRect(0, 0, W, H);
 
     var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.05);
@@ -371,8 +411,8 @@
 
     ctx.font = '500 ' + Math.max(11, W * 0.021) + 'px "Chakra Petch", sans-serif';
     ctx.textAlign = 'center'; ctx.fillStyle = rgba(COR.phos, 0.75);
-    ctx.fillText('C O M P R A', cx, cy - R - 24);
-    ctx.fillText('V E N D A', cx, cy + R + 32);
+    ctx.fillText('C O M P R A', cx, cy - R - W * 0.05);
+    ctx.fillText('V E N D A', cx, cy + R + W * 0.05 + W * 0.017);
 
     // consenso do time (borda externa)
     var cons;
@@ -385,9 +425,9 @@
     }
     ctx.lineWidth = 5; ctx.lineCap = 'butt';
     ctx.strokeStyle = rgba(COR.grid, 0.8);
-    ctx.beginPath(); ctx.arc(cx, cy, R + 12, 0, TWO_PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, anel, 0, TWO_PI); ctx.stroke();
     ctx.strokeStyle = rgba(trava !== null ? COR.amber : COR.phos, 0.9);
-    ctx.beginPath(); ctx.arc(cx, cy, R + 12, -Math.PI / 2, -Math.PI / 2 + cons * TWO_PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, anel, -Math.PI / 2, -Math.PI / 2 + cons * TWO_PI); ctx.stroke();
     ctx.lineWidth = 1;
 
     est.forEach(function (s, i) {
@@ -443,15 +483,53 @@
       cls = 'lock'; nivel = 'c';
     }
     else if (sem) { m = 'SEM SINAL'; sub = 'O robô parou de publicar o estado'; cls = 'aprox'; nivel = 's'; }
-    else if (maxc >= 0.7) { m = 'ALVO TRAVANDO'; sub = 'Aguardando confirmação no fechamento do candle'; cls = 'aprox'; nivel = 't'; }
-    else if (maxc >= 0.45) { m = 'ALVO EM APROXIMAÇÃO'; sub = 'Time acompanhando'; cls = 'aprox'; nivel = 'a'; }
+    else if (maxc >= 0.7) { m = 'ALVO NA MIRA'; sub = 'Aguardando confirmação no fechamento do candle de ' + timeframe() + ' minutos'; cls = 'aprox'; nivel = 't'; }
+    else if (maxc >= 0.45) { m = 'CONTATO DETECTADO'; sub = 'Time acompanhando'; cls = 'aprox'; nivel = 'a'; }
     else { m = 'VARRENDO'; sub = 'Mercado sem alvo definido'; }
     var chave = m + sub + cls;
     if (chave !== ultimoTxt) { ultimoTxt = chave; elMain.textContent = m; elSub.textContent = sub; elStatus.className = 'status ' + cls; }
     if (nivel !== ultimoNivel) {
-      if (nivel === 't') falar('Alvo travando.');
+      if (nivel === 't') falar('Alvo na mira.');
       ultimoNivel = nivel;
     }
+  }
+
+  // ---- cabecalho: ativo, data, hora e preco ----
+  var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function fmtPreco(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return '-';
+    return v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function timeframe() {
+    var m = estadoVivo && estadoVivo.mercado && estadoVivo.mercado.timeframe_min;
+    return m || 15;
+  }
+  var precoSim = 209000, ultTick = 0;
+  function atualizarTicker(agora) {
+    if (agora - ultTick < 250) return;
+    ultTick = agora;
+    var ativo, data, hora, preco;
+    var mk = estadoVivo && estadoVivo.mercado;
+    if ((aoVivo() || semSinal()) && mk) {
+      ativo = mk.ativo || '-';
+      var h = mk.horario || '';
+      var mt = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/.exec(h);
+      if (mt) {
+        var dia = new Date(Date.UTC(+mt[1], +mt[2] - 1, +mt[3])).getUTCDay();
+        data = DIAS[dia] + ' ' + mt[3] + '/' + mt[2] + '/' + mt[1]; hora = mt[4];
+      } else { data = '--/--/----'; hora = '--:--:--'; }
+      preco = mk.preco;
+    } else {
+      var d = new Date();
+      ativo = 'WINV26';
+      data = DIAS[d.getDay()] + ' ' + p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear();
+      hora = p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+      precoSim += Math.round((Math.random() - 0.5) * 10) * 5;
+      preco = precoSim;
+    }
+    if (tkAtivo.textContent !== ativo) tkAtivo.textContent = ativo;
+    tkData.textContent = data; tkHora.textContent = hora; tkPreco.textContent = fmtPreco(preco);
   }
 
   // ---- controles ----
@@ -497,6 +575,7 @@
     varrAnt = varr;
     desenhar(varr);
     atualizarTexto();
+    atualizarTicker(agora);
     requestAnimationFrame(quadro);
   }
   entrar('lateral'); tModo = 3; marcarBotoes();

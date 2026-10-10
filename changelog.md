@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V547 — radar: cabeçalho de mercado, textos novos e tela sem rolagem
+
+Pedido do dono (10/10/2026). **Textos:** "ALVO TRAVANDO" soava como erro de sistema e virou **ALVO NA MIRA** (70% ou mais), com a frase "Aguardando confirmação no fechamento do candle de 15 minutos"; a faixa de 45% a 70% virou **CONTATO DETECTADO**; a voz diz "Alvo na mira". **Topo da tela:** ativo, data, hora do mercado e preço atual (ao vivo vêm do robô; em Replay, a hora é a do replay; sem o robô, a tela mostra valores simulados). **Dimensionamento:** a tela agora cabe na janela, com o radar usando o espaço que sobra entre o cabeçalho e o rodapé, sem corte e sem barra de rolagem (conferido de 390x700 a 1920x1080). O arquivo de estado ganhou o campo `mercado` (ativo, horário, preço, tamanho do candle); continua sem nomes de estratégia, condições, limites e preços de entrada ou stop. No `principal.py` só mudou o que é passado à gravação do estado, e nenhuma decisão muda.
+
+---
+
 ## V546 — radar ao vivo, som e voz
 
 Pedido do dono (10/10/2026). **Ao vivo:** o robô grava `radar/radar_estado.js` a cada segundo (um ponto por estratégia do time, o lado, a confiança, o consenso e o contador de captura) e o `radar/radar.html` lê esse arquivo. A etiqueta do canto mostra "AO VIVO", "AO VIVO · REPLAY", "SEM SINAL DO ROBÔ" (mais de 6 s sem atualização) ou "DADOS SIMULADOS" quando o robô não está rodando. "Alvo Capturado!" aparece quando o robô abre a posição, no fechamento do candle. O arquivo não traz nomes de estratégia, condições, limites nem preços. **Ordens:** `RADAR_ENVIA_ORDENS = False` em `configuracao.py`; o radar não envia ordem ao Profit (teste na mesma máquina, quem envia é o robô). O envio pelo radar ainda não existe: `True` é tratado como `False`, com aviso. **Som e voz:** botão "Som" (ping de sonar a cada volta da varredura, toque ao passar por um alvo, bipes na captura) e botão "Voz" (fala "Alvo travando" e "Alvo capturado"; na mesma máquina do robô, deixe desligada). No `principal.py` só entrou gravação do estado, e nenhuma decisão muda.
