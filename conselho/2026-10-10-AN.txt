@@ -1,0 +1,167 @@
+ATA AN — ATUALIZAÇÃO DA PROPOSTA AM: RADAR ATUAL NA NUVEM
+Autoria: Manus (IA), a pedido de Marcio Soares.
+Data: 10/10/2026. Revisão humana: pendente.
+Main consultada: c57245370e930c471059c5940a18b54634808a70.
+Base: main após merge do PR #161 (V553, radar com mira em 90%).
+Norma: compliance.md, especialmente Regra 15.4 sobre preservar atas.
+Fontes do projeto consultadas: ata AM publicada, radar/README.md atual
+ e mudanças recentes da main. Esta ata complementa AM, sem reescrevê-la.
+
+1. DIREÇÃO CONFIRMADA PELO DONO
+------------------------------
+O objetivo é hospedar o MODELO ATUAL do radar ROBONILDO na nuvem para
+receber dados continuamente do robô executado no computador do dono.
+Não é um novo portal, uma nova tela ou migração do motor de negociação.
+O sistema Jade está totalmente fora do escopo: nenhum ambiente, banco,
+credencial, implantação, usuário ou código será compartilhado com ele.
+
+A nuvem precisa ser um ambiente próprio do ROBONILDO. Profit, Excel,
+DDE, estratégias, decisões e envio de ordens permanecem locais.
+
+Esta entrega adiciona SOMENTE conselho/2026-10-10-AN.txt. Não cria pasta
+de servidor, não implementa ponte, não publica site e não modifica main,
+arquivos operacionais, cartuchos ou titulares.
+
+2. ARQUITETURA ATUALIZADA
+------------------------
+Computador do dono:
+  Profit -> Excel -> Robonildo -> radar/radar_estado.js -> ponte local
+                                                             |
+                                                    HTTPS autenticado
+                                                             |
+Ambiente exclusivo ROBONILDO na nuvem:
+  recepção/validação -> último estado separado por canal -> radar atual
+
+O servidor é somente o receptor e distribuidor do estado. Não importa
+motor.py, não executa estratégias, não acessa Profit e não envia comandos.
+Não existe controle remoto de compra, venda, fechamento ou configuração.
+O computador e sua internet continuam necessários para executar o robô.
+
+Preservar radar/radar.html da main consultada: desenho, mira em 90%,
+histerese em 85%, captura, cabeçalho de mercado e versões radar/base.
+Alterar somente a fonte de dados e elementos necessários à identificação
+do canal, acesso e disponibilidade. Não refazer a interface em um portal.
+Manter abertura local funcional sem depender de servidor.
+
+3. CANAIS E ACESSO
+------------------
+REPLAY: endereço público, claramente marcado como histórico/replay.
+AO VIVO: endereço privado com token de visualização. Sem cadastro ou
+assinatura nesta primeira entrega. A chave de publicação da ponte é outra
+credencial, nunca enviada ao navegador.
+
+Separar estado e autorização no servidor, não apenas esconder botões.
+O endpoint público de replay nunca devolve o snapshot ao vivo. A rota de
+publicação deve recusar dados em modo normal destinados ao canal replay;
+modo normal não pode ser convertido automaticamente em publicação pública.
+Usar autorização de publicação vinculada ao canal correspondente.
+
+Recomenda-se receber o token de acesso pelo fragmento do link e trocá-lo
+por sessão em cookie Secure/HttpOnly/SameSite, remover o fragmento, usar
+expiração e revogação. Não inserir segredo na query da URL, logs ou Git.
+Um link com token é uma credencial compartilhável, não identificação por
+pessoa. Não equivale à segurança de conta individual com login.
+
+A evolução para cadastro, versão histórica gratuita e acesso ao vivo pago
+foi mencionada pelo dono, mas fica fora do escopo atual. A expressão
+"operar ao vivo" refere-se, neste protótipo, a visualizar dados ao vivo;
+não autoriza operação remota nem execução de ordens por visitantes.
+
+Antes de disponibilizar dados publicamente, conferir direitos de
+redistribuição com os fornecedores. Um histórico em arquivo ou uma
+cotação visível no Profit não implica licença de redistribuição comercial.
+
+4. HOSPEDAGEM E LOCAL DO CÓDIGO
+------------------------------
+Requisito: priorizar segurança e ausência de custo na fase experimental.
+Cloudflare Workers Free, com assets estáticos e Durable Object SQLite,
+é a recomendação técnica anterior e permanece uma opção adequada ao
+protótipo de baixo tráfego. Não está contratada, conectada ou implantada.
+Uma aplicação hospedada em outro ambiente também pode executar esse papel,
+mas precisa cumprir os mesmos limites de isolamento, acesso e custo.
+Não presumir escolha de fornecedor a partir da referência anterior ao Jade.
+
+Franquias oficiais consultadas em 10/10/2026: Workers Free permite 100 mil
+requisições/dia; Durable Objects SQLite Free permite 100 mil pedidos/dia
+e 100 mil linhas escritas/dia, com outros limites de processamento,
+leitura e armazenamento. Exceder franquias no Free pode interromper
+operações. Gratuito não significa tráfego ilimitado ou disponibilidade
+incondicional. Dimensionar envio da ponte e consultas dos visitantes.
+Evitar Workers KV para persistir cada atualização: sua franquia de
+escritas gratuitas é menor. Usar subdomínio da plataforma inicialmente,
+sem compra de domínio. Não habilitar plano pago por iniciativa própria.
+
+Local sugerido do código-fonte do receptor: radar/servidor/, dentro do
+repositório ROBONILDO, com implantação isolada só do serviço e assets
+necessários. Ter código no mesmo repositório não coloca o robô na nuvem.
+Credenciais são secrets da hospedagem/configuração privada da ponte.
+A pasta ainda não foi criada. Arquivos e ferramentas específicos dependem
+da plataforma efetivamente escolhida e serão declarados antes de editar.
+
+5. ENTREGA FUTURA: ESCOPO PREVISTO
+---------------------------------
+No repositório, a primeira implementação deverá envolver:
+  novo ponte_radar.py;
+  alteração de radar/radar.html para fonte online opcional;
+  alteração de radar/README.md com instalação e operação;
+  novo tests/test_ponte_radar.py;
+  novos arquivos sob radar/servidor/ de recepção, autorização,
+  armazenamento, configuração de implantação e testes do servidor.
+
+A lista exata dos arquivos dentro de radar/servidor/ será informada quando
+for escolhido o ambiente. Não é necessária alteração em principal.py,
+motor.py, classificacao.py, configuracao.py, radar_estado.py ou titular/.
+O transmissor começa como processo independente. Toda implementação é
+submetida em branch/PR; não se faz merge nem envio direto à main.
+
+6. TEMPO REAL E ISOLAMENTO DE FALHAS
+-----------------------------------
+"Tempo real" significa atualização contínua próxima da publicação local,
+não garantia de latência zero. Intervalo inicial proposto: até dois segundos
+entre envios de snapshots novos, com atraso observado e medido em testes.
+A ponte lê JSON sem executar o JavaScript do arquivo. Valida tamanho,
+tipos e números finitos. Não transmite histórico inteiro, código de
+estratégias ou credenciais da corretora.
+
+Continuam as salvaguardas da AM: conexão somente de saída, timeout,
+retentativas progressivas, fila limitada ao último estado, identificação
+de sessão/reinício e prevenção de sobrescrita por pedido antigo.
+Uma falha no servidor não interrompe nem muda o robô local.
+Não reenviar arquivo congelado como atualização genuína.
+
+O radar atual já avisa perda de contato após seis segundos sem publicação.
+Preservar esse aviso como referência inicial, medir a adequação ao atraso
+de rede e explicitar qualquer ajuste futuro. Isso refina a sugestão inicial
+de dez segundos da AM: não alterar desnecessariamente o comportamento atual.
+A idade de recepção é medida pelo servidor; a hora do mercado permanece a
+do robô/replay. Ao perder contato, não trocar silenciosamente por simulação.
+Demonstração simulada, se mantida, precisa ser explícita e distinta do
+replay publicado e do estado ao vivo autenticado.
+
+7. ACEITAÇÃO E PRÓXIMA ETAPA
+--------------------------
+O protótipo só é descrito como funcionando quando comprovados:
+- mesma tela do radar atual, local e online;
+- atualização local recebida e exibida com atraso medido;
+- replay público sem acesso a estado ou credenciais ao vivo;
+- ao vivo inacessível sem autorização, com expiração/revogação testadas;
+- arquivo congelado, queda de rede e reinício sinalizados corretamente;
+- retorno da conexão recuperando somente o estado mais recente;
+- falha do receptor sem efeito na execução local;
+- nenhum comando remoto ou segredo exposto;
+- quotas de hospedagem verificadas para o pequeno público experimental.
+
+Começar com dados sintéticos/replay em testes privados. Publicação ampla
+e implantação com suas escolhas finais devem seguir as autorizações
+aplicáveis, inclusive direitos de redistribuição de dados.
+
+Estado desta proposta: requisitos atualizados e registrados; nenhuma
+infraestrutura publicada e nenhum dado transmitido nesta entrega.
+Não há backtest, alteração de estratégia, promessa de lucro ou custo
+ilimitadamente zero. Próxima etapa: implementar a ponte e o receptor
+exclusivo do ROBONILDO preservando a interface atual, após definição do
+ambiente de implantação e acesso disponível à respectiva conta.
+
+Referências das franquias consultadas:
+https://developers.cloudflare.com/workers/platform/pricing/
+https://developers.cloudflare.com/durable-objects/platform/pricing/
