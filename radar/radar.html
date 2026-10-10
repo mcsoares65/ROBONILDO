@@ -18,6 +18,7 @@
     --phos-dim: #1d7a47;
     --grid: #0e4528;
     --amber: #ffb627;
+    --red: #ff5a4d;
     --text: #a4ecc2;
     --text-dim: #4d9a72;
     --font-display: "Chakra Petch", "Eurostile", "Bahnschrift", sans-serif;
@@ -40,10 +41,8 @@
     gap: 8px;
     overflow: hidden;
   }
-  .ticker, .status, .controles { width: min(100%, 760px); flex: 0 0 auto; }
+  header, .ticker, .audio-linha, .status, .controles { width: min(100%, 760px); flex: 0 0 auto; }
   header {
-    width: 100%;
-    flex: 0 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -64,14 +63,15 @@
     border: 1px solid var(--grid);
     padding: 3px 8px;
   }
-  .acoes { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-  .acoes .tag { margin-right: 2px; }
+  .audio-linha { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .aviso-audio { margin-right: auto; font-size: 11px; letter-spacing: .12em; color: var(--amber); }
   button.icone { width: 34px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   .icone svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .icone[aria-pressed="true"] .cortar { display: none; }
   .icone[aria-pressed="false"] .ondas { display: none; }
   .tag.vivo { color: var(--phos); border-color: var(--phos-dim); }
-  .tag.sem-sinal { color: var(--amber); border-color: var(--amber); }
+  .tag.replay { color: var(--amber); border-color: var(--amber); }
+  .tag.sem-sinal { color: var(--red); border-color: var(--red); }
   .ticker {
     display: flex;
     flex-wrap: wrap;
@@ -166,22 +166,24 @@
 <body>
 <header>
   <h1>ROBONILDO · RADAR</h1>
-  <div class="acoes">
-    <span class="tag" id="tag">DADOS SIMULADOS</span>
-    <button class="icone" id="b-som" aria-pressed="false" title="Som desligado" aria-label="Som desligado">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="ondas" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="cortar" d="M17 9l5 6M22 9l-5 6"/></svg>
-    </button>
-    <button class="icone" id="b-voz" aria-pressed="false" title="Voz desligada" aria-label="Voz desligada">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H11l-4 4v-4H4z"/><path class="ondas" d="M8 9.5h8M8 12.5h5"/><path class="cortar" d="M3 3l18 18"/></svg>
-    </button>
-  </div>
+  <span class="tag" id="tag">DADOS SIMULADOS</span>
 </header>
 
 <div class="ticker" aria-label="Ativo, data, hora e preço">
-  <div class="campo"><span class="rot">ATIVO</span><span class="val" id="t-ativo">WINV26</span></div>
+  <div class="campo"><span class="rot">ATIVO</span><span class="val" id="t-ativo">-</span></div>
   <div class="campo"><span class="rot">DATA</span><span class="val" id="t-data">--/--/----</span></div>
   <div class="campo"><span class="rot">HORA</span><span class="val" id="t-hora">--:--:--</span></div>
   <div class="campo preco"><span class="rot">PREÇO</span><span class="val" id="t-preco">-</span></div>
+</div>
+
+<div class="audio-linha">
+  <span class="aviso-audio" id="aviso-audio" hidden>toque na tela para liberar o áudio</span>
+  <button class="icone" id="b-som" aria-pressed="true" title="Som ligado" aria-label="Som ligado">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="ondas" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="cortar" d="M17 9l5 6M22 9l-5 6"/></svg>
+  </button>
+  <button class="icone" id="b-voz" aria-pressed="true" title="Voz ligada" aria-label="Voz ligada">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H11l-4 4v-4H4z"/><path class="ondas" d="M8 9.5h8M8 12.5h5"/><path class="cortar" d="M3 3l18 18"/></svg>
+  </button>
 </div>
 
 <div class="area">
@@ -209,7 +211,7 @@
   var elStatus = document.getElementById('status');
   var elMain = document.getElementById('principal');
   var elSub = document.getElementById('secundario');
-  var elTag = document.getElementById('tag');
+  var elTag = document.getElementById('tag'), elAvisoAudio = document.getElementById('aviso-audio');
   var elSim = document.getElementById('sim');
   var tkAtivo = document.getElementById('t-ativo'), tkData = document.getElementById('t-data'),
       tkHora = document.getElementById('t-hora'), tkPreco = document.getElementById('t-preco');
@@ -335,14 +337,25 @@
   }
 
   // ---- som e voz ----
-  var ac = null, somOn = false, vozOn = false;
+  var ac = null, somOn = true, vozOn = true;   // abre com som e voz ligados
   function audio() {
     if (!ac) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); }
     if (ac.state === 'suspended') ac.resume();
     return ac;
   }
+  // Navegadores so liberam audio e fala depois de um toque do usuario: o primeiro toque na pagina libera.
+  function liberarAudio() {
+    audio();
+    if (window.speechSynthesis) { try { window.speechSynthesis.resume(); } catch (e) { } }
+    if (ac && ac.state === 'running') {
+      ['pointerdown', 'keydown'].forEach(function (ev) { document.removeEventListener(ev, liberarAudio, true); });
+    }
+  }
+  ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, liberarAudio, true); });
+  function audioPronto() { return !!ac && ac.state === 'running'; }
   function tom(freq, dur, vol, tipo, atraso) {
-    var a = audio(); if (!a) return;
+    if (!audioPronto()) return;     // sem liberacao do navegador nao agenda nada (evita rajada atrasada)
+    var a = ac;
     var t = a.currentTime + (atraso || 0);
     var o = a.createOscillator(), g = a.createGain();
     o.type = tipo || 'sine'; o.frequency.value = freq;
@@ -487,10 +500,11 @@
   var ultimoTxt = '', ultimoNivel = '', ultimoTag = '';
   function atualizarTexto() {
     var vivo = aoVivo(), sem = semSinal();
-    var tagTxt = sem ? 'SEM SINAL DO ROBÔ' : vivo ? (estadoVivo.modo === 'replay' ? 'AO VIVO · REPLAY' : 'AO VIVO') : 'DADOS SIMULADOS';
+    var replay = vivo && estadoVivo.modo === 'replay';
+    var tagTxt = sem ? 'SEM SINAL DO ROBÔ' : replay ? 'REPLAY' : vivo ? 'AO VIVO' : 'DADOS SIMULADOS';
     if (tagTxt !== ultimoTag) {
       ultimoTag = tagTxt; elTag.textContent = tagTxt;
-      elTag.className = 'tag' + (sem ? ' sem-sinal' : vivo ? ' vivo' : '');
+      elTag.className = 'tag' + (sem ? ' sem-sinal' : replay ? ' replay' : vivo ? ' vivo' : '');
       elSim.hidden = vivo || sem;
     }
     var maxc = 0; est.forEach(function (s) { if (s.conf > maxc) maxc = s.conf; });
@@ -516,7 +530,6 @@
 
   // ---- cabecalho: ativo, data, hora e preco ----
   var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-  function p2(n) { return (n < 10 ? '0' : '') + n; }
   function fmtPreco(v) {
     if (typeof v !== 'number' || !isFinite(v)) return '-';
     return v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -525,29 +538,24 @@
     var m = estadoVivo && estadoVivo.mercado && estadoVivo.mercado.timeframe_min;
     return m || 15;
   }
-  var precoSim = 209000, ultTick = 0;
+  var ultTick = 0;
   function atualizarTicker(agora) {
     if (agora - ultTick < 250) return;
     ultTick = agora;
-    var ativo, data, hora, preco;
+    // Ativo, data, hora e preco vem SEMPRE do DDE, publicados pelo robo (mesma leitura do principal.py).
+    // O relogio do Windows nunca e usado; sem o robo (ou sem DDE) a tela mostra tracos.
+    var ativo = '-', data = '--/--/----', hora = '--:--:--', preco = null;
     var mk = estadoVivo && estadoVivo.mercado;
     if ((aoVivo() || semSinal()) && mk) {
       ativo = mk.ativo || '-';
-      var h = mk.horario || '';
-      var mt = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/.exec(h);
+      var mt = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/.exec(mk.horario || '');
       if (mt) {
         var dia = new Date(Date.UTC(+mt[1], +mt[2] - 1, +mt[3])).getUTCDay();
         data = DIAS[dia] + ' ' + mt[3] + '/' + mt[2] + '/' + mt[1]; hora = mt[4];
-      } else { data = '--/--/----'; hora = '--:--:--'; }
+      }
       preco = mk.preco;
-    } else {
-      var d = new Date();
-      ativo = 'WINV26';
-      data = DIAS[d.getDay()] + ' ' + p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear();
-      hora = p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
-      precoSim += Math.round((Math.random() - 0.5) * 10) * 5;
-      preco = precoSim;
     }
+    elAvisoAudio.hidden = audioPronto() || !(somOn || vozOn);
     if (tkAtivo.textContent !== ativo) tkAtivo.textContent = ativo;
     tkData.textContent = data; tkHora.textContent = hora; tkPreco.textContent = fmtPreco(preco);
   }

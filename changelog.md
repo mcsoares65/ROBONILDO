@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V549 — radar: som e voz ligados, etiqueta única e hora só do DDE
+
+Pedido do dono (10/10/2026). **Som e voz** agora abrem ligados e ficam logo abaixo da linha do preço; como o navegador só libera áudio e fala depois de um toque na página, aparece o aviso "toque na tela para liberar o áudio" até o primeiro toque (antes disso nada é tocado, para não sair uma rajada de sons atrasados). **Etiqueta:** acabou o "AO VIVO · REPLAY"; mostra só **AO VIVO** (verde) ou **REPLAY** (quadro e letra amarelos), **SEM SINAL DO ROBÔ** passou a vermelho. **Data e hora:** o radar nunca mais usa o relógio do Windows; ativo, data, hora e preço vêm só do que o robô leu no DDE. Sem o robô, ou com um robô antigo que não publica o campo `mercado` (a tela caía no relógio do Windows nesse caso), aparecem traços. Só mudou `radar/radar.html` (mais README e teste da página); nenhuma decisão do robô muda.
+
+---
+
 ## V548 — radar: botões compactos e linha do topo estável
 
 Pedido do dono (10/10/2026). **Som e voz** foram para o canto superior direito, como ícones pequenos (cerca de 75% menores que os botões de texto), liberando espaço para o círculo do radar; o estado aparece no risco do ícone e no texto de ajuda. **Linha ativo/data/hora/preço:** os campos agora têm largura fixa e fonte de largura única, então ela não treme quando os números mudam (conferido trocando valores de 5 a 9 caracteres em 390x700, 1366x768 e 1920x1080). **Fidelidade ao DDE:** ao vivo, ativo, data, hora e preço continuam vindo da mesma leitura do DDE que o robô usa (`ler_horario_mercado` e `ler_preco`); o relógio do computador só é usado em DADOS SIMULADOS. Só mudou `radar/radar.html` (mais README e teste da página); nenhuma decisão do robô muda.
