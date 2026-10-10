@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V545"
+VERSAO = "V546"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1927,3 +1927,13 @@ VERSAO = "V545"
 #   Pedido do dono: separar o radar em pasta propria do repositorio (radar/), apos consulta (regra de nao criar pastas sem consultar).
 #   radar/radar.html: pagina unica, sem dependencias, dados simulados (compra acima, venda abaixo, alvo se aproxima do centro com a
 #   confianca; "Alvo Capturado!" em 100%). radar/README.md. Nao importa nem altera nenhum modulo do robo; nenhuma decisao muda.
+
+# V546 - radar ao vivo, som e voz; RADAR_ENVIA_ORDENS (10/10/2026)
+#   Pedido do dono: ligar o radar ao robo; RADAR_ENVIA_ORDENS=False em configuracao.py (teste na mesma maquina); som tipo sonar e botao.
+#   radar_estado.py (novo): PublicadorRadar grava radar/radar_estado.js (window.RADAR_ESTADO) a cada segundo: por titular um id estavel,
+#   lado (+1/-1) e confianca; consenso; posicao; contador de captura (sobe quando o robo ABRE a posicao). Nunca grava nomes, condicoes,
+#   limites nem precos. Falha de gravacao e engolida. configuracao.py: RADAR_PUBLICA_ESTADO, RADAR_ENVIA_ORDENS (False; True e tratado
+#   como False porque o envio pelo radar nao existe), CAMINHO_RADAR_ESTADO. principal.py: cria o publicador, publica a cada volta do laco
+#   e chama capturar() na entrada aceita; so gravacao, nenhuma decisao muda. radar/radar.html: le o estado a cada segundo (AO VIVO /
+#   SEM SINAL / simulado), N estrategias dinamicas, captura por evento, botoes Som (ping de sonar, toque de contato, bipes de captura)
+#   e Voz (speechSynthesis). .gitignore: radar/radar_estado.js.

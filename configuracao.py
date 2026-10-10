@@ -246,3 +246,13 @@ ENVIAR_ORDENS = True
 # Ligar execucao real exige escrever codigo novo em principal.py, nao so mudar este valor.
 # Antes disso: validar o robo em paralelo ao acompanhamento manual, confirmar leitura
 # de posicao real via DDE (campo CAB), e ter um watchdog independente rodando.
+
+# ---------- Radar (radar/radar.html) ----------
+# V546: o robo publica o estado do radar em radar/radar_estado.js (a pagina le a cada segundo).
+# So desenho: o arquivo traz posicao dos pontos, consenso e captura, nunca regras da estrategia.
+RADAR_PUBLICA_ESTADO = True
+# V546: se o RADAR (lado cliente) envia ordem ao Profit ao "capturar o alvo". Nesta fase de testes
+# o radar roda na MESMA maquina do robo, que ja envia as ordens (ENVIAR_ORDENS); com True haveria
+# ordem duplicada. O envio pelo radar ainda nao existe: True e tratado como False, com aviso.
+RADAR_ENVIA_ORDENS = False
+CAMINHO_RADAR_ESTADO = str(RAIZ_PROJETO / "radar" / "radar_estado.js")
