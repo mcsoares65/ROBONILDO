@@ -64,6 +64,8 @@
     padding: 3px 8px;
   }
   .audio-linha { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .rodape { width: 100%; flex: 0 0 auto; text-align: right; font-size: 11px; letter-spacing: .14em; color: var(--text-dim); line-height: 1; }
+  .rodape.diferente { color: var(--amber); }
   .aviso-audio { margin-right: auto; font-size: 11px; letter-spacing: .12em; color: var(--amber); }
   button.icone { width: 34px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   .icone svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -204,13 +206,17 @@
   <button id="b-venda" aria-pressed="false">Venda se aproximando</button>
 </div>
 
+<div class="rodape" id="versao" aria-label="Versões do radar e da base"></div>
+
 <script>
 (function () {
+  var VERSAO_RADAR = 'V551';   // mantida igual a versionamento.py (o teste confere)
   var cv = document.getElementById('tela');
   var ctx = cv.getContext('2d');
   var elStatus = document.getElementById('status');
   var elMain = document.getElementById('principal');
   var elSub = document.getElementById('secundario');
+  var elVersao = document.getElementById('versao');
   var elTag = document.getElementById('tag'), elAvisoAudio = document.getElementById('aviso-audio');
   var elSim = document.getElementById('sim');
   var tkAtivo = document.getElementById('t-ativo'), tkData = document.getElementById('t-data'),
@@ -244,7 +250,7 @@
   montarEst(3);
   est[0].alvo = est[0].conf = 0.15; est[1].alvo = est[1].conf = 0.2; est[2].alvo = est[2].conf = 0.12;
 
-  // ---- estado ao vivo (publicado pelo robo em radar_estado.js) ----
+  // ---- estado ao vivo (publicado pela base em radar_estado.js) ----
   var visto = false, ultimoN = null, ultimoNMs = 0, ultimaSeq = null, estadoVivo = null;
   function carregarEstado() {
     var sc = document.createElement('script');
@@ -501,7 +507,7 @@
   function atualizarTexto() {
     var vivo = aoVivo(), sem = semSinal();
     var replay = vivo && estadoVivo.modo === 'replay';
-    var tagTxt = sem ? 'SEM SINAL DO ROBÔ' : replay ? 'REPLAY' : vivo ? 'AO VIVO' : 'DADOS SIMULADOS';
+    var tagTxt = sem ? 'PERDEMOS O CONTATO COM A BASE' : replay ? 'REPLAY' : vivo ? 'AO VIVO' : 'DADOS SIMULADOS';
     if (tagTxt !== ultimoTag) {
       ultimoTag = tagTxt; elTag.textContent = tagTxt;
       elTag.className = 'tag' + (sem ? ' sem-sinal' : replay ? ' replay' : vivo ? ' vivo' : '');
@@ -516,7 +522,7 @@
       sub = lado + ' · ' + (vivo ? (envia ? 'ORDEM ENVIADA' : 'RADAR NÃO ENVIA ORDEM (TESTE)') : 'ORDEM ENVIADA (SIMULAÇÃO)');
       cls = 'lock'; nivel = 'c';
     }
-    else if (sem) { m = 'SEM SINAL'; sub = 'O robô parou de publicar o estado'; cls = 'aprox'; nivel = 's'; }
+    else if (sem) { m = 'SEM CONTATO'; sub = 'A base parou de transmitir'; cls = 'aprox'; nivel = 's'; }
     else if (maxc >= 0.7) { m = 'ALVO NA MIRA'; sub = 'Aguardando confirmação no fechamento do candle de ' + timeframe() + ' minutos'; cls = 'aprox'; nivel = 't'; }
     else if (maxc >= 0.45) { m = 'CONTATO DETECTADO'; sub = 'Time acompanhando'; cls = 'aprox'; nivel = 'a'; }
     else { m = 'VARRENDO'; sub = 'Mercado sem alvo definido'; }
@@ -555,9 +561,16 @@
       }
       preco = mk.preco;
     }
+    // Canto da tela: versao do radar (esta pagina) e da base (a que esta transmitindo).
+    var vb = (aoVivo() || semSinal()) ? ((estadoVivo && estadoVivo.versao) || '?') : '-';
+    var txtV = 'RADAR ' + VERSAO_RADAR + ' · BASE ' + vb;
+    if (elVersao.textContent !== txtV) {
+      elVersao.textContent = txtV;
+      elVersao.className = 'rodape' + (vb !== '-' && vb !== VERSAO_RADAR ? ' diferente' : '');
+    }
     // Aviso (uma linha, abaixo do preco): diagnostico dos dados primeiro, depois a liberacao do audio.
     var aviso = '';
-    if ((aoVivo() || semSinal()) && !(mk && mk.horario)) aviso = 'robô sem dados de mercado (atualize o robô e reinicie)';
+    if ((aoVivo() || semSinal()) && !(mk && mk.horario)) aviso = 'base sem dados de mercado (atualize a base e reinicie)';
     else if (!audioPronto() && (somOn || vozOn)) aviso = 'toque na tela para liberar o áudio';
     if (elAvisoAudio.textContent !== aviso) elAvisoAudio.textContent = aviso;
     elAvisoAudio.hidden = aviso === '';

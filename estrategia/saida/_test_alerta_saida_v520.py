@@ -767,7 +767,7 @@ class RadarEstadoTest(unittest.TestCase):
         for proibido in ("A1", "segredo", "faltantes", "confirmadas", "detalhe", "titular"):
             self.assertNotIn(proibido, texto)
         self.assertEqual(set(estado["estrategias"][0]), {"id", "dir", "conf"})
-        self.assertEqual(set(estado), {"n", "modo", "radar_envia_ordens", "estrategias", "consenso", "posicao",
+        self.assertEqual(set(estado), {"n", "versao", "modo", "radar_envia_ordens", "estrategias", "consenso", "posicao",
                                        "captura", "mercado"})
 
     def test_consenso_posicao_e_captura(self):
@@ -832,7 +832,12 @@ class RadarEstadoTest(unittest.TestCase):
         self.assertNotIn("AO VIVO · REPLAY", html)
         self.assertIn(".tag.replay", html)
         self.assertNotIn("new Date()", html)
-        self.assertIn("robô sem dados de mercado", html)
+        self.assertIn("base sem dados de mercado", html)
+        self.assertIn("PERDEMOS O CONTATO COM A BASE", html)
+        self.assertNotIn("SEM SINAL DO ROBÔ", html)
+        self.assertNotIn("O robô parou", html)
+        import versionamento
+        self.assertIn("VERSAO_RADAR = '%s'" % versionamento.VERSAO, html)   # pagina e robo na mesma versao
 
 
 class SimpleNS:

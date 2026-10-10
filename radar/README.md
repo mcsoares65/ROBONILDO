@@ -7,15 +7,19 @@ Tela de radar de sinais, no estilo de radar de caça. Sem números: compra na me
 1. Rode o `principal.py` (Replay ou Normal). O robô grava `radar/radar_estado.js` a cada segundo.
 2. Abra `radar/radar.html` com dois cliques. A etiqueta do canto mostra "AO VIVO" (ou "AO VIVO · REPLAY").
 3. Sem o robô rodando, a tela mostra dados simulados e os botões de baixo forçam compra, venda ou mercado lateral.
-4. Se o robô para de publicar por mais de 6 segundos, a tela avisa "SEM SINAL DO ROBÔ".
+4. Se o robô para de publicar por mais de 6 segundos, a tela avisa "PERDEMOS O CONTATO COM A BASE".
 
 ## Cabeçalho e textos
 
-- No topo ficam o ativo, a data, a hora e o preço atual, exatamente como o robô leu no DDE (em Replay, a hora do replay). O relógio do Windows nunca é usado: sem o robô, ou com um robô antigo que não publica o campo `mercado`, a tela mostra traços (`--/--/----`, `--:--:--`) e o aviso "robô sem dados de mercado (atualize o robô e reinicie)" abaixo do preço. Cada campo tem largura fixa e fonte de largura única, então a linha não se mexe quando os números mudam.
-- A etiqueta do canto mostra **AO VIVO** (verde), **REPLAY** (amarelo, só quando o robô está em modo replay), **SEM SINAL DO ROBÔ** (vermelho) ou **DADOS SIMULADOS**.
+- No topo ficam o ativo, a data, a hora e o preço atual, exatamente como o robô leu no DDE (em Replay, a hora do replay). O relógio do Windows nunca é usado: sem o robô, ou com um robô antigo que não publica o campo `mercado`, a tela mostra traços (`--/--/----`, `--:--:--`) e o aviso "base sem dados de mercado (atualize a base e reinicie)" abaixo do preço. Cada campo tem largura fixa e fonte de largura única, então a linha não se mexe quando os números mudam.
+- A etiqueta do canto mostra **AO VIVO** (verde), **REPLAY** (amarelo, só quando o robô está em modo replay), **PERDEMOS O CONTATO COM A BASE** (vermelho) ou **DADOS SIMULADOS**.
 - Som e voz ficam logo abaixo da linha do preço, como dois ícones pequenos (alto-falante e balão de fala), e **abrem ligados**; com risco = desligado. Os navegadores só liberam áudio e fala depois de um toque na página, então aparece o aviso "toque na tela para liberar o áudio" até o primeiro toque.
 - Os textos acompanham a confiança da estratégia mais próxima: **VARRENDO** (abaixo de 45%), **CONTATO DETECTADO** (45% a 70%), **ALVO NA MIRA** (70% ou mais, aguardando a confirmação no fechamento do candle) e **ALVO CAPTURADO!** (o robô abriu a posição). Esses limites são só da tela e não entram em nenhuma decisão do robô.
 - A tela se ajusta ao tamanho da janela, sem barra de rolagem.
+
+## Versões
+
+No canto inferior direito a tela mostra `RADAR Vxxx · BASE Vxxx`: a versão desta página e a da base (o robô) que está transmitindo. Se a base for antiga e não informar a versão, aparece `BASE ?`; sem a base, `BASE -`. Quando as duas diferem, o texto fica amarelo. No contexto do radar, o robô é chamado de "base".
 
 ## Som e voz
 
