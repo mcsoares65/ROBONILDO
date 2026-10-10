@@ -40,8 +40,10 @@
     gap: 8px;
     overflow: hidden;
   }
-  header, .ticker, .status, .controles { width: min(100%, 760px); flex: 0 0 auto; }
+  .ticker, .status, .controles { width: min(100%, 760px); flex: 0 0 auto; }
   header {
+    width: 100%;
+    flex: 0 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -62,6 +64,12 @@
     border: 1px solid var(--grid);
     padding: 3px 8px;
   }
+  .acoes { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .acoes .tag { margin-right: 2px; }
+  button.icone { width: 34px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+  .icone svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .icone[aria-pressed="true"] .cortar { display: none; }
+  .icone[aria-pressed="false"] .ondas { display: none; }
   .tag.vivo { color: var(--phos); border-color: var(--phos-dim); }
   .tag.sem-sinal { color: var(--amber); border-color: var(--amber); }
   .ticker {
@@ -72,15 +80,23 @@
     border-block: 1px solid var(--grid);
     padding-block: 6px;
   }
-  .campo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .campo { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: none; }
   .campo .rot { font-size: 11px; letter-spacing: .2em; color: var(--text-dim); }
   .campo .val {
-    font: 700 clamp(15px, 2.6vh, 20px)/1.1 var(--font-display);
-    letter-spacing: .08em;
+    /* Fonte monoespacada e largura fixa por campo: os caracteres mudam, a linha nao se mexe. */
+    font: 700 clamp(15px, 2.6vh, 20px)/1.1 var(--font-mono);
+    letter-spacing: .04em;
     color: var(--phos);
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    white-space: pre;
+    display: block;
+    overflow: hidden;
+    width: calc(var(--n) * (1ch + .04em));
   }
+  #t-ativo { --n: 7; }
+  #t-data { --n: 14; }
+  #t-hora { --n: 8; }
+  #t-preco { --n: 9; text-align: right; }
   .campo.preco .val { color: var(--text); }
   .area {
     flex: 1 1 0;
@@ -150,7 +166,15 @@
 <body>
 <header>
   <h1>ROBONILDO · RADAR</h1>
-  <span class="tag" id="tag">DADOS SIMULADOS</span>
+  <div class="acoes">
+    <span class="tag" id="tag">DADOS SIMULADOS</span>
+    <button class="icone" id="b-som" aria-pressed="false" title="Som desligado" aria-label="Som desligado">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="ondas" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="cortar" d="M17 9l5 6M22 9l-5 6"/></svg>
+    </button>
+    <button class="icone" id="b-voz" aria-pressed="false" title="Voz desligada" aria-label="Voz desligada">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H11l-4 4v-4H4z"/><path class="ondas" d="M8 9.5h8M8 12.5h5"/><path class="cortar" d="M3 3l18 18"/></svg>
+    </button>
+  </div>
 </header>
 
 <div class="ticker" aria-label="Ativo, data, hora e preço">
@@ -171,10 +195,6 @@
   <div class="sub" id="secundario">Mercado sem alvo definido</div>
 </div>
 
-<div class="controles">
-  <button id="b-som" aria-pressed="false">Som: desligado</button>
-  <button id="b-voz" aria-pressed="false">Voz: desligada</button>
-</div>
 <div class="controles" id="sim">
   <button id="b-auto" aria-pressed="true">Automático</button>
   <button id="b-lateral" aria-pressed="false">Mercado lateral</button>
@@ -549,13 +569,13 @@
   bSom.addEventListener('click', function () {
     somOn = !somOn;
     bSom.setAttribute('aria-pressed', somOn ? 'true' : 'false');
-    bSom.textContent = somOn ? 'Som: ligado' : 'Som: desligado';
+    var tS = somOn ? 'Som ligado' : 'Som desligado'; bSom.title = tS; bSom.setAttribute('aria-label', tS);
     if (somOn) { audio(); pingSonar(); }
   });
   bVoz.addEventListener('click', function () {
     vozOn = !vozOn;
     bVoz.setAttribute('aria-pressed', vozOn ? 'true' : 'false');
-    bVoz.textContent = vozOn ? 'Voz: ligada' : 'Voz: desligada';
+    var tV = vozOn ? 'Voz ligada' : 'Voz desligada'; bVoz.title = tV; bVoz.setAttribute('aria-label', tV);
     if (vozOn) falar('Voz do radar ligada.'); else if (window.speechSynthesis) window.speechSynthesis.cancel();
   });
 

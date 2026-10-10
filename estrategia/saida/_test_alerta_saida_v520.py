@@ -821,8 +821,11 @@ class RadarEstadoTest(unittest.TestCase):
         html = (RAIZ / "radar" / "radar.html").read_text(encoding="utf-8")
         for trecho in ('id="b-som"', 'id="b-voz"', "radar_estado.js", "RADAR NÃO ENVIA ORDEM", "ALVO CAPTURADO!",
                        "ALVO NA MIRA", "CONTATO DETECTADO", "candle de ", 'id="t-ativo"', 'id="t-data"',
-                       'id="t-hora"', 'id="t-preco"', "overflow: hidden"):
+                       'id="t-hora"', 'id="t-preco"', "overflow: hidden", 'class="icone"', "--n: 14"):
             self.assertIn(trecho, html)
+        # som e voz ficam no cabecalho (canto superior direito), nao mais na linha de baixo
+        self.assertLess(html.index('id="b-som"'), html.index('id="status"'))
+        self.assertLess(html.index('id="b-voz"'), html.index('id="status"'))
 
 
 class SimpleNS:
