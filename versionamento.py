@@ -14,7 +14,7 @@ versao - util para arqueologia de codigo ("em que versao isso mudou?").
 """
 
 # Fonte unica de verdade — sempre no topo deste arquivo.
-VERSAO = "V544"
+VERSAO = "V545"
 
 # ---------------------------------------------------------------------------
 # Historico tecnico por versao (blocos separados; mais recente no final)
@@ -1922,3 +1922,8 @@ VERSAO = "V544"
 #   Pedido do dono: a unica banca e a da planilha (GESTAO_RISCO!B3). configuracao.py: BANCA_REAL_REAIS (1490.00, fixa) removida.
 #   motor.validar_risco_inicial passa a usar self.banca_atual (lida da planilha); sem banca lida o limite percentual nao se aplica.
 #   RISCO_MAXIMO_PCT_BANCA segue 0 (desligado desde a V483), entao nenhuma decisao muda.
+
+# V545 - radar/ (prototipo visual do radar de sinais) (10/10/2026)
+#   Pedido do dono: separar o radar em pasta propria do repositorio (radar/), apos consulta (regra de nao criar pastas sem consultar).
+#   radar/radar.html: pagina unica, sem dependencias, dados simulados (compra acima, venda abaixo, alvo se aproxima do centro com a
+#   confianca; "Alvo Capturado!" em 100%). radar/README.md. Nao importa nem altera nenhum modulo do robo; nenhuma decisao muda.
