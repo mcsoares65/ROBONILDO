@@ -8,7 +8,9 @@ Fica no laboratório (estrategia/saida/), com prefixo `_test_`, que o mantém fo
 import ast
 import csv
 import importlib
+import json
 import sys
+import time
 import tempfile
 import unittest
 from datetime import datetime, timedelta
@@ -842,6 +844,293 @@ class RadarEstadoTest(unittest.TestCase):
         import re
         versao = re.search(r'^VERSAO\s*=\s*"([^"]+)"', (RAIZ / "versionamento.py").read_text(encoding="utf-8"), re.M).group(1)
         self.assertIn("VERSAO_RADAR = '%s'" % versao, html)
+
+
+class PonteRadarTest(unittest.TestCase):
+    """V554: ponte_radar.py (processo separado) so le o arquivo de estado e envia em mao unica."""
+
+    def setUp(self):
+        self.pr = importlib.import_module("ponte_radar")
+        self.rad = importlib.import_module("radar_estado")
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.arq = Path(self.tmp.name) / "radar_estado.js"
+        self.radar = [{"titular": "A", "estrategia": "A1", "direcao": "COMPRA", "progresso": 0.6}]
+        self.pub = self.rad.PublicadorRadar(self.arq, "normal")
+        self.merc = {"ativo": "WINV26", "horario": datetime(2026, 10, 8, 10, 15, 30), "preco": 209125.0,
+                     "timeframe_min": 15}
+        self.t = [0.0]
+        self.enviados = []
+        self.logs = []
+
+    def _publica(self, modo=None):
+        if modo and modo != self.pub.modo:
+            self.pub.modo = modo
+        self.pub._ultimo = None
+        self.assertTrue(self.pub.publicar(self.radar, 0.5, None, agora=1.0, mercado=self.merc))
+
+    def _ponte(self, enviar=None, chaves=None, **kw):
+        def envio(url, chave, corpo, timeout):
+            self.enviados.append((url, chave, json.loads(corpo.decode("utf-8"))))
+            return 200
+        return self.pr.Ponte(self.arq, "https://exemplo.invalid", chaves or {"vivo": "CHV-VIVO", "replay": "CHV-REPLAY"},
+                             enviar=enviar or envio, relogio=lambda: self.t[0], log=self.logs.append, **kw)
+
+    # ---- (a) leitura: formato oficial aceito, conteudo executavel/invalido recusado
+    def test_aceita_o_formato_oficial_e_descarta_campos_extras(self):
+        self._publica()
+        estado = self.pr.ler_estado(self.arq)
+        self.assertEqual(estado["modo"], "normal")
+        self.assertEqual(estado["mercado"]["preco"], 209125.0)
+        bruto = json.loads(self.arq.read_text(encoding="utf-8")[len("window.RADAR_ESTADO ="):].strip().rstrip(";"))
+        bruto["segredo"] = "x"
+        bruto["estrategias"][0]["nome"] = "MA_v2"
+        limpo = self.pr.validar_estado(bruto)
+        self.assertNotIn("segredo", limpo)
+        self.assertNotIn("nome", limpo["estrategias"][0])
+
+    def test_recusa_javascript_executavel_e_json_invalido(self):
+        ruins = [
+            "window.RADAR_ESTADO = (function(){ return {}; })();",
+            "alert(1); window.RADAR_ESTADO = {};",
+            "window.RADAR_ESTADO = {n: 1};",
+            "window.RADAR_ESTADO = {\"n\": NaN};",
+            "window.RADAR_ESTADO = [1, 2];",
+            "",
+        ]
+        for texto in ruins:
+            with self.assertRaises(self.pr.ErroEstado, msg=texto):
+                self.pr.interpretar_texto(texto)
+
+    def test_recusa_tipos_e_valores_invalidos(self):
+        self._publica()
+        ok = json.loads(self.arq.read_text(encoding="utf-8")[len("window.RADAR_ESTADO ="):].strip().rstrip(";"))
+        mudancas = [
+            lambda e: e.update(n=True),
+            lambda e: e.update(modo="outro"),
+            lambda e: e.update(consenso=1.5),
+            lambda e: e.update(consenso=float("inf")),
+            lambda e: e["estrategias"].append("x"),
+            lambda e: e["estrategias"][0].update(conf="alto"),
+            lambda e: e["estrategias"][0].update(dir=2),
+            lambda e: e.update(estrategias=[{"id": i, "dir": 0, "conf": 0.0} for i in range(40)]),
+            lambda e: e["mercado"].update(horario="hoje"),
+            lambda e: e["mercado"].update(ativo="<script>"),
+            lambda e: e.update(radar_envia_ordens="nao"),
+        ]
+        for mudar in mudancas:
+            copia = json.loads(json.dumps(ok))
+            mudar(copia)
+            with self.assertRaises(self.pr.ErroEstado):
+                self.pr.validar_estado(copia)
+
+    def test_recusa_arquivo_grande_demais(self):
+        self.arq.write_text("window.RADAR_ESTADO = " + "{" + " " * 30000 + "};", encoding="utf-8")
+        with self.assertRaises(self.pr.ErroEstado):
+            self.pr.ler_estado(self.arq)
+
+    # ---- envio: so atualizacao genuina, canal pelo modo, chave so no cabecalho
+    def test_envia_so_quando_ha_atualizacao_nova(self):
+        self._publica()
+        p = self._ponte()
+        self.assertTrue(p.passo())
+        self.assertFalse(p.passo())                      # arquivo congelado: nao reenvia
+        self.t[0] = 10.0
+        self.assertFalse(p.passo())                      # tempo passou, mas o arquivo e o mesmo
+        self._publica()                                  # n aumentou
+        self.t[0] = 20.0
+        self.assertTrue(p.passo())
+        self.assertEqual(len(self.enviados), 2)
+        self.assertEqual([e[2]["seq"] for e in self.enviados], [1, 2])
+
+    def test_intervalo_minimo_entre_envios_e_captura_fura_a_fila(self):
+        self._publica()
+        p = self._ponte(intervalo_min_s=2.0)
+        self.assertTrue(p.passo())
+        self._publica()
+        self.t[0] = 0.5
+        self.assertFalse(p.passo())                      # cedo demais
+        self.pub.capturar(1)                             # captura: manda ja
+        self._publica()
+        self.assertTrue(p.passo())
+        self.t[0] = 5.0
+        self._publica()
+        self.assertTrue(p.passo())
+
+    def test_canal_pelo_modo_e_chave_do_canal(self):
+        self._publica("normal")
+        p = self._ponte()
+        p.passo()
+        url, chave, corpo = self.enviados[-1]
+        self.assertTrue(url.endswith("/publicar/vivo"))
+        self.assertEqual(chave, "CHV-VIVO")
+        self._publica("replay")
+        self.t[0] = 10.0
+        p.passo()
+        url, chave, corpo = self.enviados[-1]
+        self.assertTrue(url.endswith("/publicar/replay"))
+        self.assertEqual(chave, "CHV-REPLAY")
+
+    def test_modo_normal_nunca_vai_para_o_canal_replay(self):
+        self._publica("normal")
+        p = self._ponte(chaves={"vivo": None, "replay": "CHV-REPLAY"})
+        self.assertFalse(p.passo())                      # sem chave do ao vivo: nao desvia para o replay
+        self.assertEqual(self.enviados, [])
+
+    def test_chave_nao_aparece_no_corpo_nem_nos_logs(self):
+        self._publica()
+
+        def falha(url, chave, corpo, timeout):
+            raise OSError("erro com cabecalho Authorization: Bearer " + chave)
+        p = self._ponte(enviar=falha)
+        p.passo()
+        self.assertTrue(self.logs)
+        self.assertFalse(any("CHV-" in linha for linha in self.logs))
+        self._publica()
+        p2 = self._ponte()
+        p2.passo()
+        self.assertNotIn("CHV-", json.dumps(self.enviados[-1][2]))
+
+    def test_nenhum_comando_so_estado(self):
+        self._publica()
+        p = self._ponte()
+        p.passo()
+        corpo = self.enviados[-1][2]
+        self.assertEqual(set(corpo), {"sessao", "geracao", "seq", "estado"})
+        self.assertEqual(set(corpo["estado"]), {"n", "versao", "modo", "radar_envia_ordens", "estrategias",
+                                                "consenso", "posicao", "captura", "mercado"})
+
+    # ---- quedas: so o estado mais recente, espera progressiva, reinicios
+    def test_queda_e_retorno_enviam_so_o_estado_mais_recente(self):
+        self._publica()
+        ligado = [False]
+        entregues = []
+
+        def envio(url, chave, corpo, timeout):
+            if not ligado[0]:
+                raise OSError("sem rede")
+            entregues.append(json.loads(corpo.decode("utf-8")))
+            return 200
+        p = self._ponte(enviar=envio, intervalo_min_s=0.0)
+        self.assertFalse(p.passo())                      # falha 1: espera 2 s
+        self.assertFalse(p.passo())                      # ainda esperando
+        for _ in range(4):                               # robo segue atualizando durante a queda
+            self._publica()
+        ligado[0] = True
+        self.t[0] = 3.0
+        self.assertTrue(p.passo())
+        self.assertEqual(len(entregues), 1)              # nada de fila: um unico envio, o mais recente
+        self.assertEqual(entregues[0]["estado"]["n"], 5)
+        self.assertTrue(any("recuperada" in linha for linha in self.logs))
+
+    def test_espera_progressiva_com_teto(self):
+        self._publica()
+        p = self._ponte(enviar=lambda *a: (_ for _ in ()).throw(OSError("x")), intervalo_min_s=0.0)
+        esperas = []
+        for _ in range(8):
+            self.t[0] = p._proxima_tentativa
+            p.passo()
+            esperas.append(round(p._proxima_tentativa - self.t[0], 1))
+        self.assertEqual(esperas[:5], [2.0, 4.0, 8.0, 16.0, 30.0])
+        self.assertEqual(max(esperas), 30.0)
+
+    def test_status_de_erro_do_servidor_nao_derruba_a_ponte(self):
+        self._publica()
+        p = self._ponte(enviar=lambda *a: 401)
+        self.assertFalse(p.passo())
+        self.assertEqual(p._falhas, 1)                            # contou como falha e entrou em espera
+        self.assertTrue(self.logs)
+
+    def test_reinicio_da_base_e_da_ponte(self):
+        for _ in range(5):
+            self._publica()
+        p = self._ponte(intervalo_min_s=0.0)
+        p.passo()
+        self.arq.unlink()
+        self.pub = self.rad.PublicadorRadar(self.arq, "normal")   # a base reiniciou: n volta a 1
+        self._publica()
+        self.t[0] = 5.0
+        self.assertTrue(p.passo())
+        self.assertEqual(p.geracao, 1)
+        self.assertEqual(self.enviados[-1][2]["estado"]["n"], 1)
+        outra = self._ponte()                                     # a ponte reiniciou: sessao nova
+        self.assertNotEqual(outra.sessao, p.sessao)
+
+    def test_arquivo_ausente_ou_invalido_nao_derruba(self):
+        p = self._ponte()
+        self.assertFalse(p.passo())                               # ainda nao existe
+        self.arq.write_text("lixo", encoding="utf-8")
+        self.assertFalse(p.passo())
+        self.assertEqual(self.enviados, [])
+
+    # ---- destino e configuracao
+    def test_destino_precisa_ser_https(self):
+        for ok in ("https://radar.exemplo.workers.dev", "http://127.0.0.1:8787", "http://localhost:8787"):
+            self.assertTrue(self.pr.destino_valido(ok), ok)
+        for ruim in ("http://exemplo.com", "ftp://x", "radar", "", "javascript:alert(1)"):
+            self.assertFalse(self.pr.destino_valido(ruim), ruim)
+        with self.assertRaises(ValueError):
+            self.pr.Ponte(self.arq, "http://exemplo.com", {})
+
+    def test_configuracao_por_ambiente_ou_arquivo_privado(self):
+        priv = Path(self.tmp.name) / "priv.json"
+        priv.write_text(json.dumps({"radar_url": "https://a.invalid", "radar_chave_vivo": "K1"}), encoding="utf-8")
+        cfg = self.pr.carregar_configuracao(env={"RADAR_CHAVE_REPLAY": "K2"}, caminho_privado=priv)
+        self.assertEqual(cfg["url"], "https://a.invalid")
+        self.assertEqual(cfg["chaves"], {"vivo": "K1", "replay": "K2"})
+        vazio = self.pr.carregar_configuracao(env={}, caminho_privado=Path(self.tmp.name) / "nao_existe.json")
+        self.assertIsNone(vazio["url"])
+
+    # ---- (b) servidor lento: o envio respeita o tempo limite
+    def test_servidor_lento_respeita_o_tempo_limite(self):
+        import http.server
+        import threading
+
+        class Lento(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                time.sleep(1.5)
+                self.send_response(200)
+                self.end_headers()
+
+            def log_message(self, *a):
+                pass
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Lento)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
+        self._publica()
+        p = self.pr.Ponte(self.arq, f"http://127.0.0.1:{srv.server_address[1]}", {"vivo": "K"},
+                          relogio=lambda: self.t[0], timeout_s=0.3, log=self.logs.append)
+        ini = time.monotonic()
+        self.assertFalse(p.passo())
+        self.assertLess(time.monotonic() - ini, 1.2)
+        self.assertTrue(any("sem conexao" in linha for linha in self.logs))
+
+    def test_servidor_real_recebe_o_envio(self):
+        import http.server
+        import threading
+        recebido = []
+
+        class Rec(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                n = int(self.headers.get("Content-Length", 0))
+                recebido.append((self.path, self.headers.get("Authorization"), self.rfile.read(n)))
+                self.send_response(204)
+                self.end_headers()
+
+            def log_message(self, *a):
+                pass
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Rec)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
+        self._publica()
+        p = self.pr.Ponte(self.arq, f"http://127.0.0.1:{srv.server_address[1]}", {"vivo": "K"},
+                          relogio=lambda: self.t[0], log=self.logs.append)
+        self.assertTrue(p.passo())
+        self.assertEqual(recebido[0][0], "/publicar/vivo")
+        self.assertEqual(recebido[0][1], "Bearer K")
+        self.assertEqual(json.loads(recebido[0][2])["estado"]["modo"], "normal")
 
 
 class SimpleNS:

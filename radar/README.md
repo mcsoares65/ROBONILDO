@@ -30,6 +30,15 @@ No canto inferior direito a tela mostra `RADAR Vxxx · BASE Vxxx`: a versão des
 
 `RADAR_ENVIA_ORDENS = False` em `configuracao.py`. O radar não envia ordem ao Profit. Quem envia é o robô (`ENVIAR_ORDENS`). O envio pelo radar ainda não existe; `True` é tratado como `False`, com aviso.
 
+## Ponte para o radar online (em construção)
+
+`ponte_radar.py`, na raiz do projeto, é um processo **separado** do robô. Ele só lê o `radar_estado.js` e o envia por HTTPS, em mão única, ao servidor do radar (que ainda será criado em `radar/servidor/`). Ele não recebe comando nenhum.
+
+- **Rodar:** `python ponte_radar.py` (em outra janela, com o robô rodando). Se o servidor ficar fora do ar, o robô nem percebe: a ponte tenta de novo com espera crescente e manda só o estado mais recente.
+- **Configuração (fora do Git):** variáveis de ambiente ou o arquivo `ponte_radar.privado.json` (já no `.gitignore`), com `radar_url`, `radar_chave_vivo` e `radar_chave_replay`. Cada canal tem a sua chave. Modo `replay` do robô vai para o canal replay, modo `normal` só para o ao vivo. O endereço precisa ser `https://` (`http` só para `127.0.0.1` ou `localhost`, em teste).
+- **O que ela envia:** o mesmo conteúdo do `radar_estado.js`, remontado campo a campo depois de validado (nenhum campo extra passa), mais um identificador de sessão e um contador de envio. Arquivo parado não é reenviado, e o servidor mede a idade da última atualização pelo relógio dele.
+- **Ainda não existe:** o servidor e a opção de fonte online no `radar.html`. Esta etapa não publica nada na internet.
+
 ## Segurança
 
 O arquivo `radar_estado.js` traz só o desenho: um rumo por estratégia, o lado, a confiança, o consenso e o contador de captura, mais o cabeçalho de mercado (ativo, hora e preço, que são dados públicos). Não traz nomes de estratégia, condições, limites nem preços de entrada ou de stop. É gerado pelo robô e não vai para o GitHub (`.gitignore`).
