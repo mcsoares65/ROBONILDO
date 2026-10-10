@@ -137,6 +137,7 @@
     text-wrap: balance;
   }
   .status.aprox .main { color: var(--text); }
+  .status.perdido .main, .status.perdido .sub { color: var(--red); }
   .status.lock .main { color: var(--amber); animation: piscar .55s steps(2, jump-none) infinite; }
   .status.lock .sub { color: var(--amber); }
   @keyframes piscar { 50% { opacity: .25; } }
@@ -210,7 +211,7 @@
 
 <script>
 (function () {
-  var VERSAO_RADAR = 'V551';   // mantida igual a versionamento.py (o teste confere)
+  var VERSAO_RADAR = 'V552';   // mantida igual a versionamento.py (o teste confere)
   var cv = document.getElementById('tela');
   var ctx = cv.getContext('2d');
   var elStatus = document.getElementById('status');
@@ -522,7 +523,7 @@
       sub = lado + ' · ' + (vivo ? (envia ? 'ORDEM ENVIADA' : 'RADAR NÃO ENVIA ORDEM (TESTE)') : 'ORDEM ENVIADA (SIMULAÇÃO)');
       cls = 'lock'; nivel = 'c';
     }
-    else if (sem) { m = 'SEM CONTATO'; sub = 'A base parou de transmitir'; cls = 'aprox'; nivel = 's'; }
+    else if (sem) { m = 'SEM CONTATO'; sub = 'A base parou de transmitir'; cls = 'perdido'; nivel = 's'; }
     else if (maxc >= 0.7) { m = 'ALVO NA MIRA'; sub = 'Aguardando confirmação no fechamento do candle de ' + timeframe() + ' minutos'; cls = 'aprox'; nivel = 't'; }
     else if (maxc >= 0.45) { m = 'CONTATO DETECTADO'; sub = 'Time acompanhando'; cls = 'aprox'; nivel = 'a'; }
     else { m = 'VARRENDO'; sub = 'Mercado sem alvo definido'; }
