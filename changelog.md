@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V545 — radar/ com o protótipo do radar de sinais
+
+Pedido do dono (10/10/2026), depois de aprovar o visual: o radar ganhou pasta própria no repositório, `radar/`. A pasta tem `radar.html` (abre no navegador, sem instalar nada, dados simulados) e um `README.md`. Estilo de radar de caça, sem números na tela: compra acima, venda abaixo, cada estratégia do time é um ponto que se aproxima do centro conforme a confiança sobe; em 100%, "Alvo Capturado!". Ainda não está ligado ao robô, e nada em `radar/` importa ou altera os módulos do robô. Nenhuma decisão muda.
+
+---
+
 ## V544 — BANCA_REAL_REAIS removida
 
 Pedido do dono (09/10/2026): a única banca passa a ser a da planilha (aba `GESTAO_RISCO`, célula `B3`). A constante fixa `BANCA_REAL_REAIS = 1490.00` saiu de `configuracao.py`. O limite de risco por operação (`RISCO_MAXIMO_PCT_BANCA`), que continua desligado (0), usaria a banca lida da planilha se fosse religado. Nenhuma decisão muda.

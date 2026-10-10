@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar Robonildo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Share+Tech+Mono&display=swap">
+<style>
+  /* Conceito: tela de radar de caça (PPI), um unico olhar, sem numeros. Compra acima, venda abaixo, alvo chega ao anel central. */
+  :root {
+    color-scheme: dark;
+    --bg: #020806;
+    --scope: #05180f;
+    --phos: #62ff9f;
+    --phos-dim: #1d7a47;
+    --grid: #0e4528;
+    --amber: #ffb627;
+    --text: #a4ecc2;
+    --text-dim: #4d9a72;
+    --font-display: "Chakra Petch", "Eurostile", "Bahnschrift", sans-serif;
+    --font-mono: "Share Tech Mono", ui-monospace, "Consolas", monospace;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    padding-inline: 16px;
+    padding-block: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    overflow-x: hidden;
+  }
+  header {
+    width: min(100%, 720px);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  h1 {
+    margin: 0;
+    font: 700 18px/1.2 var(--font-display);
+    letter-spacing: .28em;
+    color: var(--phos);
+  }
+  .tag {
+    font-size: 12px;
+    letter-spacing: .18em;
+    color: var(--text-dim);
+    border: 1px solid var(--grid);
+    padding: 3px 8px;
+  }
+  .scope-wrap {
+    position: relative;
+    width: min(100%, 78vh, 700px);
+    aspect-ratio: 1;
+    flex: 0 1 auto;
+  }
+  canvas { width: 100%; height: 100%; display: block; }
+  .status {
+    width: min(100%, 720px);
+    min-height: 74px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .status .main {
+    font: 700 clamp(22px, 5vw, 34px)/1.1 var(--font-display);
+    letter-spacing: .22em;
+    color: var(--phos);
+    text-wrap: balance;
+  }
+  .status .sub {
+    font-size: 14px;
+    letter-spacing: .16em;
+    color: var(--text-dim);
+    min-height: 1.3em;
+  }
+  .status.aprox .main { color: var(--text); }
+  .status.lock .main { color: var(--amber); animation: piscar .55s steps(2, jump-none) infinite; }
+  .status.lock .sub { color: var(--amber); }
+  @keyframes piscar { 50% { opacity: .25; } }
+  .controles {
+    width: min(100%, 720px);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+  button {
+    font: 500 13px/1 var(--font-mono);
+    letter-spacing: .08em;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--grid);
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--phos-dim); }
+  button[aria-pressed="true"] { color: var(--bg); background: var(--phos); border-color: var(--phos); }
+  button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    .status.lock .main { animation: none; }
+  }
+</style>
+
+</head>
+<body>
+<header>
+  <h1>ROBONILDO · RADAR</h1>
+  <span class="tag">DADOS SIMULADOS</span>
+</header>
+
+<div class="scope-wrap">
+  <canvas id="tela" role="img" aria-label="Radar com alvos de compra acima e de venda abaixo. O alvo se aproxima do centro conforme a confiança sobe."></canvas>
+</div>
+
+<div class="status" id="status" aria-live="polite">
+  <div class="main" id="principal">VARRENDO</div>
+  <div class="sub" id="secundario">Mercado sem alvo definido</div>
+</div>
+
+<div class="controles">
+  <button id="b-auto" aria-pressed="true">Automático</button>
+  <button id="b-lateral" aria-pressed="false">Mercado lateral</button>
+  <button id="b-compra" aria-pressed="false">Compra se aproximando</button>
+  <button id="b-venda" aria-pressed="false">Venda se aproximando</button>
+</div>
+
+<script>
+(function () {
+  var cv = document.getElementById('tela');
+  var ctx = cv.getContext('2d');
+  var elStatus = document.getElementById('status');
+  var elMain = document.getElementById('principal');
+  var elSub = document.getElementById('secundario');
+  var reduz = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var COR = { phos: '98,255,159', dim: '29,122,71', grid: '14,69,40', amber: '255,182,39' };
+  var TWO_PI = Math.PI * 2;
+  var VOLTA_S = reduz ? 9 : 4.6;            // segundos por varredura
+  var PERMANENCIA_TRAVA_S = 6.5;
+  var RAMPA_S = 15;
+
+  // tres estrategias do time; b = rumo (graus a partir do topo) dentro do setor de compra; venda espelha para baixo
+  var est = [
+    { b: -54, dir: 1, conf: 0.15, alvo: 0.15, rad: 0.9, ang: 0 },
+    { b: 2,   dir: 1, conf: 0.20, alvo: 0.20, rad: 0.88, ang: 0 },
+    { b: 56,  dir: 1, conf: 0.12, alvo: 0.12, rad: 0.92, ang: 0 }
+  ];
+  est.forEach(function (s) { s.ang = rumo(s); });
+
+  var modo = 'lateral', tModo = 0, auto = true, proxAuto = 'compra';
+  var lider = 1, trava = null, travaDir = 0;
+  var prox = [0, 0, 0];
+
+  function rumo(s) { return (s.dir >= 0 ? s.b : 180 - s.b) * Math.PI / 180; }
+  function menorDif(a, b) { var d = (a - b) % TWO_PI; if (d > Math.PI) d -= TWO_PI; if (d < -Math.PI) d += TWO_PI; return d; }
+  function sorteio(a, b) { return a + Math.random() * (b - a); }
+
+  function entrar(m) {
+    modo = m; tModo = 0; trava = null;
+    if (m === 'compra' || m === 'venda') {
+      var d = m === 'compra' ? 1 : -1;
+      lider = Math.floor(Math.random() * 3);
+      est.forEach(function (s) { s.dir = d; });
+    } else {
+      prox = [0, 0, 0];
+    }
+    marcarBotoes();
+  }
+
+  function atualizarSim(dt) {
+    tModo += dt;
+    if (modo === 'lateral') {
+      est.forEach(function (s, i) {
+        prox[i] -= dt;
+        if (prox[i] <= 0) {
+          s.alvo = sorteio(0.05, 0.42);
+          if (Math.random() < 0.18) s.dir = -s.dir;
+          prox[i] = sorteio(1.4, 3.6);
+        }
+      });
+      if (auto && tModo > 7) { entrar(proxAuto); proxAuto = proxAuto === 'compra' ? 'venda' : 'compra'; }
+    } else {
+      var p = Math.min(1, tModo / RAMPA_S);
+      var base = Math.pow(p, 1.15);
+      est.forEach(function (s, i) {
+        if (i === lider) s.alvo = base;
+        else s.alvo = Math.min(0.92, 0.12 + 0.78 * base * (0.75 + 0.25 * Math.sin(tModo * 0.7 + i)));
+      });
+      if (trava === null && est[lider].conf >= 0.995) { trava = 0; travaDir = est[lider].dir; }
+      if (trava !== null) {
+        trava += dt;
+        if (trava > PERMANENCIA_TRAVA_S) { entrar('lateral'); if (!auto) { /* fica em lateral */ } }
+      }
+    }
+    est.forEach(function (s) {
+      var k = 1 - Math.exp(-dt * 2.2);
+      s.conf += (s.alvo - s.conf) * k;
+      var raio = 1 - s.conf * 0.89;
+      s.rad += (raio - s.rad) * (1 - Math.exp(-dt * 3.2));
+      s.ang += menorDif(rumo(s), s.ang) * (1 - Math.exp(-dt * 3));
+    });
+  }
+
+  // ---- desenho ----
+  var W = 0, H = 0, dpr = 1;
+  function ajustar() {
+    var r = cv.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = Math.max(200, Math.round(r.width)); H = W;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  if (window.ResizeObserver) new ResizeObserver(ajustar).observe(cv); else window.addEventListener('resize', ajustar);
+  ajustar();
+
+  function pt(cx, cy, r, ang) { return [cx + r * Math.sin(ang), cy - r * Math.cos(ang)]; }
+  function rgba(c, a) { return 'rgba(' + c + ',' + a + ')'; }
+
+  function desenhar(t, varredura) {
+    var cx = W / 2, cy = H / 2, R = W * 0.41;
+    ctx.clearRect(0, 0, W, H);
+
+    // fundo do escopo
+    var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.05);
+    g.addColorStop(0, '#07261a'); g.addColorStop(1, '#030f09');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.0, 0, TWO_PI); ctx.fill();
+
+    // aneis de alcance (sem numeros)
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75, 1].forEach(function (f, i) {
+      ctx.strokeStyle = rgba(COR.grid, i === 3 ? 1 : 0.9);
+      ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, TWO_PI); ctx.stroke();
+    });
+    // anel de captura
+    ctx.setLineDash([4, 5]); ctx.strokeStyle = rgba(COR.amber, 0.55);
+    ctx.beginPath(); ctx.arc(cx, cy, R * 0.145, 0, TWO_PI); ctx.stroke(); ctx.setLineDash([]);
+
+    // cruz e divisao compra/venda
+    ctx.strokeStyle = rgba(COR.grid, 0.9);
+    ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+    ctx.strokeStyle = rgba(COR.dim, 0.8); ctx.setLineDash([2, 6]);
+    ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke(); ctx.setLineDash([]);
+
+    // marcas de rumo na borda
+    for (var d = 0; d < 360; d += 10) {
+      var a = d * Math.PI / 180, longa = d % 30 === 0;
+      var p1 = pt(cx, cy, R, a), p2 = pt(cx, cy, R * (longa ? 0.94 : 0.965), a);
+      ctx.strokeStyle = rgba(COR.dim, longa ? 1 : 0.7);
+      ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+    }
+
+    // varredura
+    var aV = varredura - Math.PI / 2;             // angulo de canvas
+    var trilha = 1.25;
+    if (ctx.createConicGradient) {
+      var cg = ctx.createConicGradient(aV - trilha, cx, cy);
+      var f = trilha / TWO_PI;
+      cg.addColorStop(0, rgba(COR.phos, 0));
+      cg.addColorStop(f, rgba(COR.phos, 0.34));
+      cg.addColorStop(Math.min(1, f + 0.002), rgba(COR.phos, 0));
+      cg.addColorStop(1, rgba(COR.phos, 0));
+      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TWO_PI); ctx.fill();
+    }
+    var pe = pt(cx, cy, R, varredura);
+    ctx.strokeStyle = rgba(COR.phos, 0.95); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(pe[0], pe[1]); ctx.stroke(); ctx.lineWidth = 1;
+
+    // rotulos dos setores
+    ctx.font = '500 ' + Math.max(11, W * 0.021) + 'px "Chakra Petch", sans-serif';
+    ctx.textAlign = 'center'; ctx.fillStyle = rgba(COR.phos, 0.75);
+    ctx.fillText('C O M P R A', cx, cy - R - 24);
+    ctx.fillText('V E N D A', cx, cy + R + 32);
+
+    // anel de consenso do time (borda externa)
+    var soma = 0; est.forEach(function (s) { soma += s.dir * s.conf; });
+    var domin = soma >= 0 ? 1 : -1, cons = 0;
+    est.forEach(function (s) { if (s.dir === domin) cons += s.conf; });
+    cons = Math.min(1, cons / est.length);
+    ctx.lineWidth = 5; ctx.lineCap = 'butt';
+    ctx.strokeStyle = rgba(COR.grid, 0.8);
+    ctx.beginPath(); ctx.arc(cx, cy, R + 12, 0, TWO_PI); ctx.stroke();
+    ctx.strokeStyle = rgba(trava !== null ? COR.amber : COR.phos, 0.9);
+    ctx.beginPath(); ctx.arc(cx, cy, R + 12, -Math.PI / 2, -Math.PI / 2 + cons * TWO_PI); ctx.stroke();
+    ctx.lineWidth = 1;
+
+    // alvos
+    est.forEach(function (s, i) {
+      var ang = s.ang, p = pt(cx, cy, R * s.rad, ang);
+      var dv = ((varredura - ang) % TWO_PI + TWO_PI) % TWO_PI;       // quanto depois da varredura
+      var br = Math.max(0.18, Math.exp(-dv / (TWO_PI * 0.42)));
+      var travado = trava !== null && i === lider;
+      var cor = travado ? COR.amber : COR.phos;
+      var tam = Math.max(3.5, W * 0.0085) * (0.8 + 0.5 * s.conf);
+      // halo
+      var h = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], tam * 4.5);
+      h.addColorStop(0, rgba(cor, 0.5 * br)); h.addColorStop(1, rgba(cor, 0));
+      ctx.fillStyle = h; ctx.beginPath(); ctx.arc(p[0], p[1], tam * 4.5, 0, TWO_PI); ctx.fill();
+      // marca em losango (simbolo de contato)
+      ctx.fillStyle = rgba(cor, 0.35 + 0.65 * br);
+      ctx.beginPath();
+      ctx.moveTo(p[0], p[1] - tam); ctx.lineTo(p[0] + tam, p[1]); ctx.lineTo(p[0], p[1] + tam); ctx.lineTo(p[0] - tam, p[1]);
+      ctx.closePath(); ctx.fill();
+      if (travado) {
+        // mira de captura: colchetes que fecham sobre o alvo + pulsos
+        var e = Math.min(1, trava / 0.9), fe = 1 - Math.pow(1 - e, 3);
+        var lado = W * (0.17 - 0.12 * fe), cc = Math.min(lado * 0.45, 22);
+        ctx.strokeStyle = rgba(COR.amber, 1); ctx.lineWidth = 2;
+        [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (q) {
+          var x = p[0] + q[0] * lado, y = p[1] + q[1] * lado;
+          ctx.beginPath(); ctx.moveTo(x - q[0] * cc, y); ctx.lineTo(x, y); ctx.lineTo(x, y - q[1] * cc); ctx.stroke();
+        });
+        var pul = (trava % 1.1) / 1.1;
+        ctx.strokeStyle = rgba(COR.amber, 0.7 * (1 - pul)); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(p[0], p[1], W * (0.03 + 0.1 * pul), 0, TWO_PI); ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+    });
+
+    // centro
+    ctx.fillStyle = rgba(COR.phos, 0.9);
+    ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, TWO_PI); ctx.fill();
+  }
+
+  // ---- texto de estado ----
+  var ultimoTxt = '';
+  function atualizarTexto() {
+    var maxc = 0; est.forEach(function (s) { if (s.conf > maxc) maxc = s.conf; });
+    var m, sub, cls = '';
+    if (trava !== null) { m = 'ALVO CAPTURADO!'; sub = (travaDir > 0 ? 'COMPRA' : 'VENDA') + ' · ORDEM ENVIADA (SIMULAÇÃO)'; cls = 'lock'; }
+    else if (maxc >= 0.7) { m = 'ALVO TRAVANDO'; sub = 'Aguardando confirmação no fechamento do candle'; cls = 'aprox'; }
+    else if (maxc >= 0.45) { m = 'ALVO EM APROXIMAÇÃO'; sub = 'Time acompanhando'; cls = 'aprox'; }
+    else { m = 'VARRENDO'; sub = 'Mercado sem alvo definido'; }
+    var chave = m + sub + cls;
+    if (chave === ultimoTxt) return;
+    ultimoTxt = chave;
+    elMain.textContent = m; elSub.textContent = sub; elStatus.className = 'status ' + cls;
+  }
+
+  // ---- controles ----
+  var bAuto = document.getElementById('b-auto'), bLat = document.getElementById('b-lateral'),
+      bCom = document.getElementById('b-compra'), bVen = document.getElementById('b-venda');
+  function marcarBotoes() {
+    bAuto.setAttribute('aria-pressed', auto ? 'true' : 'false');
+    bLat.setAttribute('aria-pressed', !auto && modo === 'lateral' ? 'true' : 'false');
+    bCom.setAttribute('aria-pressed', !auto && modo === 'compra' ? 'true' : 'false');
+    bVen.setAttribute('aria-pressed', !auto && modo === 'venda' ? 'true' : 'false');
+  }
+  bAuto.addEventListener('click', function () { auto = true; entrar('lateral'); tModo = 3; proxAuto = 'compra'; marcarBotoes(); });
+  bLat.addEventListener('click', function () { auto = false; entrar('lateral'); });
+  bCom.addEventListener('click', function () { auto = false; entrar('compra'); });
+  bVen.addEventListener('click', function () { auto = false; entrar('venda'); });
+
+  // ---- laco ----
+  var t0 = performance.now(), ult = t0;
+  function quadro(agora) {
+    var dt = Math.min(0.1, (agora - ult) / 1000); ult = agora;
+    atualizarSim(dt);
+    var varr = (((agora - t0) / 1000) / VOLTA_S % 1) * TWO_PI;
+    desenhar((agora - t0) / 1000, varr);
+    atualizarTexto();
+    requestAnimationFrame(quadro);
+  }
+  entrar('lateral'); tModo = 3; marcarBotoes();
+  requestAnimationFrame(quadro);
+})();
+</script>
+</body>
+</html>
