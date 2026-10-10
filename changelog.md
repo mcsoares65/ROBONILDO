@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V553 — radar: "Alvo na mira" só com 90% de confiança
+
+Pedido do dono (10/10/2026): com 70% o aviso "Alvo na mira" disparava sem parar. Agora só aparece (e só fala) com **90% ou mais**, e para não piscar perto do limite só sai quando a confiança cai abaixo de **85%**. A faixa "Contato detectado" vai de 45% a 90%. Esses limites são só da tela e não entram em nenhuma decisão do robô. Só mudou `radar/radar.html` (mais README e teste da página).
+
+---
+
 ## V552 — radar: "sem contato" em vermelho
 
 Pedido do dono (10/10/2026). Quando a base para de transmitir, o texto grande **SEM CONTATO** e a frase abaixo dele agora ficam em **vermelho** (a etiqueta do canto já estava vermelha). Só mudou `radar/radar.html` (mais teste e changelog); nenhuma decisão do robô muda.

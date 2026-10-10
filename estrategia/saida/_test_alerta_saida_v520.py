@@ -834,6 +834,7 @@ class RadarEstadoTest(unittest.TestCase):
         self.assertNotIn("new Date()", html)
         self.assertIn("base sem dados de mercado", html)
         self.assertIn("PERDEMOS O CONTATO COM A BASE", html)
+        self.assertIn("LIMITE_NA_MIRA = 0.90, LIMITE_SAI_DA_MIRA = 0.85", html)   # mira so com 90% (histerese 85%)
         self.assertIn(".status.perdido .main", html)   # sem contato = vermelho
         self.assertNotIn("SEM SINAL DO ROBÔ", html)
         self.assertNotIn("O robô parou", html)
