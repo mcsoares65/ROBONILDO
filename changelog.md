@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V554 — ponte do radar (`ponte_radar.py`), primeira peça do radar distribuído
+
+Pedido do dono (10/10/2026), seguindo as atas AM e AN do conselho. **Novo processo separado do robô**, `ponte_radar.py`, que lê `radar/radar_estado.js` e o envia por HTTPS ao servidor do radar (o servidor vem na próxima etapa; esta não publica nada na internet). Ele só lê o arquivo como JSON (nunca executa o JavaScript), valida tamanho, tipos e números e remonta o estado só com os campos permitidos; só envia atualização nova (arquivo congelado não é reenviado), no máximo a cada 2 s, com tempo limite de 5 s e espera progressiva (2, 4, 8, 16, 30 s) quando a rede cai; depois de uma queda manda só o estado mais recente (sem fila). Cada partida tem identificador de sessão, e o contador de envio impede que um pedido antigo sobrescreva um novo. Modo `replay` vai para o canal replay e modo `normal` só para o canal ao vivo, cada um com a sua chave de publicação (`RADAR_CHAVE_VIVO`, `RADAR_CHAVE_REPLAY`, `RADAR_URL`, em variável de ambiente ou `ponte_radar.privado.json`, que está no `.gitignore`); as chaves nunca aparecem em log nem no corpo enviado. Endereço sem HTTPS é recusado (exceto 127.0.0.1 e localhost, para teste). `principal.py`, `radar_estado.py` e a tela não mudam, e nenhuma decisão do robô muda. 19 testes novos no arquivo de testes de sempre.
+
+---
+
 ## V553 — radar: "Alvo na mira" só com 90% de confiança
 
 Pedido do dono (10/10/2026): com 70% o aviso "Alvo na mira" disparava sem parar. Agora só aparece (e só fala) com **90% ou mais**, e para não piscar perto do limite só sai quando a confiança cai abaixo de **85%**. A faixa "Contato detectado" vai de 45% a 90%. Esses limites são só da tela e não entram em nenhuma decisão do robô. Só mudou `radar/radar.html` (mais README e teste da página).

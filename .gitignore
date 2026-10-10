@@ -16,5 +16,6 @@ logs/
 **/posicao*.json
 **/historico*.csv
 
-# Estado ao vivo do radar (gerado pelo robo)
+# Estado ao vivo do radar (gerado pelo robo) e configuracao privada da ponte (chaves)
 radar/radar_estado.js
+ponte_radar.privado.json
