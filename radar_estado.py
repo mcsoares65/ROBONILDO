@@ -17,6 +17,8 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from versionamento import VERSAO
+
 
 def _lado(direcao) -> int:
     texto = str(direcao or "").upper()
@@ -73,6 +75,7 @@ class PublicadorRadar:
             estrategias.append({"id": indice, "dir": m["dir"], "conf": round(m["conf"], 4)})
         return {
             "n": self._n,
+            "versao": VERSAO,
             "modo": self.modo,
             "radar_envia_ordens": self.envia_ordens,
             "estrategias": estrategias,

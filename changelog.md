@@ -4,6 +4,18 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V552 — radar: "sem contato" em vermelho
+
+Pedido do dono (10/10/2026). Quando a base para de transmitir, o texto grande **SEM CONTATO** e a frase abaixo dele agora ficam em **vermelho** (a etiqueta do canto já estava vermelha). Só mudou `radar/radar.html` (mais teste e changelog); nenhuma decisão do robô muda.
+
+---
+
+## V551 — radar: versão na tela e "base" no lugar de "robô"
+
+Pedido do dono (10/10/2026). **Versão na tela:** o canto inferior direito mostra `RADAR Vxxx · BASE Vxxx` (a versão da página e a da base que está transmitindo; `BASE ?` se a base for antiga demais para informar, `BASE -` sem a base; amarelo quando diferem). Para isso o arquivo de estado ganhou o campo `versao` (só um texto). O teste da página confere que a versão escrita nela é a mesma de `versionamento.py`. **Linguagem do radar:** nada de "robô" na tela, é "base": a etiqueta virou **PERDEMOS O CONTATO COM A BASE**, o texto principal **SEM CONTATO** ("A base parou de transmitir") e o aviso "base sem dados de mercado (atualize a base e reinicie)". Nenhuma decisão do robô muda.
+
+---
+
 ## V550 — radar: aviso quando o robô não envia os dados de mercado
 
 Pedido do dono (10/10/2026): a linha de ativo/data/hora/preço apareceu só com traços. Isso acontece quando o robô em execução é anterior à V547 e não publica o campo `mercado`. Agora a tela diz isso abaixo do preço ("robô sem dados de mercado (atualize o robô e reinicie)") em vez de só mostrar traços. Só mudou `radar/radar.html` (mais README e teste da página); nenhuma decisão do robô muda.
