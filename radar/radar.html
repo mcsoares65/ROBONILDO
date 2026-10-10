@@ -211,7 +211,7 @@
 
 <script>
 (function () {
-  var VERSAO_RADAR = 'V552';   // mantida igual a versionamento.py (o teste confere)
+  var VERSAO_RADAR = 'V553';   // mantida igual a versionamento.py (o teste confere)
   var cv = document.getElementById('tela');
   var ctx = cv.getContext('2d');
   var elStatus = document.getElementById('status');
@@ -505,6 +505,12 @@
 
   // ---- texto de estado ----
   var ultimoTxt = '', ultimoNivel = '', ultimoTag = '';
+  // "Alvo na mira" so com confianca alta (90%) e, para nao ficar piscando perto do limite, so sai abaixo de 85%.
+  var LIMITE_NA_MIRA = 0.90, LIMITE_SAI_DA_MIRA = 0.85, naMiraAtivo = false;
+  function naMira(c) {
+    naMiraAtivo = naMiraAtivo ? c >= LIMITE_SAI_DA_MIRA : c >= LIMITE_NA_MIRA;
+    return naMiraAtivo;
+  }
   function atualizarTexto() {
     var vivo = aoVivo(), sem = semSinal();
     var replay = vivo && estadoVivo.modo === 'replay';
@@ -524,7 +530,7 @@
       cls = 'lock'; nivel = 'c';
     }
     else if (sem) { m = 'SEM CONTATO'; sub = 'A base parou de transmitir'; cls = 'perdido'; nivel = 's'; }
-    else if (maxc >= 0.7) { m = 'ALVO NA MIRA'; sub = 'Aguardando confirmação no fechamento do candle de ' + timeframe() + ' minutos'; cls = 'aprox'; nivel = 't'; }
+    else if (naMira(maxc)) { m = 'ALVO NA MIRA'; sub = 'Aguardando confirmação no fechamento do candle de ' + timeframe() + ' minutos'; cls = 'aprox'; nivel = 't'; }
     else if (maxc >= 0.45) { m = 'CONTATO DETECTADO'; sub = 'Time acompanhando'; cls = 'aprox'; nivel = 'a'; }
     else { m = 'VARRENDO'; sub = 'Mercado sem alvo definido'; }
     var chave = m + sub + cls;
