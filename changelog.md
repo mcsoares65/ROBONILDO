@@ -4,6 +4,12 @@ Arquivo único e estável — entradas empilhadas, mais recente no topo.
 
 ---
 
+## V546 — radar ao vivo, som e voz
+
+Pedido do dono (10/10/2026). **Ao vivo:** o robô grava `radar/radar_estado.js` a cada segundo (um ponto por estratégia do time, o lado, a confiança, o consenso e o contador de captura) e o `radar/radar.html` lê esse arquivo. A etiqueta do canto mostra "AO VIVO", "AO VIVO · REPLAY", "SEM SINAL DO ROBÔ" (mais de 6 s sem atualização) ou "DADOS SIMULADOS" quando o robô não está rodando. "Alvo Capturado!" aparece quando o robô abre a posição, no fechamento do candle. O arquivo não traz nomes de estratégia, condições, limites nem preços. **Ordens:** `RADAR_ENVIA_ORDENS = False` em `configuracao.py`; o radar não envia ordem ao Profit (teste na mesma máquina, quem envia é o robô). O envio pelo radar ainda não existe: `True` é tratado como `False`, com aviso. **Som e voz:** botão "Som" (ping de sonar a cada volta da varredura, toque ao passar por um alvo, bipes na captura) e botão "Voz" (fala "Alvo travando" e "Alvo capturado"; na mesma máquina do robô, deixe desligada). No `principal.py` só entrou gravação do estado, e nenhuma decisão muda.
+
+---
+
 ## V545 — radar/ com o protótipo do radar de sinais
 
 Pedido do dono (10/10/2026), depois de aprovar o visual: o radar ganhou pasta própria no repositório, `radar/`. A pasta tem `radar.html` (abre no navegador, sem instalar nada, dados simulados) e um `README.md`. Estilo de radar de caça, sem números na tela: compra acima, venda abaixo, cada estratégia do time é um ponto que se aproxima do centro conforme a confiança sobe; em 100%, "Alvo Capturado!". Ainda não está ligado ao robô, e nada em `radar/` importa ou altera os módulos do robô. Nenhuma decisão muda.

@@ -501,6 +501,7 @@ from registrador import Registrador
 from auditor_execucao import AuditorExecucao
 from caminho_operacao import CaminhoOperacao
 from alerta_saida import MonitorAlertasSaida, linha_posicao
+from radar_estado import PublicadorRadar
 from leitor_dde import LeitorDDE
 import leitor_dde as _leitor_dde_mod  # so para acessar PREFIXO_REPLAY (constante de config)
 
@@ -896,6 +897,18 @@ def rodar():
               f"o resultado das operacoes.")
     else:
         print(f"[BANCA] Banca atual lida da planilha: R${gestor.banca_atual:.2f}")
+
+    # V546: estado do radar (radar/radar_estado.js). So desenho; nao decide nada.
+    publicador_radar = None
+    if cfg.RADAR_PUBLICA_ESTADO:
+        publicador_radar = PublicadorRadar(
+            cfg.CAMINHO_RADAR_ESTADO, "replay" if _MODO_REPLAY else "normal", envia_ordens=False)
+        print(f"[RADAR] Publicando o estado em {cfg.CAMINHO_RADAR_ESTADO}")
+    if cfg.RADAR_ENVIA_ORDENS:
+        print("[RADAR] AVISO: RADAR_ENVIA_ORDENS=True, mas o radar ainda nao envia ordens; "
+              "tratado como False (o robo continua sendo o unico que envia).")
+    else:
+        print("[RADAR] RADAR_ENVIA_ORDENS=False: o radar nao envia ordens ao Profit (fase de testes).")
 
     if gestor.posicao_aberta:
         pos = gestor.posicao_aberta
@@ -1524,6 +1537,10 @@ def rodar():
                     narrar(frase)
             ultimo_candle_narracao_periodica = candle_horario_atual
 
+        if publicador_radar is not None:
+            publicador_radar.publicar(
+                radar, _consenso_time(radar, oportunidade_prioritaria), gestor.posicao_aberta)
+
         if (agora_real - ultimo_heartbeat).total_seconds() >= HEARTBEAT_SEGUNDOS:
             indicadores_texto = _texto_indicadores(row_indicadores)
             quadro = _quadro_proximidade(
@@ -2034,6 +2051,8 @@ def rodar():
                                 # já com o stop/alvo reais que o cartucho definiu
                                 # na abertura - `sinal` nunca carrega isso desde
                                 # que o motor deixou de calcular nível nenhum.
+                                if publicador_radar is not None:
+                                    publicador_radar.capturar(sinal.lado)   # V546: "Alvo capturado" no radar
                                 registrador.registrar_operacao_aberta(gestor.posicao_aberta)
                                 if registro_planilha:
                                     leitor.registrar_abertura_planilha(gestor.posicao_aberta)

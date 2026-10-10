@@ -734,6 +734,88 @@ class ContratosTest(unittest.TestCase):
         self.assertAlmostEqual(pr._resultado_liquido_reais(pos, 100100.0), 5 * um)
 
 
+class RadarEstadoTest(unittest.TestCase):
+    """V546: estado que o robo publica para radar/radar.html. So desenho, nunca as regras."""
+
+    def setUp(self):
+        self.mod = importlib.import_module("radar_estado")
+        self.cfg = importlib.import_module("configuracao")
+        self.radar = [
+            {"titular": "A", "estrategia": "A1", "direcao": "COMPRA", "progresso": 0.6},
+            {"titular": "A", "estrategia": "A2", "direcao": "VENDA", "progresso": 0.2},
+            {"titular": "B", "estrategia": "B1", "direcao": "VENDA", "progresso": 0.8},
+        ]
+
+    def test_configuracao_do_radar(self):
+        self.assertIs(self.cfg.RADAR_ENVIA_ORDENS, False)
+        self.assertTrue(self.cfg.RADAR_PUBLICA_ESTADO)
+        self.assertTrue(self.cfg.CAMINHO_RADAR_ESTADO.replace("\\", "/").endswith("radar/radar_estado.js"))
+
+    def test_melhor_item_de_cada_titular_e_ids_estaveis(self):
+        pub = self.mod.PublicadorRadar("x.js", "replay")
+        e = pub.montar(self.radar, 0.5, None)
+        self.assertEqual(e["estrategias"], [{"id": 0, "dir": 1, "conf": 0.6}, {"id": 1, "dir": -1, "conf": 0.8}])
+        e2 = pub.montar([], 0.0, None)                                 # radar vazio: os mesmos ids, confianca 0
+        self.assertEqual([x["id"] for x in e2["estrategias"]], [0, 1])
+        self.assertTrue(all(x["conf"] == 0.0 and x["dir"] == 0 for x in e2["estrategias"]))
+
+    def test_nunca_expoe_nomes_nem_regras(self):
+        pub = self.mod.PublicadorRadar("x.js", "normal")
+        item = dict(self.radar[0], faltantes=["segredo"], detalhe="segredo", confirmadas=2, total=3)
+        estado = pub.montar([item], 0.3, None)
+        texto = str(estado)
+        for proibido in ("A1", "segredo", "faltantes", "confirmadas", "detalhe", "titular"):
+            self.assertNotIn(proibido, texto)
+        self.assertEqual(set(estado["estrategias"][0]), {"id", "dir", "conf"})
+        self.assertEqual(set(estado), {"n", "modo", "radar_envia_ordens", "estrategias", "consenso", "posicao", "captura"})
+
+    def test_consenso_posicao_e_captura(self):
+        pub = self.mod.PublicadorRadar("x.js", "replay")
+        e = pub.montar(self.radar, 1.7, SimpleNS(lado="VENDA"))
+        self.assertEqual(e["consenso"], 1.0)                           # limitado a 0..1
+        self.assertEqual(e["posicao"], -1)
+        self.assertEqual(e["captura"], {"seq": 0, "dir": 0})
+        pub.capturar("COMPRA")
+        self.assertEqual(pub.montar(self.radar, 0.5, None)["captura"], {"seq": 1, "dir": 1})
+        pub.capturar("VENDA")
+        self.assertEqual(pub.montar(self.radar, 0.5, None)["captura"], {"seq": 2, "dir": -1})
+
+    def test_arquivo_gravado_e_intervalo(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            arq = Path(pasta) / "sub" / "radar_estado.js"
+            pub = self.mod.PublicadorRadar(arq, "replay", intervalo_s=1.0)
+            self.assertTrue(pub.publicar(self.radar, 0.5, None, agora=10.0))
+            texto = arq.read_text(encoding="utf-8")
+            self.assertTrue(texto.startswith("window.RADAR_ESTADO = ") and texto.rstrip().endswith(";"))
+            import json
+            dados = json.loads(texto[len("window.RADAR_ESTADO = "):].rstrip().rstrip(";"))
+            self.assertEqual(dados["n"], 1)
+            self.assertEqual(dados["modo"], "replay")
+            self.assertIs(dados["radar_envia_ordens"], False)
+            self.assertFalse(pub.publicar(self.radar, 0.5, None, agora=10.4))   # dentro do intervalo
+            pub.capturar("COMPRA")
+            self.assertTrue(pub.publicar(self.radar, 0.5, None, agora=10.5))    # captura fura o intervalo
+            self.assertTrue(pub.publicar(self.radar, 0.5, None, agora=12.0))
+            self.assertFalse(arq.with_suffix(".tmp").exists())
+
+    def test_falha_de_gravacao_nao_derruba(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            ocupado = Path(pasta) / "arquivo"
+            ocupado.write_text("x", encoding="utf-8")
+            pub = self.mod.PublicadorRadar(ocupado / "radar_estado.js", "normal")   # pasta-pai e um arquivo
+            self.assertFalse(pub.publicar(self.radar, 0.5, None, agora=1.0))
+
+    def test_pagina_do_radar_tem_som_voz_e_leitura_do_estado(self):
+        html = (RAIZ / "radar" / "radar.html").read_text(encoding="utf-8")
+        for trecho in ('id="b-som"', 'id="b-voz"', "radar_estado.js", "RADAR NÃO ENVIA ORDEM", "ALVO CAPTURADO!"):
+            self.assertIn(trecho, html)
+
+
+class SimpleNS:
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+
 class EstruturaTest(unittest.TestCase):
     def test_um_unico_capitao(self):
         arquivos = [p for p in (PASTA_SAIDA / "titular" / "capitao").glob("*.py") if not p.stem.startswith("_")]
