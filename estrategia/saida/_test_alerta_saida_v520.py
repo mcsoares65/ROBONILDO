@@ -837,8 +837,10 @@ class RadarEstadoTest(unittest.TestCase):
         self.assertIn(".status.perdido .main", html)   # sem contato = vermelho
         self.assertNotIn("SEM SINAL DO ROBÔ", html)
         self.assertNotIn("O robô parou", html)
-        import versionamento
-        self.assertIn("VERSAO_RADAR = '%s'" % versionamento.VERSAO, html)   # pagina e robo na mesma versao
+        # pagina e robo na mesma versao (le o texto de versionamento.py: o CI proibe cartucho importar o modulo)
+        import re
+        versao = re.search(r'^VERSAO\s*=\s*"([^"]+)"', (RAIZ / "versionamento.py").read_text(encoding="utf-8"), re.M).group(1)
+        self.assertIn("VERSAO_RADAR = '%s'" % versao, html)
 
 
 class SimpleNS:
