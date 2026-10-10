@@ -11,13 +11,14 @@ Tela de radar de sinais, no estilo de radar de caça. Sem números: compra na me
 
 ## Cabeçalho e textos
 
-- No topo ficam o ativo, a data, a hora do mercado e o preço atual (em Replay, a hora do replay).
+- No topo ficam o ativo, a data, a hora e o preço atual, exatamente como o robô leu no DDE (em Replay, a hora do replay). O relógio do computador só aparece em DADOS SIMULADOS, quando o robô não está rodando. Cada campo tem largura fixa e fonte de largura única, então a linha não se mexe quando os números mudam.
+- Som e voz ficam no canto superior direito, como dois ícones pequenos (alto-falante e balão de fala); com risco = desligado.
 - Os textos acompanham a confiança da estratégia mais próxima: **VARRENDO** (abaixo de 45%), **CONTATO DETECTADO** (45% a 70%), **ALVO NA MIRA** (70% ou mais, aguardando a confirmação no fechamento do candle) e **ALVO CAPTURADO!** (o robô abriu a posição). Esses limites são só da tela e não entram em nenhuma decisão do robô.
 - A tela se ajusta ao tamanho da janela, sem barra de rolagem.
 
 ## Som e voz
 
-- **Som:** um ping de sonar a cada volta da varredura, um toque curto quando ela passa por um alvo com confiança média ou alta, e uma sequência de bipes na captura. O navegador só libera o áudio depois do clique no botão.
+- **Som:** um ping de sonar a cada volta da varredura, um toque curto quando ela passa por um alvo com confiança média ou alta, e uma sequência de bipes na captura. O navegador só libera o áudio depois do clique no ícone.
 - **Voz:** fala "Alvo na mira" e "Alvo capturado, compra/venda". Na mesma máquina do robô, deixe desligada: o robô já narra e as vozes se sobreporiam.
 
 ## Ordens
